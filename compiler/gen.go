@@ -1,4 +1,4 @@
-package translator
+package compiler
 
 // CodeGenerator provides a simple API for creating code generator for
 // any language desired
