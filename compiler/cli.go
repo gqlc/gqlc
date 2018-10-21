@@ -40,18 +40,3 @@ type CommandLine interface {
 	// Run the compiler with the given command-line parameters.
 	Run(args []string) error
 }
-
-type cli struct{}
-
-func (c cli) RegisterGenerator(flagName string, gen CodeGenerator, helpText string) {}
-
-func (c cli) AllowPlugins(exeNamePrefix string) {}
-
-func (c cli) Run(args []string) error {
-	return nil
-}
-
-// NewCLI returns a simple implementation for the CommandLine interface
-func NewCLI() CommandLine {
-	return cli{}
-}

@@ -28,18 +28,19 @@ const (
 	litEnd
 
 	opBeg
-	AND    // &
-	OR     // |
-	NOT    // !
-	AT     // @
-	ASSIGN // =
+	AND // &
+	OR  // |
+	NOT // !
+	AT  // @
+	VAR // $
 
+	ASSIGN // =
 	LPAREN // (
 	LBRACK // [
 	LBRACE // {
 	COMMA  // ,
-	PERIOD // .
 
+	PERIOD // .
 	RPAREN // )
 	RBRACK // ]
 	RBRACE // }

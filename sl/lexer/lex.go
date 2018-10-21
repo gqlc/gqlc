@@ -255,7 +255,7 @@ func lexImports(l *lxr) stateFn {
 	case '(':
 		l.accept("(")
 		l.emit(token.LPAREN)
-		ok := l.scanList(')', defListSep, func(ll *lxr) bool {
+		ok := l.scanList(")", defListSep, func(ll *lxr) bool {
 			if ll.scanString() {
 				ll.emit(token.STRING)
 				return true
@@ -292,49 +292,195 @@ func lexScalar(l *lxr) stateFn {
 	case '\n', '\r':
 		break
 	case '@':
-
+		ok := l.scanDirectives("\r\n", " \t")
+		if !ok {
+			return nil
+		}
 	}
 	return lexDoc
 }
 
 // lexObject scans a object type definition
 func lexObject(l *lxr) stateFn {
+	// TODO
 	return lexDoc
 }
 
 // lexInterface scans a interface type definition
 func lexInterface(l *lxr) stateFn {
+	// TODO
 	return lexDoc
 }
 
 // lexUnion scans a union type definition
 func lexUnion(l *lxr) stateFn {
+	// TODO
 	return lexDoc
 }
 
 // lexEnum scans a enum type definition
 func lexEnum(l *lxr) stateFn {
+	// TODO
 	return lexDoc
 }
 
 // lexInput scans a input type definition
 func lexInput(l *lxr) stateFn {
+	// TODO
 	return lexDoc
 }
 
 // lexDirective scans a directive type definition
 func lexDirective(l *lxr) stateFn {
+	// TODO
 	return lexDoc
 }
 
 // lexScalar scans a scalar type definition
 func lexExtension(l *lxr) stateFn {
+	// TODO
 	return lexDoc
 }
 
 // scanDirectives scans the list of directives on type defs
-func (l *lxr) scanDirectives() {
+func (l *lxr) scanDirectives(endChars string, sep string) bool {
+	return l.scanList(endChars, sep, func(ll *lxr) bool {
+		if !ll.accept("@") {
+			l.errorf("directive must begin with an '@'")
+			return false
+		}
+		ll.emit(token.AT)
 
+		ident := ll.scanIdentifier()
+		if ident == token.ERR {
+			ll.errorf("invalid directive name: %s", ll.input[ll.start:ll.pos])
+			return false
+		}
+		ll.emit(ident)
+
+		r := ll.peek()
+		switch r {
+		case '(':
+			break
+		case '\n', '\r', ' ':
+			return true
+		}
+
+		ll.accept("(")
+		ll.emit(token.LPAREN)
+
+		ok := ll.scanList(")", ",", func(argsL *lxr) bool {
+			id := argsL.scanIdentifier()
+			if id == token.ERR {
+				argsL.errorf("invalid argument name: %s", argsL.input[argsL.start:argsL.pos])
+				return false
+			}
+			argsL.emit(id)
+
+			argsL.acceptRun(" \t")
+			argsL.ignore()
+
+			if !argsL.accept(":") {
+				argsL.errorf("expected ':' instead of: %s", string(argsL.input[argsL.pos]))
+				return false
+			}
+			argsL.emit(token.COLON)
+
+			argsL.acceptRun(" \t")
+			argsL.ignore()
+
+			return argsL.scanValue()
+		})
+
+		if ok {
+			ll.emit(token.RPAREN)
+		}
+		return ok
+	})
+}
+
+// scanValue scans a Value
+func (l *lxr) scanValue() (ok bool) {
+	var emitter func()
+
+	switch r := l.peek(); {
+	case r == '$':
+		l.accept("$")
+		l.emit(token.VAR)
+		tok := l.scanIdentifier()
+		if tok == token.ERR {
+			emitter = func() { l.errorf("") }
+		}
+		emitter = func() { l.emit(tok) }
+		ok = true
+	case r == '"':
+		ok = l.scanString()
+		if !ok {
+			emitter = func() { l.errorf("") }
+		}
+		emitter = func() { l.emit(token.STRING) }
+	case isAlphaNumeric(r):
+		if unicode.IsDigit(r) {
+			num := l.scanNumber()
+			if num == token.ERR {
+				emitter = func() { l.errorf("") }
+				break
+			}
+			emitter = func() { l.emit(num) }
+			ok = true
+			break
+		}
+		tok := l.scanIdentifier()
+		if tok == token.ERR {
+			emitter = func() { l.errorf("") }
+			break
+		}
+		emitter = func() { l.emit(tok) }
+		ok = true
+	case r == '-':
+		num := l.scanNumber()
+		if num == token.ERR {
+			emitter = func() { l.errorf("") }
+			break
+		}
+		emitter = func() { l.emit(num) }
+		ok = true
+	case r == '[':
+		l.accept("[")
+		l.emit(token.LBRACK)
+		ok = l.scanList("]", defListSep, func(ll *lxr) bool {
+			return l.scanValue()
+		})
+	case r == '{':
+		l.accept("{")
+		l.emit(token.LBRACE)
+		ok = l.scanList("}", defListSep, func(ll *lxr) bool {
+			tok := ll.scanIdentifier()
+			if tok == token.ERR {
+				ll.errorf("invalid object field name: %s", ll.input[l.start:l.pos])
+				return false
+			}
+			ll.emit(tok)
+
+			ll.acceptRun(" \t")
+			ll.ignore()
+
+			if !ll.accept(":") {
+				ll.errorf("expected field name-value seperator ':' but got %s", string(ll.input[l.pos]))
+				return false
+			}
+			ll.emit(token.COLON)
+
+			ll.acceptRun(" \t")
+			ll.ignore()
+
+			return ll.scanValue()
+		})
+	}
+
+	emitter()
+
+	return
 }
 
 const defListSep = ",\n"
@@ -342,18 +488,19 @@ const defListSep = ",\n"
 // scanList scans a GraphQL list given a list element scanner func.
 // The element scanner should assume that the lexer is right before whatever it needs
 // scanList does not handle descriptions but it does handle comments
-func (l *lxr) scanList(endDelim rune, sep string, elemScanner func(l *lxr) bool) bool {
+func (l *lxr) scanList(endDelims, sep string, elemScanner func(l *lxr) bool) bool {
 	// start delim has already been lexed
 	l.ignoreSpace()
-	if l.accept(string(endDelim)) {
+	if r := l.next(); strings.ContainsRune(endDelims, r) {
 		// return early if there was nothing in the list
 		return true
 	}
+	l.backup()
 
 	// Check if we hit comment
 	if l.accept("#") {
 		l.ignoreComment()
-		return l.scanList(endDelim, sep, elemScanner)
+		return l.scanList(endDelims, sep, elemScanner)
 	}
 
 	// scan an element and return early if it failed
@@ -362,13 +509,17 @@ func (l *lxr) scanList(endDelim rune, sep string, elemScanner func(l *lxr) bool)
 		return false
 	}
 
-	// Now check for sep
-	l.acceptRun(" \t")
-
 	// Enforce same list seperator
+loop:
 	r := l.next()
-	switch r {
-	case ',', '\n':
+	switch {
+	case r == ',', r == '\n', r == '\r':
+		// Check if newline is list endDelim
+		if strings.ContainsRune(endDelims, r) {
+			l.ignore()
+			return true
+		}
+
 		if string(r) != sep && sep != defListSep {
 			if r == '\n' {
 				l.backup()
@@ -378,22 +529,36 @@ func (l *lxr) scanList(endDelim rune, sep string, elemScanner func(l *lxr) bool)
 		} else {
 			sep = string(r)
 		}
-	case '#':
+		l.ignore()
+	case r == ' ', r == '\t':
+		if strings.ContainsRune(sep, r) {
+			l.acceptRun(" \t")
+			l.ignore()
+			break
+		}
+		l.ignore()
+		goto loop
+	case r == '#':
 		if sep == "," {
 			l.errorf("expected a comma list seperator before comment in list")
 			return false
 		}
 		l.ignoreComment()
-	case endDelim:
+	case strings.ContainsRune(endDelims, r):
 		l.backup()
-		return l.scanList(endDelim, sep, elemScanner)
+		l.ignore()
+	case r == eof:
+		if strings.ContainsRune(endDelims, '\r') || strings.ContainsRune(endDelims, '\n') {
+			l.backup()
+			return true
+		}
+		fallthrough
 	default:
 		l.errorf("invalid list seperator: %v", r)
 		return false
 	}
-	l.ignore()
 
-	return l.scanList(endDelim, sep, elemScanner)
+	return l.scanList(endDelims, sep, elemScanner)
 }
 
 // scanString scans both a block string, `"""` and a normal string `"`
@@ -422,8 +587,21 @@ func (l *lxr) scanString() bool {
 	return true
 }
 
-func (l *lxr) scanNumber() bool {
-	return true
+// scanNumber scans both an int and a float as defined by the GraphQL spec.
+func (l *lxr) scanNumber() token.Token {
+	l.accept("-")
+	l.acceptRun("0123456789")
+
+	if !l.accept(".") && !l.accept("eE") {
+		return token.INT
+	}
+
+	l.acceptRun("0123456789")
+	l.accept("eE")
+	l.accept("+-")
+	l.acceptRun("0123456789")
+
+	return token.FLOAT
 }
 
 // scanIdentifier scans an identifier and returns its token
@@ -436,6 +614,13 @@ func (l *lxr) scanIdentifier() token.Token {
 	word := l.input[l.start:l.pos]
 	if !l.atTerminator() {
 		return token.ERR
+	}
+
+	if l.peek() == '.' {
+		l.emit(token.Lookup(word))
+		l.accept(".")
+		l.emit(token.PERIOD)
+		return l.scanIdentifier()
 	}
 
 	return token.Lookup(word)

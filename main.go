@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"gqlc/cmd"
 	"gqlc/compiler"
 	"gqlc/compiler/gens"
 	"os"
@@ -10,20 +11,24 @@ import (
 var cli compiler.CommandLine
 
 func init() {
-	cli = compiler.NewCLI()
+	cli = cmd.NewCLI()
 	cli.AllowPlugins("gqlc-")
 
-	// Register go generator
-	cli.RegisterGenerator("--go_out", gens.GoGenerator{},
-		"Generate Go source file.")
+	// Register Documentation generator
+	cli.RegisterGenerator("doc_out", gens.DocGenerator{},
+		"Generate Documentation from GraphQL schema.")
+
+	// Register Go generator
+	cli.RegisterGenerator("go_out", gens.GoGenerator{},
+		"Generate Go source.")
 
 	// Register Javascript generator
-	cli.RegisterGenerator("--js_out", gens.JsGenerator{},
+	cli.RegisterGenerator("js_out", gens.JsGenerator{},
 		"Generate Javascript source.")
 
 	// Register Dart generator
-	cli.RegisterGenerator("--dart_out", gens.DartGenerator{},
-		"Generate Dart source file.")
+	cli.RegisterGenerator("dart_out", gens.DartGenerator{},
+		"Generate Dart source.")
 }
 
 func main() {
