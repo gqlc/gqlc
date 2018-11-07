@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 )
 
+// Item represents a lexed token.
 type Item struct {
 	typ  token.Token
 	pos  token.Pos
@@ -29,17 +30,29 @@ func (i Item) String() string {
 	return fmt.Sprintf("%q", i.val)
 }
 
+// Interface defines the simplest API any consumer of a lexer could need.
 type Interface interface {
+	// NextItem returns the next lexed Item
 	NextItem() Item
+
+	// Drain drains the remaining items. Used only by parser if error occurs.
 	Drain()
 }
 
 // stateFn represents the state of the scanner as a function that returns the next state.
 type stateFn func(*lxr) stateFn
 
+// A Mode value is a set of flags (or 0). They control lexer behaviour
+type Mode uint
+
+const (
+	ScanComments Mode = 1 << iota // Return comments as COMMENT tokens
+)
+
 type lxr struct {
+	mode  Mode
 	name  string
-	input string
+	input []byte
 	pos   token.Pos
 	start token.Pos
 	width token.Pos
@@ -47,10 +60,12 @@ type lxr struct {
 	line  int
 }
 
-func Lex(name, input string) Interface {
+// Lex lexs the given input based on the the GraphQL IDL specification.
+func Lex(name string, src []byte, mode Mode) Interface {
 	l := &lxr{
+		mode:  mode,
 		name:  name,
-		input: input,
+		input: src,
 		items: make(chan Item),
 		line:  1,
 	}
@@ -84,7 +99,7 @@ func (l *lxr) next() rune {
 		l.width = 0
 		return eof
 	}
-	r, w := utf8.DecodeRuneInString(l.input[l.pos:])
+	r, w := utf8.DecodeRune(l.input[l.pos:])
 	l.width = token.Pos(w)
 	l.pos += l.width
 	if r == '\n' {
@@ -109,9 +124,10 @@ func (l *lxr) backup() {
 	}
 }
 
+// TODO: Check emitted value for newline characters and subtract them from l.line
 // emit passes an item back to the client.
 func (l *lxr) emit(t token.Token) {
-	l.items <- Item{t, l.start, l.input[l.start:l.pos], l.line}
+	l.items <- Item{t, l.start, string(l.input[l.start:l.pos]), l.line}
 	l.start = l.pos
 }
 
@@ -155,7 +171,7 @@ func (l *lxr) NextItem() Item {
 	return <-l.items
 }
 
-// drain drains the output so the lexing goroutine will exit.
+// Drain drains the output so the lexing goroutine will exit.
 // Called by the parser, not in the lexing goroutine.
 func (l *lxr) Drain() {
 	for range l.items {
@@ -185,7 +201,14 @@ func lexDoc(l *lxr) stateFn {
 	case isSpace(r):
 		l.ignoreSpace()
 	case r == '#':
-		l.ignoreComment()
+		if l.mode != ScanComments {
+			l.ignoreComment()
+			break
+		}
+		for s := l.next(); s != '\r' && s != '\n' && s != eof; {
+			s = l.next()
+		}
+		l.emit(token.COMMENT)
 	case r == '"':
 		l.backup()
 		if !l.scanString() {
@@ -211,25 +234,33 @@ func lexImportsOrDef(l *lxr) stateFn {
 		l.emit(ident)
 	}
 
+	if ident != token.IMPORT && ident != token.EXTEND {
+		l.acceptRun(" \t")
+		l.ignore()
+
+		if !isAlphaNumeric(l.peek()) {
+			return l.errorf("expected type name for type decl: %s", ident)
+		}
+
+		name := l.scanIdentifier()
+		l.emit(name)
+	}
+
 	switch ident {
 	case token.IMPORT:
 		return lexImports
 	case token.SCALAR:
 		return lexScalar
-	case token.TYPE:
+	case token.SCHEMA, token.TYPE, token.INTERFACE, token.ENUM, token.INPUT:
 		return lexObject
-	case token.INTERFACE:
-		return lexInterface
 	case token.UNION:
 		return lexUnion
-	case token.ENUM:
-		return lexEnum
-	case token.INPUT:
-		return lexInput
 	case token.DIRECTIVE:
 		return lexDirective
 	case token.EXTEND:
-		return lexExtension
+		l.acceptRun(" \t")
+		l.ignore()
+		return lexImportsOrDef
 	}
 
 	return l.errorf("unknown type definition: %v", ident)
@@ -255,7 +286,7 @@ func lexImports(l *lxr) stateFn {
 	case '(':
 		l.accept("(")
 		l.emit(token.LPAREN)
-		ok := l.scanList(")", defListSep, func(ll *lxr) bool {
+		ok := l.scanList(")", defListSep, 0, func(ll *lxr) bool {
 			if ll.scanString() {
 				ll.emit(token.STRING)
 				return true
@@ -277,16 +308,6 @@ func lexScalar(l *lxr) stateFn {
 	l.acceptRun(" \t")
 	l.ignore()
 
-	if !isAlphaNumeric(l.peek()) {
-		return l.errorf("expected scalar type identifier name")
-	}
-
-	ident := l.scanIdentifier()
-	l.emit(ident)
-
-	l.acceptRun(" \t")
-	l.ignore()
-
 	r := l.peek()
 	switch r {
 	case '\n', '\r':
@@ -300,32 +321,189 @@ func lexScalar(l *lxr) stateFn {
 	return lexDoc
 }
 
-// lexObject scans a object type definition
+// lexObject scans a schema, object, enum, or input type definition
 func lexObject(l *lxr) stateFn {
-	// TODO
+	l.acceptRun(" \t")
+	l.ignore()
+
+	r := l.peek()
+	switch r {
+	case 'i':
+		implIdent := l.scanIdentifier()
+		if implIdent != token.IMPLEMENTS {
+			return l.errorf("invalid identifier in object type signature")
+		}
+		l.emit(implIdent)
+
+		ok := l.scanList("@{\n", "&", 0, func(ll *lxr) bool {
+			name := ll.scanIdentifier()
+			if name == token.ERR {
+				ll.errorf("error occurred when scanning implements list")
+				return false
+			}
+			ll.emit(name)
+			return true
+		})
+		if !ok {
+			return nil
+		}
+		l.backup()
+
+		r = l.peek()
+		switch r {
+		case '@':
+			goto dirs
+		case '{':
+			return lexFields
+		}
+		break
+	dirs:
+		fallthrough
+	case '@':
+		ok := l.scanDirectives("{\r\n", " \t")
+		if !ok {
+			return nil
+		}
+		l.backup()
+
+		r = l.peek()
+		if r == '\r' || r == '\n' || r == eof {
+			break
+		}
+
+		fallthrough
+	case '{':
+		return lexFields
+	default:
+		return l.errorf("unexpected character encountered in object declaration: %s", string(l.input[l.pos]))
+	}
 	return lexDoc
 }
 
-// lexInterface scans a interface type definition
-func lexInterface(l *lxr) stateFn {
-	// TODO
+// lexFieldDefs scans a FieldsDefinition, EnumValuesDefinition, InputFieldsDefinition list
+func lexFields(l *lxr) stateFn {
+	l.accept("{")
+	l.emit(token.LBRACE)
+
+	ok := l.scanList("}", defListSep, 0, func(ll *lxr) bool {
+		if ll.accept("\"") {
+			ll.backup()
+			ok := ll.scanString()
+			if !ok {
+				return false
+			}
+			ll.emit(token.DESCRIPTION)
+			ll.ignoreSpace()
+		}
+
+		tok := ll.scanIdentifier()
+		if tok == token.ERR {
+			return false
+		}
+		ll.emit(tok)
+
+	fieldStuff:
+		r := ll.next()
+		switch r {
+		case ' ', '\t':
+			ll.acceptRun(" \t")
+			ll.ignore()
+			goto fieldStuff
+		case '(':
+			ll.emit(token.LPAREN)
+
+			ok := ll.scanList(")", defListSep, 0, func(lll *lxr) bool {
+				if lll.accept("\"") {
+					sok := lll.scanString()
+					if !sok {
+						return false
+					}
+					lll.emit(token.DESCRIPTION)
+
+					lll.ignoreSpace()
+				}
+
+				ident := lll.scanIdentifier()
+				if ident == token.ERR {
+					return false
+				}
+				lll.emit(ident)
+
+				lll.acceptRun(" \t")
+				lll.ignore()
+
+				if !lll.accept(":") {
+					ll.errorf("missing ':' in args definition")
+					return false
+				}
+
+				vok := lll.scanVal()
+				if !vok {
+					return false
+				}
+				lll.acceptRun(" \t")
+				lll.ignore()
+
+				if lll.accept(",\n") {
+					lll.backup()
+					return true
+				}
+
+				if lll.accept("@") {
+					lll.backup()
+					return lll.scanDirectives(",)\r\n", " \t")
+				}
+
+				return true
+			})
+			if !ok {
+				return false
+			}
+			ll.emit(token.RPAREN)
+
+			ll.acceptRun(" \t")
+			ll.ignore()
+
+			if !ll.accept(":") {
+				ll.errorf("missing ':' in fields definition")
+				return false
+			}
+
+			fallthrough
+		case ':':
+			if !ll.scanVal() {
+				return false
+			}
+			ll.acceptRun(" \t")
+			ll.ignore()
+
+			if !ll.accept("@") {
+				break
+			}
+
+			fallthrough
+		case '@':
+			ll.backup()
+			ok := ll.scanDirectives(",\r\n", " \t")
+			if !ok {
+				return false
+			}
+			ll.backup()
+		default:
+			ll.backup()
+		}
+		return true
+	})
+	if !ok {
+		return nil
+	}
+	l.emit(token.RBRACE)
+
 	return lexDoc
 }
 
 // lexUnion scans a union type definition
 func lexUnion(l *lxr) stateFn {
-	// TODO
-	return lexDoc
-}
-
-// lexEnum scans a enum type definition
-func lexEnum(l *lxr) stateFn {
-	// TODO
-	return lexDoc
-}
-
-// lexInput scans a input type definition
-func lexInput(l *lxr) stateFn {
 	// TODO
 	return lexDoc
 }
@@ -336,15 +514,38 @@ func lexDirective(l *lxr) stateFn {
 	return lexDoc
 }
 
-// lexScalar scans a scalar type definition
-func lexExtension(l *lxr) stateFn {
-	// TODO
-	return lexDoc
+// scanVal scans an input value definitions, as used by obj, inter, and input types
+func (l *lxr) scanVal() bool {
+	l.emit(token.COLON)
+	l.acceptRun(" \t")
+	l.ignore()
+
+	typ := l.scanIdentifier()
+	if typ == token.ERR {
+		return false
+	}
+	l.emit(typ)
+
+	l.acceptRun(" \t")
+	l.ignore()
+
+	if l.accept("=") {
+		l.emit(token.ASSIGN)
+		l.acceptRun(" \t")
+		l.ignore()
+
+		ok := l.scanValue()
+		if !ok {
+			return false
+		}
+	}
+
+	return true
 }
 
 // scanDirectives scans the list of directives on type defs
 func (l *lxr) scanDirectives(endChars string, sep string) bool {
-	return l.scanList(endChars, sep, func(ll *lxr) bool {
+	return l.scanList(endChars, sep, 0, func(ll *lxr) bool {
 		if !ll.accept("@") {
 			l.errorf("directive must begin with an '@'")
 			return false
@@ -366,10 +567,12 @@ func (l *lxr) scanDirectives(endChars string, sep string) bool {
 			return true
 		}
 
-		ll.accept("(")
+		if !ll.accept("(") {
+			return true
+		}
 		ll.emit(token.LPAREN)
 
-		ok := ll.scanList(")", ",", func(argsL *lxr) bool {
+		ok := ll.scanList(")", ",", ',', func(argsL *lxr) bool {
 			id := argsL.scanIdentifier()
 			if id == token.ERR {
 				argsL.errorf("invalid argument name: %s", argsL.input[argsL.start:argsL.pos])
@@ -448,13 +651,13 @@ func (l *lxr) scanValue() (ok bool) {
 	case r == '[':
 		l.accept("[")
 		l.emit(token.LBRACK)
-		ok = l.scanList("]", defListSep, func(ll *lxr) bool {
+		ok = l.scanList("]", defListSep, 0, func(ll *lxr) bool {
 			return l.scanValue()
 		})
 	case r == '{':
 		l.accept("{")
 		l.emit(token.LBRACE)
-		ok = l.scanList("}", defListSep, func(ll *lxr) bool {
+		ok = l.scanList("}", defListSep, 0, func(ll *lxr) bool {
 			tok := ll.scanIdentifier()
 			if tok == token.ERR {
 				ll.errorf("invalid object field name: %s", ll.input[l.start:l.pos])
@@ -488,7 +691,7 @@ const defListSep = ",\n"
 // scanList scans a GraphQL list given a list element scanner func.
 // The element scanner should assume that the lexer is right before whatever it needs
 // scanList does not handle descriptions but it does handle comments
-func (l *lxr) scanList(endDelims, sep string, elemScanner func(l *lxr) bool) bool {
+func (l *lxr) scanList(endDelims, sep string, rsep rune, elemScanner func(l *lxr) bool) bool {
 	// start delim has already been lexed
 	l.ignoreSpace()
 	if r := l.next(); strings.ContainsRune(endDelims, r) {
@@ -499,8 +702,15 @@ func (l *lxr) scanList(endDelims, sep string, elemScanner func(l *lxr) bool) boo
 
 	// Check if we hit comment
 	if l.accept("#") {
-		l.ignoreComment()
-		return l.scanList(endDelims, sep, elemScanner)
+		if l.mode != ScanComments {
+			l.ignoreComment()
+		} else {
+			for r := l.next(); r != '\r' && r != '\n' && r != eof; {
+				r = l.next()
+			}
+			l.emit(token.COMMENT)
+		}
+		return l.scanList(endDelims, sep, rsep, elemScanner)
 	}
 
 	// scan an element and return early if it failed
@@ -513,22 +723,7 @@ func (l *lxr) scanList(endDelims, sep string, elemScanner func(l *lxr) bool) boo
 loop:
 	r := l.next()
 	switch {
-	case r == ',', r == '\n', r == '\r':
-		// Check if newline is list endDelim
-		if strings.ContainsRune(endDelims, r) {
-			l.ignore()
-			return true
-		}
-
-		if string(r) != sep && sep != defListSep {
-			if r == '\n' {
-				l.backup()
-			}
-			l.errorf("list seperator must remain the same throughout the list")
-			return false
-		} else {
-			sep = string(r)
-		}
+	case r == rsep:
 		l.ignore()
 	case r == ' ', r == '\t':
 		if strings.ContainsRune(sep, r) {
@@ -545,8 +740,18 @@ loop:
 		}
 		l.ignoreComment()
 	case strings.ContainsRune(endDelims, r):
-		l.backup()
+		return true
+	case strings.ContainsRune(sep, r):
+		if rsep != 0 {
+			if r == '\n' {
+				l.backup()
+			}
+			l.errorf("list seperator must remain the same throughout the list")
+			return false
+		}
+
 		l.ignore()
+		rsep = r
 	case r == eof:
 		if strings.ContainsRune(endDelims, '\r') || strings.ContainsRune(endDelims, '\n') {
 			l.backup()
@@ -558,7 +763,7 @@ loop:
 		return false
 	}
 
-	return l.scanList(endDelims, sep, elemScanner)
+	return l.scanList(endDelims, sep, rsep, elemScanner)
 }
 
 // scanString scans both a block string, `"""` and a normal string `"`
@@ -611,7 +816,7 @@ func (l *lxr) scanIdentifier() token.Token {
 	}
 
 	l.backup()
-	word := l.input[l.start:l.pos]
+	word := string(l.input[l.start:l.pos])
 	if !l.atTerminator() {
 		return token.ERR
 	}

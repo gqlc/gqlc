@@ -2,14 +2,6 @@ package token
 
 import "strconv"
 
-type Pos int
-
-const NoPos Pos = 0
-
-func (p Pos) IsValid() bool {
-	return p != NoPos
-}
-
 // Token is the set of lexical tokens of the GraphQL Schema Language
 type Token int
 
@@ -18,6 +10,7 @@ const (
 	// Special Tokens
 	ERR Token = iota
 	EOF
+	COMMENT
 	DESCRIPTION
 
 	litBeg
