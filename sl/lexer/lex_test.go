@@ -750,6 +750,36 @@ func TestLexObject(t *testing.T) {
 	})
 }
 
+func TestLexUnion(t *testing.T) {
+	t.Run("simple", func(subT *testing.T) {
+		l := Lex("simple", []byte(`union Pizza = Triangle | Circle`), 0)
+		expectItems(subT, l, []Item{
+			{typ: token.UNION, line: 1, pos: 0, val: "union"},
+			{typ: token.IDENT, line: 1, pos: 6, val: "Pizza"},
+			{typ: token.ASSIGN, line: 1, pos: 12, val: "="},
+			{typ: token.IDENT, line: 1, pos: 14, val: "Triangle"},
+			{typ: token.IDENT, line: 1, pos: 25, val: "Circle"},
+		}...)
+		expectEOF(subT, l)
+	})
+
+	t.Run("withDirectives", func(subT *testing.T) {
+		l := Lex("simple", []byte(`union Pizza @ham @pineapple = Triangle | Circle`), 0)
+		expectItems(subT, l, []Item{
+			{typ: token.UNION, line: 1, pos: 0, val: "union"},
+			{typ: token.IDENT, line: 1, pos: 6, val: "Pizza"},
+			{typ: token.AT, line: 1, pos: 12, val: "@"},
+			{typ: token.IDENT, line: 1, pos: 13, val: "ham"},
+			{typ: token.AT, line: 1, pos: 17, val: "@"},
+			{typ: token.IDENT, line: 1, pos: 18, val: "pineapple"},
+			{typ: token.ASSIGN, line: 1, pos: 28, val: "="},
+			{typ: token.IDENT, line: 1, pos: 30, val: "Triangle"},
+			{typ: token.IDENT, line: 1, pos: 41, val: "Circle"},
+		}...)
+		expectEOF(subT, l)
+	})
+}
+
 func expectItems(t *testing.T, l Interface, items ...Item) {
 	for _, item := range items {
 		lItem := l.NextItem()

@@ -234,7 +234,7 @@ func lexImportsOrDef(l *lxr) stateFn {
 		l.emit(ident)
 	}
 
-	if ident != token.IMPORT && ident != token.EXTEND {
+	if ident != token.IMPORT && ident != token.EXTEND && ident != token.SCHEMA {
 		l.acceptRun(" \t")
 		l.ignore()
 
@@ -504,7 +504,38 @@ func lexFields(l *lxr) stateFn {
 
 // lexUnion scans a union type definition
 func lexUnion(l *lxr) stateFn {
-	// TODO
+	l.acceptRun(" \t")
+	l.ignore()
+
+	if l.accept("@") {
+		l.backup()
+		ok := l.scanDirectives("=\r\n", " \t")
+		if !ok {
+			return nil
+		}
+		l.backup()
+	}
+
+	if l.accept("\r\n") {
+		return lexDoc
+	}
+
+	if l.accept("=") {
+		l.emit(token.ASSIGN)
+	}
+
+	ok := l.scanList("\r\n", "|", '|', func(ll *lxr) bool {
+		ident := ll.scanIdentifier()
+		if ident == token.ERR {
+			ll.errorf("invalid union member type identifier: %s", string(l.input[l.start:l.pos]))
+			return false
+		}
+		ll.emit(ident)
+		return true
+	})
+	if !ok {
+		return nil
+	}
 	return lexDoc
 }
 
