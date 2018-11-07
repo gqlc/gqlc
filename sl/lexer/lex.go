@@ -234,7 +234,7 @@ func lexImportsOrDef(l *lxr) stateFn {
 		l.emit(ident)
 	}
 
-	if ident != token.IMPORT && ident != token.EXTEND && ident != token.SCHEMA {
+	if ident != token.IMPORT && ident != token.EXTEND && ident != token.SCHEMA && ident != token.DIRECTIVE {
 		l.acceptRun(" \t")
 		l.ignore()
 
@@ -541,7 +541,99 @@ func lexUnion(l *lxr) stateFn {
 
 // lexDirective scans a directive type definition
 func lexDirective(l *lxr) stateFn {
-	// TODO
+	l.acceptRun(" \t")
+	l.ignore()
+
+	if !l.accept("@") {
+		return l.errorf("directive decl must begin with a '@'")
+	}
+	l.emit(token.AT)
+
+	name := l.scanIdentifier()
+	if name == token.ERR {
+		return l.errorf("invalid directive identifier: %s", string(l.input[l.start:l.pos]))
+	}
+	l.emit(name)
+
+	l.acceptRun(" \t")
+	l.ignore()
+
+	if l.accept("(") {
+		l.emit(token.LPAREN)
+
+		ok := l.scanList(")", defListSep, 0, func(ll *lxr) bool {
+			if ll.accept("\"") {
+				sok := ll.scanString()
+				if !sok {
+					return false
+				}
+				ll.emit(token.DESCRIPTION)
+
+				ll.ignoreSpace()
+			}
+
+			ident := ll.scanIdentifier()
+			if ident == token.ERR {
+				return false
+			}
+			ll.emit(ident)
+
+			ll.acceptRun(" \t")
+			ll.ignore()
+
+			if !ll.accept(":") {
+				ll.errorf("missing ':' in args definition")
+				return false
+			}
+
+			vok := ll.scanVal()
+			if !vok {
+				return false
+			}
+			ll.acceptRun(" \t")
+			ll.ignore()
+
+			if ll.accept(",\n") {
+				ll.backup()
+				return true
+			}
+
+			if ll.accept("@") {
+				ll.backup()
+				return ll.scanDirectives(",)\r\n", " \t")
+			}
+
+			return true
+		})
+		if !ok {
+			return nil
+		}
+		l.emit(token.RPAREN)
+	}
+	l.acceptRun(" \t")
+	l.ignore()
+
+	on := l.scanIdentifier()
+	if on != token.ON {
+		return l.errorf("directive decl must have locations specified with 'on' keyword, not: %s", string(l.input[l.start:l.pos]))
+	}
+	l.emit(token.ON)
+
+	l.acceptRun(" \t")
+	l.ignore()
+
+	ok := l.scanList("\r\n", "|", '|', func(ll *lxr) bool {
+		ident := ll.scanIdentifier()
+		if ident == token.ERR {
+			ll.errorf("invalid directive location identifier: %s", string(ll.input[ll.start:ll.pos]))
+			return false
+		}
+		ll.emit(ident)
+		return true
+	})
+	if !ok {
+		return nil
+	}
 	return lexDoc
 }
 

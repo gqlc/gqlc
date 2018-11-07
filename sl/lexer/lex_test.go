@@ -694,7 +694,7 @@ func TestLexObject(t *testing.T) {
 		// 		 Instead, it uses a construction that is valid by the lexer and tests
 		//		 the full capabilities of the lexObject stateFn.
 
-		l := Lex("all", []byte(`schema Rect implements Shape & Obj @green @blue {
+		l := Lex("all", []byte(`type Rect implements Shape & Obj @green @blue {
 	"one descr" one: One @one
 	"""
 	two descr
@@ -705,46 +705,46 @@ func TestLexObject(t *testing.T) {
 	thr: Thr = 3 @ptle @ptle
 }`), 0)
 		expectItems(subT, l, []Item{
-			{typ: token.SCHEMA, line: 1, pos: 0, val: "schema"},
-			{typ: token.IDENT, line: 1, pos: 7, val: "Rect"},
-			{typ: token.IMPLEMENTS, line: 1, pos: 12, val: "implements"},
-			{typ: token.IDENT, line: 1, pos: 23, val: "Shape"},
-			{typ: token.IDENT, line: 1, pos: 31, val: "Obj"},
-			{typ: token.AT, line: 1, pos: 35, val: "@"},
-			{typ: token.IDENT, line: 1, pos: 36, val: "green"},
-			{typ: token.AT, line: 1, pos: 42, val: "@"},
-			{typ: token.IDENT, line: 1, pos: 43, val: "blue"},
-			{typ: token.LBRACE, line: 1, pos: 48, val: "{"},
-			{typ: token.DESCRIPTION, line: 2, pos: 51, val: `"one descr"`},
-			{typ: token.IDENT, line: 2, pos: 63, val: "one"},
-			{typ: token.COLON, line: 2, pos: 66, val: ":"},
-			{typ: token.IDENT, line: 2, pos: 68, val: "One"},
-			{typ: token.AT, line: 2, pos: 72, val: "@"},
-			{typ: token.IDENT, line: 2, pos: 73, val: "one"},
-			{typ: token.DESCRIPTION, line: 5, pos: 78, val: "\"\"\"\n\ttwo descr\n\t\"\"\""},
-			{typ: token.IDENT, line: 6, pos: 99, val: "two"},
-			{typ: token.LPAREN, line: 6, pos: 102, val: "("},
-			{typ: token.DESCRIPTION, line: 7, pos: 106, val: `"a descr"`},
-			{typ: token.IDENT, line: 7, pos: 116, val: "a"},
-			{typ: token.COLON, line: 7, pos: 117, val: ":"},
-			{typ: token.IDENT, line: 7, pos: 119, val: "A"},
-			{typ: token.ASSIGN, line: 7, pos: 121, val: "="},
-			{typ: token.INT, line: 7, pos: 123, val: "1"},
-			{typ: token.AT, line: 7, pos: 125, val: "@"},
-			{typ: token.IDENT, line: 7, pos: 126, val: "ptle"},
-			{typ: token.RPAREN, line: 8, pos: 132, val: ")"},
-			{typ: token.COLON, line: 8, pos: 133, val: ":"},
-			{typ: token.IDENT, line: 8, pos: 135, val: "Two"},
-			{typ: token.IDENT, line: 9, pos: 140, val: "thr"},
-			{typ: token.COLON, line: 9, pos: 143, val: ":"},
-			{typ: token.IDENT, line: 9, pos: 145, val: "Thr"},
-			{typ: token.ASSIGN, line: 9, pos: 149, val: "="},
-			{typ: token.INT, line: 9, pos: 151, val: "3"},
-			{typ: token.AT, line: 9, pos: 153, val: "@"},
-			{typ: token.IDENT, line: 9, pos: 154, val: "ptle"},
-			{typ: token.AT, line: 9, pos: 159, val: "@"},
-			{typ: token.IDENT, line: 9, pos: 160, val: "ptle"},
-			{typ: token.RBRACE, line: 10, pos: 165, val: "}"},
+			{typ: token.TYPE, line: 1, pos: 0, val: "type"},
+			{typ: token.IDENT, line: 1, pos: 5, val: "Rect"},
+			{typ: token.IMPLEMENTS, line: 1, pos: 10, val: "implements"},
+			{typ: token.IDENT, line: 1, pos: 21, val: "Shape"},
+			{typ: token.IDENT, line: 1, pos: 29, val: "Obj"},
+			{typ: token.AT, line: 1, pos: 33, val: "@"},
+			{typ: token.IDENT, line: 1, pos: 34, val: "green"},
+			{typ: token.AT, line: 1, pos: 40, val: "@"},
+			{typ: token.IDENT, line: 1, pos: 41, val: "blue"},
+			{typ: token.LBRACE, line: 1, pos: 46, val: "{"},
+			{typ: token.DESCRIPTION, line: 2, pos: 49, val: `"one descr"`},
+			{typ: token.IDENT, line: 2, pos: 61, val: "one"},
+			{typ: token.COLON, line: 2, pos: 64, val: ":"},
+			{typ: token.IDENT, line: 2, pos: 66, val: "One"},
+			{typ: token.AT, line: 2, pos: 70, val: "@"},
+			{typ: token.IDENT, line: 2, pos: 71, val: "one"},
+			{typ: token.DESCRIPTION, line: 5, pos: 76, val: "\"\"\"\n\ttwo descr\n\t\"\"\""},
+			{typ: token.IDENT, line: 6, pos: 97, val: "two"},
+			{typ: token.LPAREN, line: 6, pos: 100, val: "("},
+			{typ: token.DESCRIPTION, line: 7, pos: 104, val: `"a descr"`},
+			{typ: token.IDENT, line: 7, pos: 114, val: "a"},
+			{typ: token.COLON, line: 7, pos: 115, val: ":"},
+			{typ: token.IDENT, line: 7, pos: 117, val: "A"},
+			{typ: token.ASSIGN, line: 7, pos: 119, val: "="},
+			{typ: token.INT, line: 7, pos: 121, val: "1"},
+			{typ: token.AT, line: 7, pos: 123, val: "@"},
+			{typ: token.IDENT, line: 7, pos: 124, val: "ptle"},
+			{typ: token.RPAREN, line: 8, pos: 130, val: ")"},
+			{typ: token.COLON, line: 8, pos: 131, val: ":"},
+			{typ: token.IDENT, line: 8, pos: 133, val: "Two"},
+			{typ: token.IDENT, line: 9, pos: 138, val: "thr"},
+			{typ: token.COLON, line: 9, pos: 141, val: ":"},
+			{typ: token.IDENT, line: 9, pos: 143, val: "Thr"},
+			{typ: token.ASSIGN, line: 9, pos: 147, val: "="},
+			{typ: token.INT, line: 9, pos: 149, val: "3"},
+			{typ: token.AT, line: 9, pos: 151, val: "@"},
+			{typ: token.IDENT, line: 9, pos: 152, val: "ptle"},
+			{typ: token.AT, line: 9, pos: 157, val: "@"},
+			{typ: token.IDENT, line: 9, pos: 158, val: "ptle"},
+			{typ: token.RBRACE, line: 10, pos: 163, val: "}"},
 		}...)
 		expectEOF(subT, l)
 	})
@@ -775,6 +775,46 @@ func TestLexUnion(t *testing.T) {
 			{typ: token.ASSIGN, line: 1, pos: 28, val: "="},
 			{typ: token.IDENT, line: 1, pos: 30, val: "Triangle"},
 			{typ: token.IDENT, line: 1, pos: 41, val: "Circle"},
+		}...)
+		expectEOF(subT, l)
+	})
+}
+
+func TestLexDirective(t *testing.T) {
+	t.Run("simple", func(subT *testing.T) {
+		l := Lex("simple", []byte(`directive @skip on FIELD | FIELD_DEFINITION`), 0)
+
+		expectItems(subT, l, []Item{
+			{typ: token.DIRECTIVE, line: 1, pos: 0, val: "directive"},
+			{typ: token.AT, line: 1, pos: 10, val: "@"},
+			{typ: token.IDENT, line: 1, pos: 11, val: "skip"},
+			{typ: token.ON, line: 1, pos: 16, val: "on"},
+			{typ: token.IDENT, line: 1, pos: 19, val: "FIELD"},
+			{typ: token.IDENT, line: 1, pos: 27, val: "FIELD_DEFINITION"},
+		}...)
+		expectEOF(subT, l)
+	})
+
+	t.Run("withArgs", func(subT *testing.T) {
+		l := Lex("simple", []byte(`directive @skip(if: Boolean, else: Boolean = false) on FIELD | FIELD_DEFINITION`), 0)
+
+		expectItems(subT, l, []Item{
+			{typ: token.DIRECTIVE, line: 1, pos: 0, val: "directive"},
+			{typ: token.AT, line: 1, pos: 10, val: "@"},
+			{typ: token.IDENT, line: 1, pos: 11, val: "skip"},
+			{typ: token.LPAREN, line: 1, pos: 15, val: "("},
+			{typ: token.IDENT, line: 1, pos: 16, val: "if"},
+			{typ: token.COLON, line: 1, pos: 18, val: ":"},
+			{typ: token.IDENT, line: 1, pos: 20, val: "Boolean"},
+			{typ: token.IDENT, line: 1, pos: 29, val: "else"},
+			{typ: token.COLON, line: 1, pos: 33, val: ":"},
+			{typ: token.IDENT, line: 1, pos: 35, val: "Boolean"},
+			{typ: token.ASSIGN, line: 1, pos: 43, val: "="},
+			{typ: token.IDENT, line: 1, pos: 45, val: "false"},
+			{typ: token.RPAREN, line: 1, pos: 50, val: ")"},
+			{typ: token.ON, line: 1, pos: 52, val: "on"},
+			{typ: token.IDENT, line: 1, pos: 55, val: "FIELD"},
+			{typ: token.IDENT, line: 1, pos: 63, val: "FIELD_DEFINITION"},
 		}...)
 		expectEOF(subT, l)
 	})
