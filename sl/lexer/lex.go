@@ -10,24 +10,24 @@ import (
 
 // Item represents a lexed token.
 type Item struct {
-	typ  token.Token
-	pos  token.Pos
-	val  string
-	line int
+	Typ  token.Token
+	Pos  token.Pos
+	Val  string
+	Line int
 }
 
 func (i Item) String() string {
 	switch {
-	case i.typ == token.EOF:
+	case i.Typ == token.EOF:
 		return "EOF"
-	case i.typ == token.ERR:
-		return i.val
-	case i.typ >= token.PACKAGE:
-		return fmt.Sprintf("<%s>", i.val)
-	case len(i.val) > 10:
-		return fmt.Sprintf("%.10q...", i.val)
+	case i.Typ == token.ERR:
+		return i.Val
+	case i.Typ >= token.PACKAGE:
+		return fmt.Sprintf("<%s>", i.Val)
+	case len(i.Val) > 10:
+		return fmt.Sprintf("%.10q...", i.Val)
 	}
-	return fmt.Sprintf("%q", i.val)
+	return fmt.Sprintf("%q", i.Val)
 }
 
 // Interface defines the simplest API any consumer of a lexer could need.
@@ -321,7 +321,7 @@ func lexScalar(l *lxr) stateFn {
 	return lexDoc
 }
 
-// lexObject scans a schema, object, enum, or input type definition
+// lexObject scans a schema, object, interface, enum, or input type definition
 func lexObject(l *lxr) stateFn {
 	l.acceptRun(" \t")
 	l.ignore()
@@ -643,11 +643,30 @@ func (l *lxr) scanVal() bool {
 	l.acceptRun(" \t")
 	l.ignore()
 
+	if l.accept("[") {
+		l.emit(token.LBRACK)
+	}
+
 	typ := l.scanIdentifier()
 	if typ == token.ERR {
 		return false
 	}
 	l.emit(typ)
+
+	if l.accept("!") {
+		l.emit(token.NOT)
+	}
+
+	l.acceptRun(" \t")
+	l.ignore()
+
+	if l.accept("]") {
+		l.emit(token.RBRACK)
+	}
+
+	if l.accept("!") {
+		l.emit(token.NOT)
+	}
 
 	l.acceptRun(" \t")
 	l.ignore()
@@ -961,7 +980,7 @@ func (l *lxr) atTerminator() bool {
 	}
 
 	switch r {
-	case eof, '.', ',', ':', ')', '(':
+	case eof, '.', ',', ':', ')', '(', '!', ']':
 		return true
 	}
 	return false
