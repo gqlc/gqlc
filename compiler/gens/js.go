@@ -2,7 +2,7 @@ package gens
 
 import (
 	"context"
-	"gqlc/sl/file"
+	"gqlc/graphql/file"
 )
 
 // JsGenerator generates Javascript code for a GraphQL schema.

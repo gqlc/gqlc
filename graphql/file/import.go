@@ -1,6 +1,6 @@
 package file
 
-import "gqlc/sl/token"
+import "gqlc/graphql/token"
 
 // SortImports sorts runs of consecutive import lines in import blocks in f.
 // It also removes duplicate imports when it is possible to do so without data loss.

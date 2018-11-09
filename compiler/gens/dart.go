@@ -2,7 +2,7 @@ package gens
 
 import (
 	"context"
-	"gqlc/sl/file"
+	"gqlc/graphql/file"
 )
 
 // DartGenerator generates Dart code for a GraphQL schema.

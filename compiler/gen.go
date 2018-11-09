@@ -2,7 +2,7 @@ package compiler
 
 import (
 	"context"
-	"gqlc/sl/file"
+	"gqlc/graphql/file"
 )
 
 // CodeGenerator provides a simple API for creating a code generator for

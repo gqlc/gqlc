@@ -2,9 +2,9 @@ package parser
 
 import (
 	"fmt"
-	"gqlc/sl/file"
-	"gqlc/sl/lexer"
-	"gqlc/sl/token"
+	"gqlc/graphql/file"
+	"gqlc/graphql/lexer"
+	"gqlc/graphql/token"
 	"io"
 	"io/ioutil"
 	"os"

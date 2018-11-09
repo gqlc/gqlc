@@ -2,7 +2,7 @@ package lexer
 
 import (
 	"fmt"
-	"gqlc/sl/token"
+	"gqlc/graphql/token"
 	"strings"
 	"unicode"
 	"unicode/utf8"

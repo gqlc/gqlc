@@ -3,7 +3,7 @@ package gens
 
 import (
 	"context"
-	"gqlc/sl/file"
+	"gqlc/graphql/file"
 )
 
 // DocGenerator generates Documentation for a GraphQL schema.

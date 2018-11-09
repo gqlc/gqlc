@@ -11,7 +11,8 @@ func init() {
 	gens = make(map[string]compiler.CodeGenerator)
 }
 
-// CLI is an implementation of the compiler interface
+// CLI is an implementation of the compiler interface, which
+// simply wraps a github.com/spf13/cobra.Command
 type CLI struct {
 	root *cobra.Command
 }

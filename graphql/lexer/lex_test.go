@@ -1,7 +1,7 @@
 package lexer
 
 import (
-	"gqlc/sl/token"
+	"gqlc/graphql/token"
 	"testing"
 )
 
