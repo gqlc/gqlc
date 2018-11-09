@@ -50,22 +50,27 @@ const (
 )
 
 type lxr struct {
-	mode  Mode
-	name  string
-	input []byte
-	pos   token.Pos
-	start token.Pos
-	width token.Pos
-	items chan Item
+	// immutable state
+	file *token.File
+	name string
+	mode Mode
+	src  []byte
+
+	// scanning state
+	pos   int
+	start int
+	width int
 	line  int
+	items chan Item
 }
 
-// Lex lexs the given input based on the the GraphQL IDL specification.
-func Lex(name string, src []byte, mode Mode) Interface {
+// Lex lexs the given src based on the the GraphQL IDL specification.
+func Lex(file *token.File, src []byte, mode Mode) Interface {
 	l := &lxr{
 		mode:  mode,
-		name:  name,
-		input: src,
+		file:  file,
+		name:  file.Name(),
+		src:   src,
 		items: make(chan Item),
 		line:  1,
 	}
@@ -93,14 +98,15 @@ func (l *lxr) run() {
 
 const eof = -1
 
-// next returns the next rune in the input.
+// next returns the next rune in the src.
 func (l *lxr) next() rune {
-	if int(l.pos) >= len(l.input) {
+	if int(l.pos) >= len(l.src) {
 		l.width = 0
 		return eof
 	}
-	r, w := utf8.DecodeRune(l.input[l.pos:])
-	l.width = token.Pos(w)
+
+	r, w := utf8.DecodeRune(l.src[l.pos:])
+	l.width = w
 	l.pos += l.width
 	if r == '\n' {
 		l.line++
@@ -108,7 +114,7 @@ func (l *lxr) next() rune {
 	return r
 }
 
-// peek returns but does not consume the next rune in the input.
+// peek returns but does not consume the next rune in the src.
 func (l *lxr) peek() rune {
 	r := l.next()
 	l.backup()
@@ -119,7 +125,7 @@ func (l *lxr) peek() rune {
 func (l *lxr) backup() {
 	l.pos -= l.width
 	// Correct newline count.
-	if l.width == 1 && l.input[l.pos] == '\n' {
+	if l.width == 1 && l.src[l.pos] == '\n' {
 		l.line--
 	}
 }
@@ -127,11 +133,11 @@ func (l *lxr) backup() {
 // TODO: Check emitted value for newline characters and subtract them from l.line
 // emit passes an item back to the client.
 func (l *lxr) emit(t token.Token) {
-	l.items <- Item{t, l.start, string(l.input[l.start:l.pos]), l.line}
+	l.items <- Item{t, l.file.Pos(l.start), string(l.src[l.start:l.pos]), l.line}
 	l.start = l.pos
 }
 
-// ignore skips over the pending input before this point.
+// ignore skips over the pending src before this point.
 func (l *lxr) ignore() {
 	l.start = l.pos
 }
@@ -155,7 +161,7 @@ func (l *lxr) acceptRun(valid string) {
 // errorf returns an error token and terminates the scan by passing
 // back a nil pointer that will be the next state, terminating l.nextItem.
 func (l *lxr) errorf(format string, args ...interface{}) stateFn {
-	l.items <- Item{token.ERR, l.start, fmt.Sprintf(format, args...), l.line}
+	l.items <- Item{token.ERR, l.file.Pos(l.start), fmt.Sprintf(format, args...), l.line}
 	return nil
 }
 
@@ -165,7 +171,7 @@ func (l *lxr) ignoreSpace() {
 	l.ignore()
 }
 
-// NextItem returns the next item from the input.
+// NextItem returns the next item from the src.
 // Called by the parser, not in the lexing goroutine.
 func (l *lxr) NextItem() Item {
 	return <-l.items
@@ -212,7 +218,7 @@ func lexDoc(l *lxr) stateFn {
 	case r == '"':
 		l.backup()
 		if !l.scanString() {
-			return l.errorf("bad string syntax: %q", l.input[l.start:l.pos])
+			return l.errorf("bad string syntax: %q", l.src[l.start:l.pos])
 		}
 		l.emit(token.STRING)
 	case isAlphaNumeric(r) && !unicode.IsDigit(r):
@@ -280,7 +286,7 @@ func lexImports(l *lxr) stateFn {
 	switch r {
 	case '"':
 		if !l.scanString() {
-			return l.errorf("malformed input string: %s", l.input[l.start:l.pos])
+			return l.errorf("malformed src string: %s", l.src[l.start:l.pos])
 		}
 		l.emit(token.STRING)
 	case '(':
@@ -321,7 +327,7 @@ func lexScalar(l *lxr) stateFn {
 	return lexDoc
 }
 
-// lexObject scans a schema, object, interface, enum, or input type definition
+// lexObject scans a schema, object, interface, enum, or src type definition
 func lexObject(l *lxr) stateFn {
 	l.acceptRun(" \t")
 	l.ignore()
@@ -375,7 +381,7 @@ func lexObject(l *lxr) stateFn {
 	case '{':
 		return lexFields
 	default:
-		return l.errorf("unexpected character encountered in object declaration: %s", string(l.input[l.pos]))
+		return l.errorf("unexpected character encountered in object declaration: %s", string(l.src[l.pos]))
 	}
 	return lexDoc
 }
@@ -527,7 +533,7 @@ func lexUnion(l *lxr) stateFn {
 	ok := l.scanList("\r\n", "|", '|', func(ll *lxr) bool {
 		ident := ll.scanIdentifier()
 		if ident == token.ERR {
-			ll.errorf("invalid union member type identifier: %s", string(l.input[l.start:l.pos]))
+			ll.errorf("invalid union member type identifier: %s", string(l.src[l.start:l.pos]))
 			return false
 		}
 		ll.emit(ident)
@@ -551,7 +557,7 @@ func lexDirective(l *lxr) stateFn {
 
 	name := l.scanIdentifier()
 	if name == token.ERR {
-		return l.errorf("invalid directive identifier: %s", string(l.input[l.start:l.pos]))
+		return l.errorf("invalid directive identifier: %s", string(l.src[l.start:l.pos]))
 	}
 	l.emit(name)
 
@@ -615,7 +621,7 @@ func lexDirective(l *lxr) stateFn {
 
 	on := l.scanIdentifier()
 	if on != token.ON {
-		return l.errorf("directive decl must have locations specified with 'on' keyword, not: %s", string(l.input[l.start:l.pos]))
+		return l.errorf("directive decl must have locations specified with 'on' keyword, not: %s", string(l.src[l.start:l.pos]))
 	}
 	l.emit(token.ON)
 
@@ -625,7 +631,7 @@ func lexDirective(l *lxr) stateFn {
 	ok := l.scanList("\r\n", "|", '|', func(ll *lxr) bool {
 		ident := ll.scanIdentifier()
 		if ident == token.ERR {
-			ll.errorf("invalid directive location identifier: %s", string(ll.input[ll.start:ll.pos]))
+			ll.errorf("invalid directive location identifier: %s", string(ll.src[ll.start:ll.pos]))
 			return false
 		}
 		ll.emit(ident)
@@ -637,7 +643,7 @@ func lexDirective(l *lxr) stateFn {
 	return lexDoc
 }
 
-// scanVal scans an input value definitions, as used by obj, inter, and input types
+// scanVal scans an src value definitions, as used by obj, inter, and src types
 func (l *lxr) scanVal() bool {
 	l.emit(token.COLON)
 	l.acceptRun(" \t")
@@ -696,7 +702,7 @@ func (l *lxr) scanDirectives(endChars string, sep string) bool {
 
 		ident := ll.scanIdentifier()
 		if ident == token.ERR {
-			ll.errorf("invalid directive name: %s", ll.input[ll.start:ll.pos])
+			ll.errorf("invalid directive name: %s", ll.src[ll.start:ll.pos])
 			return false
 		}
 		ll.emit(ident)
@@ -717,7 +723,7 @@ func (l *lxr) scanDirectives(endChars string, sep string) bool {
 		ok := ll.scanList(")", ",", ',', func(argsL *lxr) bool {
 			id := argsL.scanIdentifier()
 			if id == token.ERR {
-				argsL.errorf("invalid argument name: %s", argsL.input[argsL.start:argsL.pos])
+				argsL.errorf("invalid argument name: %s", argsL.src[argsL.start:argsL.pos])
 				return false
 			}
 			argsL.emit(id)
@@ -726,7 +732,7 @@ func (l *lxr) scanDirectives(endChars string, sep string) bool {
 			argsL.ignore()
 
 			if !argsL.accept(":") {
-				argsL.errorf("expected ':' instead of: %s", string(argsL.input[argsL.pos]))
+				argsL.errorf("expected ':' instead of: %s", string(argsL.src[argsL.pos]))
 				return false
 			}
 			argsL.emit(token.COLON)
@@ -802,7 +808,7 @@ func (l *lxr) scanValue() (ok bool) {
 		ok = l.scanList("}", defListSep, 0, func(ll *lxr) bool {
 			tok := ll.scanIdentifier()
 			if tok == token.ERR {
-				ll.errorf("invalid object field name: %s", ll.input[l.start:l.pos])
+				ll.errorf("invalid object field name: %s", ll.src[l.start:l.pos])
 				return false
 			}
 			ll.emit(tok)
@@ -811,7 +817,7 @@ func (l *lxr) scanValue() (ok bool) {
 			ll.ignore()
 
 			if !ll.accept(":") {
-				ll.errorf("expected field name-value seperator ':' but got %s", string(ll.input[l.pos]))
+				ll.errorf("expected field name-value seperator ':' but got %s", string(ll.src[l.pos]))
 				return false
 			}
 			ll.emit(token.COLON)
@@ -958,7 +964,7 @@ func (l *lxr) scanIdentifier() token.Token {
 	}
 
 	l.backup()
-	word := string(l.input[l.start:l.pos])
+	word := string(l.src[l.start:l.pos])
 	if !l.atTerminator() {
 		return token.ERR
 	}

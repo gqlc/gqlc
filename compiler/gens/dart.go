@@ -1,13 +1,17 @@
 package gens
 
-import "context"
+import (
+	"context"
+	"gqlc/sl/file"
+)
 
+// DartGenerator generates Dart code for a GraphQL schema.
 type DartGenerator struct{}
 
-func (gen DartGenerator) Generate(ctx context.Context) error {
+func (gen DartGenerator) Generate(ctx context.Context, file *file.Descriptor, opts string) error {
 	return nil
 }
 
-func (gen DartGenerator) GenerateAll(ctx context.Context) error {
+func (gen DartGenerator) GenerateAll(ctx context.Context, files []*file.Descriptor, opts string) error {
 	return nil
 }

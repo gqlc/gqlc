@@ -7,15 +7,20 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"gqlc/compiler"
+	"gqlc/sl/file"
+	"gqlc/sl/parser"
+	"gqlc/sl/token"
+	"os"
 	"path/filepath"
 	"strings"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "gqlc",
-	Short: "A GraphQL IDL compiler",
-	Long:  ``,
-	RunE:  runRoot,
+	Use:              "gqlc",
+	Short:            "A GraphQL IDL compiler",
+	Long:             ``,
+	RunE:             runRoot,
+	TraverseChildren: true,
 }
 
 var tmplFs = map[string]interface{}{
@@ -42,7 +47,10 @@ var tmplFs = map[string]interface{}{
 func init() {
 	cobra.AddTemplateFuncs(tmplFs)
 
-	rootCmd.Flags().String("I", ".", "Path")
+	rootCmd.Flags().StringP("schema_path", "I", ".", `Specify the directory in which to search for
+imports.  May be specified multiple times;
+directories will be searched in order.  If not
+given, the current working directory is used.`)
 	rootCmd.Flags().BoolP("verbose", "v", false, "Output for info")
 	rootCmd.SetUsageTemplate(`Usage:
 	gqlc [flags] files
@@ -59,34 +67,58 @@ General Flags:{{$flags = ex .LocalFlags "_out"}}
 
 func runRoot(cmd *cobra.Command, args []string) (err error) {
 	if len(args) == 0 {
-		return errors.New("gqlc: no files provided")
+		return errors.New("no files provided")
 	}
 
 	// Validate file names
 	for _, fileName := range args {
-		ext := filepath.Ext(fileName)
+		ext := strings.TrimPrefix(filepath.Ext(fileName), ".")
 		if ext != "gql" && ext != "graphql" {
-			return fmt.Errorf("gqlc: invalid file extension: %s", fileName)
+			return fmt.Errorf("invalid file extension: %s", fileName)
 		}
 	}
 
-	// Parse files
-	// TODO: Add parser code here
-
 	// Accumulate selected code generators
+	var mode parser.Mode
 	var gs []compiler.CodeGenerator
-	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+	cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
+		if !f.Changed {
+			return
+		}
+
 		gen, exists := gens[f.Name]
 		if exists {
 			gs = append(gs, gen)
+			if f.Name == "doc_out" {
+				mode = parser.ParseComments
+			}
 		}
 	})
 
+	// Parse files
+	schemas := make([]*file.Descriptor, 0, len(args))
+	fset := token.NewFileSet()
+	for _, filename := range args {
+		f, err := os.Open(filename)
+		if err != nil {
+			return err
+		}
+
+		schema, err := parser.ParseFile(fset, filename, f, mode)
+		if err != nil {
+			return err
+		}
+
+		schemas = append(schemas, schema)
+	}
+
 	// Run code generators
 	for _, g := range gs {
-		err = g.Generate(context.TODO()) // TODO: Replace context
-		if err != nil {
-			return
+		for _, schema := range schemas {
+			err = g.Generate(context.TODO(), schema, "") // TODO: Replace context
+			if err != nil {
+				return
+			}
 		}
 	}
 

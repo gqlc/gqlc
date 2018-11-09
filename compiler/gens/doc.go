@@ -1,15 +1,20 @@
 // Package gens contains generator implementations for various languages
 package gens
 
-import "context"
+import (
+	"context"
+	"gqlc/sl/file"
+)
 
-// DocGenerator generates Documentation from the GraphQL schema
+// DocGenerator generates Documentation for a GraphQL schema.
 type DocGenerator struct{}
 
-func (gen DocGenerator) Generate(ctx context.Context) error {
+// Generate generates documentation for all schemas found within the given file.
+func (gen DocGenerator) Generate(ctx context.Context, file *file.Descriptor, opts string) error {
 	return nil
 }
 
-func (gen DocGenerator) GenerateAll(ctx context.Context) error {
+// GenerateAll generates documentation for all schemas found within all the given files.
+func (gen DocGenerator) GenerateAll(ctx context.Context, files []*file.Descriptor, opts string) error {
 	return nil
 }

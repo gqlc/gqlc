@@ -1,0 +1,255 @@
+schema {
+    query: Query!
+}
+
+"Query defines querying on a Schema file"
+type Query {
+    "Name is the file name"
+    name: String!
+
+    "Imports returns all imports inside this file."
+    imports: [Import]
+
+    "Comments returns all the file level documents."
+    comments: [Comment]
+
+    "Types allows for querying on all top-level type declarations."
+    types(name: String): [Type]
+}
+
+"Import is simply a type alias for a string."
+scalar Import
+
+"Comment represent a comment within the schema file."
+type Comment {
+    "Text is the text after the '#'."
+    text: String!
+
+    """
+    Pos is the position number of the comment in the schema file.
+    Remember comments in the Schema def are only able to be single line.
+    """
+    pos: Int!
+}
+
+"Type represents any valid type declaration in a GraphQL schema file."
+interface Type {
+    "Type name"
+    name: String!
+
+    "Pos is the position of the types keyword in the schema file."
+    pos: Int!
+
+    """
+    Description is here for simplicity sakes due to all but a Schema
+    type decl having a description as part of the signature.
+    """
+    description: String
+
+    """
+    Directives is here for simplicity sakes due to all but a Directive
+    type decl having directives as part of the signature.
+    """
+    directives: [Type]
+
+    "Comments returns the comments contained within a type declaration."
+    comments: [Comment]
+}
+
+"Schema represents a schema type declaration."
+type Schema implements Type {
+    name: String! @default(val: "schema")
+    pos: Int!
+    description: String
+    directives: [Type]
+    comments: [Comment]
+
+    # TODO(Zaba505): must query, mutation, and subscription be Objects
+
+    "Query represents the schema's root query type."
+    query: Object!
+
+    "Mutation represents the root mutation type."
+    mutation: Object
+
+    "Subscription represents the schema's root subscription type."
+    subscription: Object
+}
+
+"Scalar represents a scalar type declaration."
+type Scalar implements Type {
+    name: String!
+    pos: Int!
+    description: String
+    directives: [Type]
+    comments: [Comment]
+}
+
+"Object represents an object type declaration."
+type Object implements Type {
+    name: String!
+    pos: Int!
+    description: String
+    directives: [Type]
+    comments: [Comment]
+
+    "Interfaces are the interfaces implemented by this object."
+    interfaces: [Interface]
+
+    "Fields are the fields that make up this object."
+    fields: [FieldDefinition]
+}
+
+"FieldDefinition represents a field definition."
+type FieldDefinition implements Type {
+    name: String!
+    pos: Int!
+    description: String
+    directives: [Type]
+    comments: [Comment]
+
+    "Args are any defined arguments on this field."
+    args: [InputValueDefinition]
+
+    "Type is return type for this field."
+    type: String!
+}
+
+"DefaultValue represents a input values default."
+scalar DefaultValue
+
+"InputValueDefinition represents an argument definition"
+type InputValueDefinition implements Type {
+    name: String!
+    pos: Int!
+    description: String
+    directives: [Type]
+    comments: [Comment]
+
+    "Type is the accepted type for this input field."
+    type: String!
+
+    "DefaultValue is the default value for this input field."
+    defaultValue: DefaultValue
+}
+
+"Interface represents an interface type declaration."
+type Interface implements Type {
+    name: String!
+    pos: Int!
+    description: String
+    directives: [Type]
+    comments: [Comment]
+
+    "Fields are the fields that make up this interface."
+    fields: [FieldDefinition]
+}
+
+"Union represents a union type declaration."
+type Union implements Type {
+    name: String!
+    pos: Int!
+    description: String
+    directives: [Type]
+    comments: [Comment]
+
+    "Members is the list of types that make up the union type."
+    members: [String]
+}
+
+"Enum represents an enum type declaration."
+type Enum implements Type {
+    name: String!
+    pos: Int!
+    description: String
+    directives: [Type]
+    comments: [Comment]
+
+    "Vals are the possible values for this enum."
+    vals: [EnumValueDefinition]
+}
+
+"EnumValueDefinition represents a possible value for an enum type."
+type EnumValueDefinition implements Type {
+    name: String!
+    pos: Int!
+    description: String
+    directives: [Type]
+    comments: [Comment]
+}
+
+"Input represents an input type declaration."
+type Input implements Type {
+    name: String!
+    pos: Int!
+    description: String
+    directives: [Type]
+    comments: [Comment]
+
+    "Fields are the fields which make up this input."
+    fields: [InputValueDefinition]
+}
+
+"Directive represents a directive type declaration."
+type Directive implements Type {
+    name: String!
+    pos: Int!
+    description: String
+    directives: [Type]
+    comments: [Comment]
+
+    "Args are any defined arguments on this directive."
+    args: [InputValueDefinition]
+
+    "Locs are the locations for which this directive can be applied."
+    locs: [Location]
+}
+
+"Location represents a location in a GraphQL document where a directive can be applied."
+union Location = ExecutableDirectiveLocation | TypeSystemDirectiveLocation
+
+enum ExecutableDirectiveLocation {
+    QUERY
+    MUTATION
+    SUBSCRIPTION
+    FIELD
+    FRAGMENT_DEFINITION
+    FRAGMENT_SPREAD
+    INLINE_FRAGMENT
+    VARIABLE_FRAGMENT
+}
+
+enum TypeSystemDirectiveLocation {
+    SCHEMA
+    SCALAR
+    OBJECT
+    FIELD_DEFINITION
+    ARGUMENT_DEFINITION
+    INTERFACE
+    UNION
+    ENUM
+    ENUM_VALUE
+    INPUT_OBJECT
+    INPUT_FIELD_DEFINITION
+}
+
+"Extension represents a TypeSystemExtension."
+type Extension implements Type {
+    name: String! @default(val: "extend")
+    pos: Int!
+    description: String
+    directives: [Type]
+    comments: [Comment]
+
+    "Ext points to the type which is being extended."
+    ext: Type
+}
+
+"""
+@default is used internally for defining default values for fields.
+Its semantics are that if a field has it and the field has no other assigned value,
+then the provided, val, will be returned for that field.
+
+Note: It is only valid for fields whose type is: String
+"""
+directive @default(val: String!) on FIELD_DEFINITION
