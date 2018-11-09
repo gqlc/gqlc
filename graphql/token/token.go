@@ -1,4 +1,6 @@
-// Package token defines constants representing the lexical tokens of the GraphQL IDL and basic operations on tokens (printing, predicates).
+// Package token defines constants representing the lexical tokens of
+// the GraphQL IDL and basic operations on tokens (printing, predicates).
+//
 package token
 
 import "strconv"
