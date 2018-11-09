@@ -1,3 +1,4 @@
+// Package parser implements a parser for GraphQL IDL source files.
 package parser
 
 import (

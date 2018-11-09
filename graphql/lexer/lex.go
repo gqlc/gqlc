@@ -1,3 +1,4 @@
+// Package lexer implements a lexer for GraphQL IDL source text.
 package lexer
 
 import (
