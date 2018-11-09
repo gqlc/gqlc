@@ -1,3 +1,5 @@
+[![GoDoc](https://godoc.org/github.com/Zaba505/gqlc?status.svg)](https://godoc.org/github.com/Zaba505/gqlc)
+
 # GraphQL Schema Language Compiler
 
 `gqlc` is a compiler for the "GraphQL Schema Language", as defined by the [GraphQL spec](http://facebook.github.io/graphql).
