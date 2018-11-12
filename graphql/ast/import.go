@@ -1,4 +1,4 @@
-package file
+package ast
 
 import "gqlc/graphql/token"
 

@@ -1,4 +1,4 @@
-module gqlc
+module ""
 
 require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect

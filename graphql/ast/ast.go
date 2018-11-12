@@ -1,6 +1,6 @@
-// Package file declares the types used to represent a GraphQL IDL source.
+// Package ast declares the types used to represent a GraphQL IDL source.
 //
-package file
+package ast
 
 import (
 	"gqlc/graphql/token"
@@ -29,8 +29,6 @@ type Decl interface {
 
 // A Field represents a Field declaration in a GraphQL type declaration
 // or an argument declaration in an arguments declaration.
-// Field.Names is nil for unnamed parameters (parameter lists which only contain types)
-// and embedded struct fields. In the latter case, the field name is the type name.
 //
 type Field struct {
 	Doc     *DocGroup       // associated documentation; or nil
@@ -381,8 +379,8 @@ func (x *DocGroup) Text() string {
 	return strings.Join(lines, "\n")
 }
 
-// Descriptor represents a single parsed GraphQL IDL file.
-type Descriptor struct {
+// Document represents a single parsed GraphQL IDL document.
+type Document struct {
 	Name string    // file name, relative to root of source tree
 	Doc  *DocGroup // associated documentation
 

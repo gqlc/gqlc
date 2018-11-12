@@ -2,12 +2,11 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"gqlc/compiler"
-	"gqlc/graphql/file"
+	"gqlc/graphql/ast"
 	"gqlc/graphql/parser"
 	"gqlc/graphql/token"
 	"os"
@@ -16,9 +15,24 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:              "gqlc",
-	Short:            "A GraphQL IDL compiler",
-	Long:             ``,
+	Use:   "gqlc",
+	Short: "A GraphQL IDL compiler",
+	Long:  ``,
+	Args:  cobra.MinimumNArgs(1), // Make sure at least one file is provided.
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Name() == "help" {
+			return nil
+		}
+
+		// Validate file names
+		for _, fileName := range args {
+			ext := strings.TrimPrefix(filepath.Ext(fileName), ".")
+			if ext != "gql" && ext != "graphql" {
+				return fmt.Errorf("invalid file extension: %s", fileName)
+			}
+		}
+		return nil
+	},
 	RunE:             runRoot,
 	TraverseChildren: true,
 }
@@ -47,37 +61,26 @@ var tmplFs = map[string]interface{}{
 func init() {
 	cobra.AddTemplateFuncs(tmplFs)
 
-	rootCmd.Flags().StringP("schema_path", "I", ".", `Specify the directory in which to search for
+	rootCmd.PersistentFlags().StringSliceP("import_path", "I", []string{"."}, `Specify the directory in which to search for
 imports.  May be specified multiple times;
 directories will be searched in order.  If not
 given, the current working directory is used.`)
-	rootCmd.Flags().BoolP("verbose", "v", false, "Output for info")
+	rootCmd.Flags().BoolP("verbose", "v", false, "Output logging")
 	rootCmd.SetUsageTemplate(`Usage:
-	gqlc [flags] files
+	gqlc [command|flags] files{{if .HasAvailableSubCommands}}
 
-Generator Flags:{{$flags := in .LocalFlags "_out"}}
-{{$flags.FlagUsages | trimTrailingWhitespaces}}
+Available Commands:{{range .Commands}}
+  {{rpad .Name .NamePadding}} {{.Short}}{{end}}{{end}}{{$flags := in .LocalFlags "_out"}}{{if gt (len $flags.FlagUsages) 0}}
 
-General Flags:{{$flags = ex .LocalFlags "_out"}}
-{{$flags.FlagUsages | trimTrailingWhitespaces}}
+Generator Flags:
+{{$flags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{$flags = ex .LocalFlags "_out"}}{{if gt (len $flags.FlagUsages) 0}}
+
+General Flags:
+{{$flags.FlagUsages | trimTrailingWhitespaces}}{{end}}
 `)
-
-	// TODO: Add sub commands to template
 }
 
 func runRoot(cmd *cobra.Command, args []string) (err error) {
-	if len(args) == 0 {
-		return errors.New("no files provided")
-	}
-
-	// Validate file names
-	for _, fileName := range args {
-		ext := strings.TrimPrefix(filepath.Ext(fileName), ".")
-		if ext != "gql" && ext != "graphql" {
-			return fmt.Errorf("invalid file extension: %s", fileName)
-		}
-	}
-
 	// Accumulate selected code generators
 	var mode parser.Mode
 	var gs []compiler.CodeGenerator
@@ -96,7 +99,7 @@ func runRoot(cmd *cobra.Command, args []string) (err error) {
 	})
 
 	// Parse files
-	schemas := make([]*file.Descriptor, 0, len(args))
+	schemas := make([]*ast.Document, 0, len(args))
 	fset := token.NewFileSet()
 	for _, filename := range args {
 		f, err := os.Open(filename)

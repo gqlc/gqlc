@@ -4,7 +4,7 @@ package parser
 
 import (
 	"fmt"
-	"gqlc/graphql/file"
+	"gqlc/graphql/ast"
 	"gqlc/graphql/lexer"
 	"gqlc/graphql/token"
 	"io"
@@ -21,12 +21,12 @@ const (
 // ParseDir calls ParseFile for all files with names ending in ".gql"/".graphql" in the
 // directory specified by path and returns a map of file name -> File Schema with all
 // the schemas found.
-func ParseDir(fset *token.FileSet, path string, filter func(os.FileInfo) bool, mode Mode) (map[string]*file.Descriptor, error) {
+func ParseDir(fset *token.FileSet, path string, filter func(os.FileInfo) bool, mode Mode) (map[string]*ast.Document, error) {
 	return nil, nil
 }
 
 // ParseFile parses a single GraphQL Schema file.
-func ParseFile(fset *token.FileSet, filename string, src io.Reader, mode Mode) (*file.Descriptor, error) {
+func ParseFile(fset *token.FileSet, filename string, src io.Reader, mode Mode) (*ast.Document, error) {
 	// Assume src isn't massive so we're gonna just read it all
 	b, err := ioutil.ReadAll(src)
 	if err != nil {
@@ -46,5 +46,12 @@ func ParseFile(fset *token.FileSet, filename string, src io.Reader, mode Mode) (
 			break
 		}
 	}
+	return nil, nil
+}
+
+// ParseDocument parses a GraphQL document read from the provided reader.
+// It makes no assumption of the origin of the src, thus allowing it to be
+// used a little bit more freely than ParseFile.
+func ParseDocument(src io.Reader, mode Mode) (*ast.Document, error) {
 	return nil, nil
 }
