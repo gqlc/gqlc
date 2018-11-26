@@ -1,8 +1,8 @@
 package cmd
 
 import (
+	"github.com/Zaba505/gqlc/compiler"
 	"github.com/spf13/cobra"
-	"gqlc/compiler"
 )
 
 var gens map[string]compiler.CodeGenerator

@@ -3,25 +3,29 @@
 package ast
 
 import (
-	"gqlc/graphql/token"
+	"github.com/Zaba505/gqlc/graphql/token"
 	"strings"
 )
 
+// Node
 type Node interface {
 	Pos() token.Pos
 	End() token.Pos
 }
 
+// Expr
 type Expr interface {
 	Node
 	exprNode()
 }
 
+// Stmt
 type Stmt interface {
 	Node
 	stmtNode()
 }
 
+// Decl
 type Decl interface {
 	Node
 	declNode()
@@ -369,7 +373,7 @@ func (x *DocGroup) Text() string {
 			n++
 		}
 	}
-	lines = lines[0:n]
+	lines = lines[:n]
 
 	// Add final "" entry to get trailing newline from Join.
 	if n > 0 && lines[n-1] != "" {
@@ -379,14 +383,17 @@ func (x *DocGroup) Text() string {
 	return strings.Join(lines, "\n")
 }
 
-// Document represents a single parsed GraphQL IDL document.
+// Document represents a single parsed GraphQL Document.
 type Document struct {
 	Name string    // file name, relative to root of source tree
 	Doc  *DocGroup // associated documentation
 
 	// Names of files imported by this file.
-	Imports []string
+	Imports []*GenDecl
 
 	// Indexes of the public imported files in the dependency list above.
 	PublicImports []string
+
+	Schemas []*GenDecl // Convenient shortcut for accessing schemas
+	Types   []*GenDecl // All top-level type declarations in doc; or nil
 }

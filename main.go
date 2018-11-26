@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"gqlc/cmd"
-	"gqlc/compiler"
-	"gqlc/compiler/gens"
+	"github.com/Zaba505/gqlc/cmd"
+	"github.com/Zaba505/gqlc/compiler"
+	"github.com/Zaba505/gqlc/compiler/gens"
 	"os"
 )
 

@@ -2,7 +2,7 @@ package compiler
 
 import (
 	"context"
-	"gqlc/graphql/ast"
+	"github.com/Zaba505/gqlc/graphql/ast"
 )
 
 // CodeGenerator provides a simple API for creating a code generator for

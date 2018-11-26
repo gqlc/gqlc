@@ -3,16 +3,38 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/Zaba505/gqlc/compiler"
+	"github.com/Zaba505/gqlc/graphql/ast"
+	"github.com/Zaba505/gqlc/graphql/parser"
+	"github.com/Zaba505/gqlc/graphql/token"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"gqlc/compiler"
-	"gqlc/graphql/ast"
-	"gqlc/graphql/parser"
-	"gqlc/graphql/token"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+// helper template funcs for rootCmd usage template
+var tmplFs = map[string]interface{}{
+	"in": func(set *pflag.FlagSet, key string) *pflag.FlagSet {
+		fs := new(pflag.FlagSet)
+		set.VisitAll(func(flag *pflag.Flag) {
+			if strings.Contains(flag.Name, key) {
+				fs.AddFlag(flag)
+			}
+		})
+		return fs
+	},
+	"ex": func(set *pflag.FlagSet, key string) *pflag.FlagSet {
+		fs := new(pflag.FlagSet)
+		set.VisitAll(func(flag *pflag.Flag) {
+			if !strings.Contains(flag.Name, key) {
+				fs.AddFlag(flag)
+			}
+		})
+		return fs
+	},
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "gqlc",
@@ -35,27 +57,6 @@ var rootCmd = &cobra.Command{
 	},
 	RunE:             runRoot,
 	TraverseChildren: true,
-}
-
-var tmplFs = map[string]interface{}{
-	"in": func(set *pflag.FlagSet, key string) *pflag.FlagSet {
-		fs := new(pflag.FlagSet)
-		set.VisitAll(func(flag *pflag.Flag) {
-			if strings.Contains(flag.Name, key) {
-				fs.AddFlag(flag)
-			}
-		})
-		return fs
-	},
-	"ex": func(set *pflag.FlagSet, key string) *pflag.FlagSet {
-		fs := new(pflag.FlagSet)
-		set.VisitAll(func(flag *pflag.Flag) {
-			if !strings.Contains(flag.Name, key) {
-				fs.AddFlag(flag)
-			}
-		})
-		return fs
-	},
 }
 
 func init() {
