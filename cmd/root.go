@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/Zaba505/gqlc/cmd/util"
 	"github.com/Zaba505/gqlc/compiler"
 	"github.com/Zaba505/gqlc/graphql/ast"
 	"github.com/Zaba505/gqlc/graphql/parser"
@@ -100,26 +101,34 @@ func runRoot(cmd *cobra.Command, args []string) (err error) {
 	})
 
 	// Parse files
-	schemas := make([]*ast.Document, 0, len(args))
-	fset := token.NewFileSet()
+	docs := make(map[string]*ast.Document, len(args))
+	fset := token.NewDocSet()
 	for _, filename := range args {
 		f, err := os.Open(filename)
 		if err != nil {
 			return err
 		}
 
-		schema, err := parser.ParseFile(fset, filename, f, mode)
+		doc, err := parser.ParseDoc(fset, filename, f, mode)
 		if err != nil {
 			return err
 		}
 
-		schemas = append(schemas, schema)
+		docs[doc.Name] = doc
+	}
+
+	errs := util.CheckTypes(docs)
+	if len(errs) > 0 {
+		// TODO: Compound errors into a single error and return.
+		return
 	}
 
 	// Run code generators
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	for _, g := range gs {
-		for _, schema := range schemas {
-			err = g.Generate(context.TODO(), schema, "") // TODO: Replace context
+		for _, doc := range docs {
+			err = g.Generate(ctx, doc, "")
 			if err != nil {
 				return
 			}

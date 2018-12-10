@@ -12,7 +12,7 @@ var fmtCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(fmtCmd)
+	//TODO:	rootCmd.AddCommand(fmtCmd)
 
 	fmtCmd.SetUsageTemplate(`Usage:
 	gqlc fmt [flags] files
