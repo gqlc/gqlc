@@ -31,16 +31,30 @@ type Decl interface {
 	declNode()
 }
 
+// A Arg represents an Argument pair in a applied directive.
+type Arg struct {
+	Name  *Ident
+	Value Expr
+}
+
+func (a *Arg) Pos() token.Pos {
+	return a.Name.Pos()
+}
+
+func (a *Arg) End() token.Pos {
+	return a.Value.End()
+}
+
 // A Field represents a Field declaration in a GraphQL type declaration
 // or an argument declaration in an arguments declaration.
 //
 type Field struct {
-	Doc     *DocGroup       // associated documentation; or nil
-	Name    *Ident          // field/parameter names; or nil
-	Args    CallExpr        // field arguments; or nil
-	Type    Expr            // field/parameter type
-	Default *BasicLit       // parameter default value; or nil
-	Dirs    []*DirectiveLit // directives; or nil
+	Doc     *DocGroup // associated documentation; or nil
+	Name    *Ident    // field/parameter names; or nil
+	Args    CallExpr  // field arguments; or nil
+	Type    Expr      // field/parameter type
+	Default Expr      // parameter default value; or nil
+	Dirs    []Expr    // directives; or nil
 }
 
 func (f *Field) Pos() token.Pos {
@@ -108,7 +122,10 @@ type (
 	}
 
 	// An Ident node represents an identifier.
-	Ident struct{}
+	Ident struct {
+		NamePos token.Pos
+		Name    string
+	}
 
 	// A BasicList node represents a literal of basic type.
 	BasicLit struct {
@@ -117,12 +134,22 @@ type (
 		Value    string
 	}
 
-	DirectiveLit struct{}
+	// A NonNull represents an identifier with the non-null character, '!'
+	NonNull struct {
+		Type Expr
+	}
+
+	// A DirectiveLit node presents an applied directive
+	DirectiveLit struct {
+		AtPos token.Pos // position of '@'
+		Name  string    // name following '@'
+		Args  *CallExpr // Any arguments; or nil
+	}
 
 	// A CallExpr node represents an expression followed by an argument list.
 	CallExpr struct {
 		Lparen token.Pos // position of '('
-		Args   []*Field  // arguments; or nil
+		Args   []*Arg    // arguments; or nil
 		Rparen token.Pos // position of ')'
 	}
 )
@@ -139,6 +166,7 @@ type (
 
 	ScalarType struct {
 		Scalar token.Pos // position of "scalar" keyword
+		Name   *Ident
 	}
 
 	ObjectType struct {
@@ -183,9 +211,10 @@ type (
 // TODO: Handle extension situations i.e. no fields, no impls
 
 func (x *BadExpr) Pos() token.Pos       { return x.From }
-func (x *Ident) Pos() token.Pos         { return 0 } // TODO
+func (x *Ident) Pos() token.Pos         { return x.NamePos }
 func (x *BasicLit) Pos() token.Pos      { return 0 } // TODO
-func (x *DirectiveLit) Pos() token.Pos  { return 0 } // TODO
+func (x *NonNull) Pos() token.Pos       { return x.Type.Pos() }
+func (x *DirectiveLit) Pos() token.Pos  { return x.AtPos }
 func (x *SchemaType) Pos() token.Pos    { return x.Schema }
 func (x *ScalarType) Pos() token.Pos    { return x.Scalar }
 func (x *ObjectType) Pos() token.Pos    { return x.Object }
@@ -197,8 +226,9 @@ func (x *DirectiveType) Pos() token.Pos { return x.Directive }
 func (x *Extension) Pos() token.Pos     { return x.Extend }
 
 func (x *BadExpr) End() token.Pos       { return x.To }
-func (x *Ident) End() token.Pos         { return 0 } // TODO
-func (x *BasicLit) End() token.Pos      { return 0 } // TODO
+func (x *Ident) End() token.Pos         { return token.Pos(int(x.NamePos) + len(x.Name)) } // TODO
+func (x *BasicLit) End() token.Pos      { return 0 }                                       // TODO
+func (x *NonNull) End() token.Pos       { return x.Type.End() + 1 }
 func (x *DirectiveLit) End() token.Pos  { return 0 } // TODO
 func (x *SchemaType) End() token.Pos    { return x.Fields.End() }
 func (x *ScalarType) End() token.Pos    { return token.NoPos }
@@ -210,9 +240,20 @@ func (x *InputType) End() token.Pos     { return x.Fields.End() }
 func (x *DirectiveType) End() token.Pos { return x.Locs[0].End() }
 func (x *Extension) End() token.Pos     { return x.Type.End() }
 
-func (*BadExpr) exprNode()  {}
-func (*Ident) exprNode()    {}
-func (*BasicLit) exprNode() {}
+func (*BadExpr) exprNode()       {}
+func (*Ident) exprNode()         {}
+func (*BasicLit) exprNode()      {}
+func (*NonNull) exprNode()       {}
+func (*DirectiveLit) exprNode()  {}
+func (*SchemaType) exprNode()    {}
+func (*ScalarType) exprNode()    {}
+func (*ObjectType) exprNode()    {}
+func (*InterfaceType) exprNode() {}
+func (*UnionType) exprNode()     {}
+func (*EnumType) exprNode()      {}
+func (*InputType) exprNode()     {}
+func (*DirectiveType) exprNode() {}
+func (*Extension) exprNode()     {}
 
 type (
 	// The Spec type stands for any of *ImportSpec, and *TypeSpec
@@ -221,7 +262,7 @@ type (
 		specNode()
 	}
 
-	// An ImportSpec node represents a single file import.
+	// An ImportSpec node represents a single document import.
 	ImportSpec struct {
 		Doc    *DocGroup // associated documentation; or nil
 		Name   *Ident    // local import name (including "."); or nil
@@ -277,9 +318,9 @@ type (
 		Doc    *DocGroup   // associated documentation; or nil
 		TokPos token.Pos   // position of Tok
 		Tok    token.Token // IMPORT, TYPE_KEYWORD (e.g. schema, input, union)
-		Lparen token.Pos   // position of '(', if any
+		Lparen token.Pos   // position of '(' or '{', if any
 		Specs  []Spec
-		Rparen token.Pos // position of ')', if any
+		Rparen token.Pos // position of ')' or '}', if any
 	}
 )
 
@@ -300,12 +341,18 @@ func (*GenDecl) declNode() {}
 // Doc represents a single line documentation source i.e. Description or Comment.
 //
 type Doc struct {
-	// Text is the text after the first '#'.
+	// Text is the text after the first '#' or '"'.
 	Text string
 
 	// Pos is the position of the first '#' or '"'.
 	Char token.Pos
+
+	// Comment tells if this Doc represents a comment.
+	Comment bool
 }
+
+// IsComment reports whether the documentation is a comment or not.
+func (d *Doc) IsComment() bool { return d.Comment }
 
 // DocGroup represents a sequence of docs
 // with no other tokens and no empty lines between.
@@ -385,15 +432,12 @@ func (x *DocGroup) Text() string {
 
 // Document represents a single parsed GraphQL Document.
 type Document struct {
-	Name string    // file name, relative to root of source tree
+	Name string    // document name, relative to root of source tree
 	Doc  *DocGroup // associated documentation
 
-	// Names of files imported by this file.
+	// Names of documents imported by this document; or nil
 	Imports []*GenDecl
 
-	// Indexes of the public imported files in the dependency list above.
-	PublicImports []string
-
-	Schemas []*GenDecl // Convenient shortcut for accessing schemas
+	Schemas []*GenDecl // Convenient shortcut for accessing schemas; or nil
 	Types   []*GenDecl // All top-level type declarations in doc; or nil
 }

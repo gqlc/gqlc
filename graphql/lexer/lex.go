@@ -53,7 +53,7 @@ const (
 
 type lxr struct {
 	// immutable state
-	file *token.File
+	doc  *token.Doc
 	name string
 	mode Mode
 	src  []byte
@@ -67,11 +67,11 @@ type lxr struct {
 }
 
 // Lex lexs the given src based on the the GraphQL IDL specification.
-func Lex(file *token.File, src []byte, mode Mode) Interface {
+func Lex(doc *token.Doc, src []byte, mode Mode) Interface {
 	l := &lxr{
 		mode:  mode,
-		file:  file,
-		name:  file.Name(),
+		doc:   doc,
+		name:  doc.Name(),
 		src:   src,
 		items: make(chan Item),
 		line:  1,
@@ -135,7 +135,7 @@ func (l *lxr) backup() {
 // TODO: Check emitted value for newline characters and subtract them from l.line
 // emit passes an item back to the client.
 func (l *lxr) emit(t token.Token) {
-	l.items <- Item{t, l.file.Pos(l.start), string(l.src[l.start:l.pos]), l.line}
+	l.items <- Item{t, l.doc.Pos(l.start), string(l.src[l.start:l.pos]), l.line}
 	l.start = l.pos
 }
 
@@ -163,7 +163,7 @@ func (l *lxr) acceptRun(valid string) {
 // errorf returns an error token and terminates the scan by passing
 // back a nil pointer that will be the next state, terminating l.nextItem.
 func (l *lxr) errorf(format string, args ...interface{}) stateFn {
-	l.items <- Item{token.ERR, l.file.Pos(l.start), fmt.Sprintf(format, args...), l.line}
+	l.items <- Item{token.ERR, l.doc.Pos(l.start), fmt.Sprintf(format, args...), l.line}
 	return nil
 }
 

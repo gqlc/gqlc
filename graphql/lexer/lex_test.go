@@ -10,9 +10,9 @@ func TestLexImports(t *testing.T) {
 	t.Run("single", func(subT *testing.T) {
 
 		subT.Run("perfect", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			dset := token.NewDocSet()
 			src := []byte(`import "hello"`)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(dset.AddDoc("", dset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.IMPORT, Line: 1, Pos: 1, Val: "import"},
 				{Typ: token.STRING, Line: 1, Pos: 8, Val: `"hello"`},
@@ -21,9 +21,9 @@ func TestLexImports(t *testing.T) {
 		})
 
 		subT.Run("spaces", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			dset := token.NewDocSet()
 			src := []byte(`import 		    	  	 "hello"`)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(dset.AddDoc("", dset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.IMPORT, Line: 1, Pos: 1, Val: "import"},
 				{Typ: token.STRING, Line: 1, Pos: 19, Val: `"hello"`},
@@ -32,9 +32,9 @@ func TestLexImports(t *testing.T) {
 		})
 
 		subT.Run("noParenOrQuote", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`import hello"`)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.IMPORT, Line: 1, Pos: 1, Val: "import"},
 				{Typ: token.ERR, Line: 1, Pos: 8, Val: `missing ( or " to begin import statement`},
@@ -46,9 +46,9 @@ func TestLexImports(t *testing.T) {
 	t.Run("multiple", func(subT *testing.T) {
 
 		subT.Run("singleLine", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`import ("hello")`)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.IMPORT, Line: 1, Pos: 1, Val: "import"},
 				{Typ: token.LPAREN, Line: 1, Pos: 8, Val: "("},
@@ -59,9 +59,9 @@ func TestLexImports(t *testing.T) {
 		})
 
 		subT.Run("singleLineWComma", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`import ( "a", "b", "c" )`)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.IMPORT, Line: 1, Pos: 1, Val: "import"},
 				{Typ: token.LPAREN, Line: 1, Pos: 8, Val: "("},
@@ -74,9 +74,9 @@ func TestLexImports(t *testing.T) {
 		})
 
 		subT.Run("singleLineWCommaNoEnd", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`import ( "a", "b", "c" `)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.IMPORT, Line: 1, Pos: 1, Val: "import"},
 				{Typ: token.LPAREN, Line: 1, Pos: 8, Val: "("},
@@ -88,13 +88,13 @@ func TestLexImports(t *testing.T) {
 		})
 
 		subT.Run("multiLinesWNewLine", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`import (
 					"a"
 					"b"
 					"c"
 				)`)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.IMPORT, Line: 1, Pos: 1, Val: "import"},
 				{Typ: token.LPAREN, Line: 1, Pos: 8, Val: "("},
@@ -107,13 +107,13 @@ func TestLexImports(t *testing.T) {
 		})
 
 		subT.Run("multiLinesWDiffSep1", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`import (
 					"a"
 					"b",
 					"c"
 				)`)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.IMPORT, Line: 1, Pos: 1, Val: "import"},
 				{Typ: token.LPAREN, Line: 1, Pos: 8, Val: "("},
@@ -124,13 +124,13 @@ func TestLexImports(t *testing.T) {
 		})
 
 		subT.Run("multiLinesWDiffSep2", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`import (
 					"a",
 					"b"
 					"c",
 				)`)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.IMPORT, Line: 1, Pos: 1, Val: "import"},
 				{Typ: token.LPAREN, Line: 1, Pos: 8, Val: "("},
@@ -146,9 +146,9 @@ func TestLexImports(t *testing.T) {
 func TestLexScalar(t *testing.T) {
 
 	t.Run("simple", func(subT *testing.T) {
-		fset := token.NewFileSet()
+		fset := token.NewDocSet()
 		src := []byte(`scalar URI`)
-		l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+		l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 		expectItems(subT, l, []Item{
 			{Typ: token.SCALAR, Line: 1, Pos: 1, Val: "scalar"},
 			{Typ: token.IDENT, Line: 1, Pos: 8, Val: "URI"},
@@ -157,9 +157,9 @@ func TestLexScalar(t *testing.T) {
 	})
 
 	t.Run("withDirectives", func(subT *testing.T) {
-		fset := token.NewFileSet()
+		fset := token.NewDocSet()
 		src := []byte(`scalar URI @gotype @jstype() @darttype(if: Boolean)`)
-		l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+		l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 		expectItems(subT, l, []Item{
 			{Typ: token.SCALAR, Line: 1, Pos: 1, Val: "scalar"},
 			{Typ: token.IDENT, Line: 1, Pos: 8, Val: "URI"},
@@ -189,13 +189,13 @@ func TestScanValue(t *testing.T) {
 	//    - List and Objects are handled by ScanList which is implemented in others
 
 	t.Run("var", func(subT *testing.T) {
-		fset := token.NewFileSet()
+		fset := token.NewDocSet()
 		src := []byte(`$a`)
 		l := &lxr{
 			line:  1,
 			items: make(chan Item),
 			src:   src,
-			file:  fset.AddFile("", fset.Base(), len(src)),
+			doc:   fset.AddDoc("", fset.Base(), len(src)),
 		}
 
 		go func() {
@@ -210,13 +210,13 @@ func TestScanValue(t *testing.T) {
 	})
 
 	t.Run("int", func(subT *testing.T) {
-		fset := token.NewFileSet()
+		fset := token.NewDocSet()
 		src := []byte(`12354654684013246813216513213254686210`)
 		l := &lxr{
 			line:  1,
 			items: make(chan Item),
 			src:   src,
-			file:  fset.AddFile("", fset.Base(), len(src)),
+			doc:   fset.AddDoc("", fset.Base(), len(src)),
 		}
 
 		go func() {
@@ -232,13 +232,13 @@ func TestScanValue(t *testing.T) {
 	t.Run("float", func(subT *testing.T) {
 
 		subT.Run("fractional", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`123.45`)
 			l := &lxr{
 				line:  1,
 				items: make(chan Item),
 				src:   src,
-				file:  fset.AddFile("", fset.Base(), len(src)),
+				doc:   fset.AddDoc("", fset.Base(), len(src)),
 			}
 
 			go func() {
@@ -252,13 +252,13 @@ func TestScanValue(t *testing.T) {
 		})
 
 		subT.Run("exponential", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`123e45`)
 			l := &lxr{
 				line:  1,
 				items: make(chan Item),
 				src:   src,
-				file:  fset.AddFile("", fset.Base(), len(src)),
+				doc:   fset.AddDoc("", fset.Base(), len(src)),
 			}
 
 			go func() {
@@ -272,13 +272,13 @@ func TestScanValue(t *testing.T) {
 		})
 
 		subT.Run("full", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`123.45e6`)
 			l := &lxr{
 				line:  1,
 				items: make(chan Item),
 				src:   src,
-				file:  fset.AddFile("", fset.Base(), len(src)),
+				doc:   fset.AddDoc("", fset.Base(), len(src)),
 			}
 
 			go func() {
@@ -298,9 +298,9 @@ func TestLexObject(t *testing.T) {
 	t.Run("withImpls", func(subT *testing.T) {
 
 		subT.Run("perfect", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`type Rect implements One & Two & Three`)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.TYPE, Line: 1, Pos: 1, Val: "type"},
 				{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -313,9 +313,9 @@ func TestLexObject(t *testing.T) {
 		})
 
 		subT.Run("invalidSeperator", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`type Rect implements One , Two & Three`)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.TYPE, Line: 1, Pos: 1, Val: "type"},
 				{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -324,9 +324,9 @@ func TestLexObject(t *testing.T) {
 				{Typ: token.ERR, Line: 1, Pos: 26, Val: "invalid list seperator: 44"},
 			}...)
 
-			fset = token.NewFileSet()
+			fset = token.NewDocSet()
 			src = []byte(`type Rect implements One & Two , Three`)
-			l = Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l = Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.TYPE, Line: 1, Pos: 1, Val: "type"},
 				{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -341,9 +341,9 @@ func TestLexObject(t *testing.T) {
 	t.Run("withDirectives", func(subT *testing.T) {
 
 		subT.Run("endsWithBrace", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`type Rect @green @blue {}`)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.TYPE, Line: 1, Pos: 1, Val: "type"},
 				{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -358,10 +358,10 @@ func TestLexObject(t *testing.T) {
 		})
 
 		subT.Run("endsWithNewline", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`type Rect @green @blue
 `)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.TYPE, Line: 1, Pos: 1, Val: "type"},
 				{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -374,9 +374,9 @@ func TestLexObject(t *testing.T) {
 		})
 
 		subT.Run("endsWithEOF", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`type Rect @green @blue`)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.TYPE, Line: 1, Pos: 1, Val: "type"},
 				{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -392,9 +392,9 @@ func TestLexObject(t *testing.T) {
 	t.Run("withImpls&Directives", func(subT *testing.T) {
 
 		subT.Run("endsWithBrace", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`type Rect implements One & Two & Three @green @blue {}`)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.TYPE, Line: 1, Pos: 1, Val: "type"},
 				{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -413,10 +413,10 @@ func TestLexObject(t *testing.T) {
 		})
 
 		subT.Run("endsWithNewline", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`type Rect implements One & Two & Three @green @blue
 `)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.TYPE, Line: 1, Pos: 1, Val: "type"},
 				{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -433,9 +433,9 @@ func TestLexObject(t *testing.T) {
 		})
 
 		subT.Run("endsWithEOF", func(triT *testing.T) {
-			fset := token.NewFileSet()
+			fset := token.NewDocSet()
 			src := []byte(`type Rect implements One & Two & Three @green @blue`)
-			l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 			expectItems(triT, l, []Item{
 				{Typ: token.TYPE, Line: 1, Pos: 1, Val: "type"},
 				{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -457,12 +457,12 @@ func TestLexObject(t *testing.T) {
 		subT.Run("asFieldsDef", func(triT *testing.T) {
 
 			triT.Run("simple", func(qt *testing.T) {
-				fset := token.NewFileSet()
+				fset := token.NewDocSet()
 				src := []byte(`type Rect {
 	one: One
 	two: Two
 }`)
-				l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+				l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 				expectItems(qt, l, []Item{
 					{Typ: token.TYPE, Line: 1, Pos: 1, Val: "type"},
 					{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -479,7 +479,7 @@ func TestLexObject(t *testing.T) {
 			})
 
 			triT.Run("withDescrs", func(qt *testing.T) {
-				fset := token.NewFileSet()
+				fset := token.NewDocSet()
 				src := []byte(`type Rect {
 	"one descr" one: One
 	"""
@@ -487,7 +487,7 @@ func TestLexObject(t *testing.T) {
 	"""
 	two: Two
 }`)
-				l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+				l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 				expectItems(qt, l, []Item{
 					{Typ: token.TYPE, Line: 1, Pos: 1, Val: "type"},
 					{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -506,7 +506,7 @@ func TestLexObject(t *testing.T) {
 			})
 
 			triT.Run("withArgs", func(qt *testing.T) {
-				fset := token.NewFileSet()
+				fset := token.NewDocSet()
 				src := []byte(`type Rect {
 	one(a: A, b: B): One
 	two(
@@ -517,7 +517,7 @@ func TestLexObject(t *testing.T) {
 	b: B
 ): Two
 }`)
-				l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+				l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 				expectItems(qt, l, []Item{
 					{Typ: token.TYPE, Line: 1, Pos: 1, Val: "type"},
 					{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -552,12 +552,12 @@ func TestLexObject(t *testing.T) {
 			})
 
 			triT.Run("withDirectives", func(qt *testing.T) {
-				fset := token.NewFileSet()
+				fset := token.NewDocSet()
 				src := []byte(`type Rect {
 	one: One @green @blue
 	two: Two @blue
 }`)
-				l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+				l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 				expectItems(qt, l, []Item{
 					{Typ: token.TYPE, Line: 1, Pos: 1, Val: "type"},
 					{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -583,14 +583,14 @@ func TestLexObject(t *testing.T) {
 		subT.Run("asEnumValsDef", func(triT *testing.T) {
 
 			triT.Run("simple", func(qt *testing.T) {
-				fset := token.NewFileSet()
+				fset := token.NewDocSet()
 				src := []byte(`enum Rect {
 	LEFT
 	UP
 	RIGHT
 	DOWN
 }`)
-				l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+				l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 				expectItems(qt, l, []Item{
 					{Typ: token.ENUM, Line: 1, Pos: 1, Val: "enum"},
 					{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -605,7 +605,7 @@ func TestLexObject(t *testing.T) {
 			})
 
 			triT.Run("withDescrs", func(qt *testing.T) {
-				fset := token.NewFileSet()
+				fset := token.NewDocSet()
 				src := []byte(`enum Rect {
 	"left descr" LEFT
 	"up descr" UP
@@ -616,7 +616,7 @@ func TestLexObject(t *testing.T) {
 	"down descr"
 	DOWN
 }`)
-				l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+				l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 				expectItems(qt, l, []Item{
 					{Typ: token.ENUM, Line: 1, Pos: 1, Val: "enum"},
 					{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -635,14 +635,14 @@ func TestLexObject(t *testing.T) {
 			})
 
 			triT.Run("withDirectives", func(qt *testing.T) {
-				fset := token.NewFileSet()
+				fset := token.NewDocSet()
 				src := []byte(`enum Rect {
 	LEFT @green @blue
 	UP @red
 	RIGHT
 	DOWN @red @green @blue
 }`)
-				l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+				l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 				expectItems(qt, l, []Item{
 					{Typ: token.ENUM, Line: 1, Pos: 1, Val: "enum"},
 					{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -672,12 +672,12 @@ func TestLexObject(t *testing.T) {
 		subT.Run("asInputFieldsDef", func(triT *testing.T) {
 
 			triT.Run("simple", func(qt *testing.T) {
-				fset := token.NewFileSet()
+				fset := token.NewDocSet()
 				src := []byte(`input Rect {
 	one: One
 	two: Two
 }`)
-				l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+				l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 				expectItems(qt, l, []Item{
 					{Typ: token.INPUT, Line: 1, Pos: 1, Val: "input"},
 					{Typ: token.IDENT, Line: 1, Pos: 7, Val: "Rect"},
@@ -694,7 +694,7 @@ func TestLexObject(t *testing.T) {
 			})
 
 			triT.Run("withDescrs", func(qt *testing.T) {
-				fset := token.NewFileSet()
+				fset := token.NewDocSet()
 				src := []byte(`input Rect {
 	"one descr" one: One
 	"""
@@ -702,7 +702,7 @@ func TestLexObject(t *testing.T) {
 	"""
 	two: Two
 }`)
-				l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+				l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 				expectItems(qt, l, []Item{
 					{Typ: token.INPUT, Line: 1, Pos: 1, Val: "input"},
 					{Typ: token.IDENT, Line: 1, Pos: 7, Val: "Rect"},
@@ -721,12 +721,12 @@ func TestLexObject(t *testing.T) {
 			})
 
 			triT.Run("withDefVal", func(qt *testing.T) {
-				fset := token.NewFileSet()
+				fset := token.NewDocSet()
 				src := []byte(`input Rect {
 	one: One = 123
 	two: Two = "abc"
 }`)
-				l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+				l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 				expectItems(qt, l, []Item{
 					{Typ: token.INPUT, Line: 1, Pos: 1, Val: "input"},
 					{Typ: token.IDENT, Line: 1, Pos: 7, Val: "Rect"},
@@ -747,12 +747,12 @@ func TestLexObject(t *testing.T) {
 			})
 
 			triT.Run("withDirectives", func(qt *testing.T) {
-				fset := token.NewFileSet()
+				fset := token.NewDocSet()
 				src := []byte(`input Rect {
 	one: One @green @blue
 	two: Two @blue
 }`)
-				l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+				l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 				expectItems(qt, l, []Item{
 					{Typ: token.INPUT, Line: 1, Pos: 1, Val: "input"},
 					{Typ: token.IDENT, Line: 1, Pos: 7, Val: "Rect"},
@@ -781,7 +781,7 @@ func TestLexObject(t *testing.T) {
 		// 		 Instead, it uses a construction that is valid by the lexer and tests
 		//		 the full capabilities of the lexObject stateFn.
 
-		fset := token.NewFileSet()
+		fset := token.NewDocSet()
 		src := []byte(`type Rect implements Shape & Obj @green @blue {
 	"one descr" one: One @one
 	"""
@@ -792,7 +792,7 @@ func TestLexObject(t *testing.T) {
 	): Two
 	thr: Thr = 3 @ptle @ptle
 }`)
-		l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+		l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 		expectItems(subT, l, []Item{
 			{Typ: token.TYPE, Line: 1, Pos: 1, Val: "type"},
 			{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
@@ -842,9 +842,9 @@ func TestLexObject(t *testing.T) {
 func TestLexUnion(t *testing.T) {
 
 	t.Run("simple", func(subT *testing.T) {
-		fset := token.NewFileSet()
+		fset := token.NewDocSet()
 		src := []byte(`union Pizza = Triangle | Circle`)
-		l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+		l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 		expectItems(subT, l, []Item{
 			{Typ: token.UNION, Line: 1, Pos: 1, Val: "union"},
 			{Typ: token.IDENT, Line: 1, Pos: 7, Val: "Pizza"},
@@ -856,9 +856,9 @@ func TestLexUnion(t *testing.T) {
 	})
 
 	t.Run("withDirectives", func(subT *testing.T) {
-		fset := token.NewFileSet()
+		fset := token.NewDocSet()
 		src := []byte(`union Pizza @ham @pineapple = Triangle | Circle`)
-		l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+		l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 		expectItems(subT, l, []Item{
 			{Typ: token.UNION, Line: 1, Pos: 1, Val: "union"},
 			{Typ: token.IDENT, Line: 1, Pos: 7, Val: "Pizza"},
@@ -877,9 +877,9 @@ func TestLexUnion(t *testing.T) {
 func TestLexDirective(t *testing.T) {
 
 	t.Run("simple", func(subT *testing.T) {
-		fset := token.NewFileSet()
+		fset := token.NewDocSet()
 		src := []byte(`directive @skip on FIELD | FIELD_DEFINITION`)
-		l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+		l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 
 		expectItems(subT, l, []Item{
 			{Typ: token.DIRECTIVE, Line: 1, Pos: 1, Val: "directive"},
@@ -893,9 +893,9 @@ func TestLexDirective(t *testing.T) {
 	})
 
 	t.Run("withArgs", func(subT *testing.T) {
-		fset := token.NewFileSet()
+		fset := token.NewDocSet()
 		src := []byte(`directive @skip(if: Boolean, else: Boolean = false) on FIELD | FIELD_DEFINITION`)
-		l := Lex(fset.AddFile("", fset.Base(), len(src)), src, 0)
+		l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 
 		expectItems(subT, l, []Item{
 			{Typ: token.DIRECTIVE, Line: 1, Pos: 1, Val: "directive"},
