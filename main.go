@@ -12,7 +12,7 @@ var cli compiler.CommandLine
 
 func init() {
 	cli = cmd.NewCLI()
-	cli.AllowPlugins("gqlc-")
+	cli.AllowPlugins("gqlc-gen-")
 
 	// Register Documentation generator
 	cli.RegisterGenerator("doc_out", gens.DocGenerator{},

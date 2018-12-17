@@ -10,7 +10,7 @@ import (
 )
 
 "Schema description"
-schema @one @two() @three(a: A) {
+schema @one @two() @three(a: "A") {
     "Query description"
     query: Query
 
@@ -21,4 +21,42 @@ schema @one @two() @three(a: A) {
     subscription: Subscription
 }
 
-# TODO: Object, Interface, Union, Enum, Input, Description
+"Scalar description"
+scalar Test @one @two() @three(a: 1, b: 2, c: 3)
+
+"Object description"
+type Test implements One & Two @one @two() @three(a: 1, b: 2) {
+    "Field description"
+    one: One
+
+    "Field description"
+    two(
+        """
+        Arg description
+        """
+        one: One = 1 @one
+    ): Two @one @two
+
+    "Field description"
+    three(
+        """
+        Arg description
+        """
+        one: One = 1 @one,
+
+        """
+        Arg description
+        """
+        two: Two = 2 @one @two(),
+
+        """
+        Arg description
+        """
+        three: Three = 3 @one @two() @three(a: 1, b: 2),
+    ): Three @one @two() @three(a: 1, b: 2)
+}
+
+# TODO: Interface, Union, Enum, Input
+
+"Directive description"
+directive @test(one: One = 1 @one, two: Two = 2 @one @two) on SCHEMA | QUERY | MUTATION | SUBSCRIPTION | FIELD

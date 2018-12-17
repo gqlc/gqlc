@@ -222,7 +222,7 @@ func lexDoc(l *lxr) stateFn {
 		if !l.scanString() {
 			return l.errorf("bad string syntax: %q", l.src[l.start:l.pos])
 		}
-		l.emit(token.STRING)
+		l.emit(token.DESCRIPTION)
 	case isAlphaNumeric(r) && !unicode.IsDigit(r):
 		l.backup()
 		return lexImportsOrDef
@@ -608,7 +608,12 @@ func lexDirective(l *lxr) stateFn {
 
 			if ll.accept("@") {
 				ll.backup()
-				return ll.scanDirectives(",)\r\n", " \t")
+				ok := ll.scanDirectives(",)\r\n", " \t")
+				if !ok {
+					return false
+				}
+				ll.backup()
+				return true
 			}
 
 			return true

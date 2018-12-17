@@ -21,6 +21,8 @@ const (
 	STRING // "abc" or """abc"""
 	INT    // 123
 	FLOAT  // 123.45
+	BOOL   // true or false
+	NULL   // null
 	litEnd
 
 	opBeg

@@ -51,7 +51,7 @@ func (a *Arg) End() token.Pos {
 type Field struct {
 	Doc     *DocGroup // associated documentation; or nil
 	Name    *Ident    // field/parameter names; or nil
-	Args    CallExpr  // field arguments; or nil
+	Args    *CallExpr // field arguments; or nil
 	Type    Expr      // field/parameter type
 	Default Expr      // parameter default value; or nil
 	Dirs    []Expr    // directives; or nil
@@ -110,6 +110,64 @@ func (f *FieldList) NumFields() (n int) {
 	return
 }
 
+// Loc represents one of the allowed directive locations.
+type Loc uint
+
+const (
+	// ExecutableDirectiveLocations
+
+	QUERY Loc = iota
+	MUTATION
+	SUBSCRIPTION
+	FIELD
+	FRAGMENT_DEFINITION
+	FRAGMENT_SPREAD
+	INLINE_FRAGMENT
+	VARIABLE_DEFINITION
+
+	// TypeSystemDirectiveLocations
+
+	SCHEMA
+	SCALAR
+	OBJECT
+	FIELD_DEFINITION
+	ARGUMENT_DEFINITION
+	INTERFACE
+	UNION
+	ENUM
+	ENUM_VALUE
+	INPUT_OBJECT
+	INPUT_FIELD_DEFINITION
+)
+
+var locs = map[string]Loc{
+	"QUERY":                  QUERY,
+	"MUTATION":               MUTATION,
+	"SUBSCRIPTION":           SUBSCRIPTION,
+	"FIELD":                  FIELD,
+	"FRAGMENT_DEFINITION":    FRAGMENT_DEFINITION,
+	"FRAGMENT_SPREAD":        FRAGMENT_SPREAD,
+	"INLINE_FRAGMENT":        INLINE_FRAGMENT,
+	"VARIABLE_DEFINITION":    VARIABLE_DEFINITION,
+	"SCHEMA":                 SCHEMA,
+	"SCALAR":                 SCALAR,
+	"OBJECT":                 OBJECT,
+	"FIELD_DEFINITION":       FIELD_DEFINITION,
+	"ARGUMENT_DEFINITION":    ARGUMENT_DEFINITION,
+	"INTERFACE":              INTERFACE,
+	"UNION":                  UNION,
+	"ENUM":                   ENUM,
+	"ENUM_VALUE":             ENUM_VALUE,
+	"INPUT_OBJECT":           INPUT_OBJECT,
+	"INPUT_FIELD_DEFINITION": INPUT_FIELD_DEFINITION,
+}
+
+// IsValidLoc returns whether or not a given string represents a valid directive location.
+func IsValidLoc(l string) (loc Loc, ok bool) {
+	loc, ok = locs[l]
+	return
+}
+
 // An expression is represented by a tree consisting of one
 // or more of the following concrete expression nodes.
 //
@@ -144,6 +202,11 @@ type (
 		AtPos token.Pos // position of '@'
 		Name  string    // name following '@'
 		Args  *CallExpr // Any arguments; or nil
+	}
+
+	DirectiveLocation struct {
+		Start token.Pos
+		Loc   Loc
 	}
 
 	// A CallExpr node represents an expression followed by an argument list.
@@ -196,10 +259,10 @@ type (
 	}
 
 	DirectiveType struct {
-		Directive token.Pos // position of "directive" keyword
-		Args      *CallExpr
-		OnPos     token.Pos // position of "on" keyword
-		Locs      []Expr    // valid locations where this directive can be applied
+		Directive token.Pos            // position of "directive" keyword
+		Args      *FieldList           // defined args for the directive; or nil
+		OnPos     token.Pos            // position of "on" keyword
+		Locs      []*DirectiveLocation // valid locations where this directive can be applied
 	}
 
 	Extension struct {
@@ -208,28 +271,40 @@ type (
 	}
 )
 
-// TODO: Handle extension situations i.e. no fields, no impls
+func (x *BadExpr) Pos() token.Pos           { return x.From }
+func (x *Ident) Pos() token.Pos             { return x.NamePos }
+func (x *BasicLit) Pos() token.Pos          { return 0 } // TODO
+func (x *NonNull) Pos() token.Pos           { return x.Type.Pos() }
+func (x *DirectiveLit) Pos() token.Pos      { return x.AtPos }
+func (x *DirectiveLocation) Pos() token.Pos { return x.Start }
+func (x *SchemaType) Pos() token.Pos        { return x.Schema }
+func (x *ScalarType) Pos() token.Pos        { return x.Scalar }
+func (x *ObjectType) Pos() token.Pos        { return x.Object }
+func (x *InterfaceType) Pos() token.Pos     { return x.Interface }
+func (x *UnionType) Pos() token.Pos         { return x.Union }
+func (x *EnumType) Pos() token.Pos          { return x.Enum }
+func (x *InputType) Pos() token.Pos         { return x.Input }
+func (x *DirectiveType) Pos() token.Pos     { return x.Directive }
+func (x *Extension) Pos() token.Pos         { return x.Extend }
 
-func (x *BadExpr) Pos() token.Pos       { return x.From }
-func (x *Ident) Pos() token.Pos         { return x.NamePos }
-func (x *BasicLit) Pos() token.Pos      { return 0 } // TODO
-func (x *NonNull) Pos() token.Pos       { return x.Type.Pos() }
-func (x *DirectiveLit) Pos() token.Pos  { return x.AtPos }
-func (x *SchemaType) Pos() token.Pos    { return x.Schema }
-func (x *ScalarType) Pos() token.Pos    { return x.Scalar }
-func (x *ObjectType) Pos() token.Pos    { return x.Object }
-func (x *InterfaceType) Pos() token.Pos { return x.Interface }
-func (x *UnionType) Pos() token.Pos     { return x.Union }
-func (x *EnumType) Pos() token.Pos      { return x.Enum }
-func (x *InputType) Pos() token.Pos     { return x.Input }
-func (x *DirectiveType) Pos() token.Pos { return x.Directive }
-func (x *Extension) Pos() token.Pos     { return x.Extend }
-
-func (x *BadExpr) End() token.Pos       { return x.To }
-func (x *Ident) End() token.Pos         { return token.Pos(int(x.NamePos) + len(x.Name)) } // TODO
-func (x *BasicLit) End() token.Pos      { return 0 }                                       // TODO
-func (x *NonNull) End() token.Pos       { return x.Type.End() + 1 }
-func (x *DirectiveLit) End() token.Pos  { return 0 } // TODO
+func (x *BadExpr) End() token.Pos  { return x.To }
+func (x *Ident) End() token.Pos    { return token.Pos(int(x.NamePos) + len(x.Name)) }
+func (x *BasicLit) End() token.Pos { return 0 } // TODO
+func (x *NonNull) End() token.Pos  { return x.Type.End() + 1 }
+func (x *DirectiveLit) End() token.Pos {
+	if x.Args == nil {
+		return x.AtPos + token.Pos(len(x.Name))
+	}
+	return x.Args.Rparen
+}
+func (x *DirectiveLocation) End() token.Pos {
+	for k, v := range locs {
+		if v == x.Loc {
+			return x.Start + token.Pos(len(k))
+		}
+	}
+	return token.NoPos
+}
 func (x *SchemaType) End() token.Pos    { return x.Fields.End() }
 func (x *ScalarType) End() token.Pos    { return token.NoPos }
 func (x *ObjectType) End() token.Pos    { return x.Fields.End() }
@@ -237,23 +312,24 @@ func (x *InterfaceType) End() token.Pos { return x.Fields.End() }
 func (x *UnionType) End() token.Pos     { return x.Members[0].End() }
 func (x *EnumType) End() token.Pos      { return x.Fields.End() }
 func (x *InputType) End() token.Pos     { return x.Fields.End() }
-func (x *DirectiveType) End() token.Pos { return x.Locs[0].End() }
+func (x *DirectiveType) End() token.Pos { return x.Locs[len(x.Locs)-1].End() }
 func (x *Extension) End() token.Pos     { return x.Type.End() }
 
-func (*BadExpr) exprNode()       {}
-func (*Ident) exprNode()         {}
-func (*BasicLit) exprNode()      {}
-func (*NonNull) exprNode()       {}
-func (*DirectiveLit) exprNode()  {}
-func (*SchemaType) exprNode()    {}
-func (*ScalarType) exprNode()    {}
-func (*ObjectType) exprNode()    {}
-func (*InterfaceType) exprNode() {}
-func (*UnionType) exprNode()     {}
-func (*EnumType) exprNode()      {}
-func (*InputType) exprNode()     {}
-func (*DirectiveType) exprNode() {}
-func (*Extension) exprNode()     {}
+func (*BadExpr) exprNode()           {}
+func (*Ident) exprNode()             {}
+func (*BasicLit) exprNode()          {}
+func (*NonNull) exprNode()           {}
+func (*DirectiveLit) exprNode()      {}
+func (*DirectiveLocation) exprNode() {}
+func (*SchemaType) exprNode()        {}
+func (*ScalarType) exprNode()        {}
+func (*ObjectType) exprNode()        {}
+func (*InterfaceType) exprNode()     {}
+func (*UnionType) exprNode()         {}
+func (*EnumType) exprNode()          {}
+func (*InputType) exprNode()         {}
+func (*DirectiveType) exprNode()     {}
+func (*Extension) exprNode()         {}
 
 type (
 	// The Spec type stands for any of *ImportSpec, and *TypeSpec

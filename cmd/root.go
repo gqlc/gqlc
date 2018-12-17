@@ -102,14 +102,19 @@ func runRoot(cmd *cobra.Command, args []string) (err error) {
 
 	// Parse files
 	docs := make(map[string]*ast.Document, len(args))
-	fset := token.NewDocSet()
+	dset := token.NewDocSet()
 	for _, filename := range args {
+		filename, err = filepath.Abs(filename)
+		if err != nil {
+			return err
+		}
+
 		f, err := os.Open(filename)
 		if err != nil {
 			return err
 		}
 
-		doc, err := parser.ParseDoc(fset, filename, f, mode)
+		doc, err := parser.ParseDoc(dset, filename, f, mode)
 		if err != nil {
 			return err
 		}
@@ -117,6 +122,7 @@ func runRoot(cmd *cobra.Command, args []string) (err error) {
 		docs[doc.Name] = doc
 	}
 
+	// Perform type checking
 	errs := util.CheckTypes(docs)
 	if len(errs) > 0 {
 		// TODO: Compound errors into a single error and return.

@@ -5,7 +5,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var gens map[string]compiler.CodeGenerator
+var (
+	pluginPrefix string
+	gens         map[string]compiler.CodeGenerator
+)
 
 func init() {
 	gens = make(map[string]compiler.CodeGenerator)
@@ -23,7 +26,7 @@ func NewCLI() *CLI {
 	}
 }
 
-func (c *CLI) AllowPlugins(prefix string) {}
+func (c *CLI) AllowPlugins(prefix string) { pluginPrefix = prefix }
 
 func (c *CLI) RegisterGenerator(name string, g compiler.CodeGenerator, help string) {
 	c.root.Flags().String(name, "", help)

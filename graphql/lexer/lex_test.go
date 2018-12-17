@@ -917,6 +917,44 @@ func TestLexDirective(t *testing.T) {
 		}...)
 		expectEOF(subT, l)
 	})
+
+	t.Run("argsWithDirectives", func(subT *testing.T) {
+		fset := token.NewDocSet()
+		src := []byte(`directive @skip(if: Boolean @one(), else: Boolean = false @one() @two()) on FIELD | FIELD_DEFINITION`)
+		l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
+
+		expectItems(subT, l, []Item{
+			{Typ: token.DIRECTIVE, Line: 1, Pos: 1, Val: "directive"},
+			{Typ: token.AT, Line: 1, Pos: 11, Val: "@"},
+			{Typ: token.IDENT, Line: 1, Pos: 12, Val: "skip"},
+			{Typ: token.LPAREN, Line: 1, Pos: 16, Val: "("},
+			{Typ: token.IDENT, Line: 1, Pos: 17, Val: "if"},
+			{Typ: token.COLON, Line: 1, Pos: 19, Val: ":"},
+			{Typ: token.IDENT, Line: 1, Pos: 21, Val: "Boolean"},
+			{Typ: token.AT, Line: 1, Pos: 29, Val: "@"},
+			{Typ: token.IDENT, Line: 1, Pos: 30, Val: "one"},
+			{Typ: token.LPAREN, Line: 1, Pos: 33, Val: "("},
+			{Typ: token.RPAREN, Line: 1, Pos: 34, Val: ")"},
+			{Typ: token.IDENT, Line: 1, Pos: 37, Val: "else"},
+			{Typ: token.COLON, Line: 1, Pos: 41, Val: ":"},
+			{Typ: token.IDENT, Line: 1, Pos: 43, Val: "Boolean"},
+			{Typ: token.ASSIGN, Line: 1, Pos: 51, Val: "="},
+			{Typ: token.IDENT, Line: 1, Pos: 53, Val: "false"},
+			{Typ: token.AT, Line: 1, Pos: 59, Val: "@"},
+			{Typ: token.IDENT, Line: 1, Pos: 60, Val: "one"},
+			{Typ: token.LPAREN, Line: 1, Pos: 63, Val: "("},
+			{Typ: token.RPAREN, Line: 1, Pos: 64, Val: ")"},
+			{Typ: token.AT, Line: 1, Pos: 66, Val: "@"},
+			{Typ: token.IDENT, Line: 1, Pos: 67, Val: "two"},
+			{Typ: token.LPAREN, Line: 1, Pos: 70, Val: "("},
+			{Typ: token.RPAREN, Line: 1, Pos: 71, Val: ")"},
+			{Typ: token.RPAREN, Line: 1, Pos: 72, Val: ")"},
+			{Typ: token.ON, Line: 1, Pos: 74, Val: "on"},
+			{Typ: token.IDENT, Line: 1, Pos: 77, Val: "FIELD"},
+			{Typ: token.IDENT, Line: 1, Pos: 85, Val: "FIELD_DEFINITION"},
+		}...)
+		expectEOF(subT, l)
+	})
 }
 
 func expectItems(t *testing.T, l Interface, items ...Item) {

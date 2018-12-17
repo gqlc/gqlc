@@ -38,12 +38,12 @@ func ParseDir(dset *token.DocSet, path string, filter func(os.FileInfo) bool, mo
 			return nil
 		}
 
-		f, err := os.Open(info.Name())
+		f, err := os.Open(p)
 		if err != nil {
 			return err
 		}
 
-		doc, err := ParseDoc(dset, f.Name(), f, mode)
+		doc, err := ParseDoc(dset, info.Name(), f, mode)
 		f.Close() // TODO: Handle this error
 		if err != nil {
 			return err
@@ -204,7 +204,8 @@ func (p *parser) addDocs(pdg *ast.DocGroup) (cdg *ast.DocGroup, item lexer.Item)
 		// Peek next item.
 		nitem := p.next()
 		lineDiff := nitem.Line - item.Line
-		if lineDiff == 1 {
+		if lineDiff < 2 {
+			p.pk = nitem
 			continue
 		}
 
@@ -321,7 +322,7 @@ func (p *parser) parseSchema(item lexer.Item, dg *ast.DocGroup, doc *ast.Documen
 	doc.Types = append(doc.Types, schemaGen)
 
 	// Slurp up applied directives
-	dirs, nitem := p.parseDirectives()
+	dirs, nitem := p.parseDirectives(dg)
 
 	// Create schema type spec node
 	schemaSpec := &ast.TypeSpec{
@@ -386,7 +387,7 @@ func (p *parser) parseSchema(item lexer.Item, dg *ast.DocGroup, doc *ast.Documen
 }
 
 // parseDirectives parses a list of applied directives
-func (p *parser) parseDirectives() (dirs []ast.Expr, item lexer.Item) {
+func (p *parser) parseDirectives(dg *ast.DocGroup) (dirs []ast.Expr, item lexer.Item) {
 	item = p.next()
 	for {
 		if item.Typ != token.AT {
@@ -405,10 +406,7 @@ func (p *parser) parseDirectives() (dirs []ast.Expr, item lexer.Item) {
 			continue
 		}
 
-		args, rpos := p.parseArgs(nil) // TODO: Change nil to an actual *ast.DocGroup
-		if args == nil {
-			p.unexpected(p.pk, "parseDirectives:parseArgs")
-		}
+		args, rpos := p.parseArgs(dg)
 
 		dir.Args = &ast.CallExpr{
 			Lparen: item.Pos,
@@ -446,9 +444,41 @@ func (p *parser) parseArgs(pdg *ast.DocGroup) (args []*ast.Arg, rpos token.Pos) 
 	}
 }
 
-// TODO: parseValue parses a value.
+// parseValue parses a value
 func (p *parser) parseValue() (v ast.Expr, item lexer.Item) {
-	return
+	for {
+		item = p.next()
+
+		switch item.Typ {
+		case token.COMMENT:
+			continue
+		case token.LBRACK: // TODO
+		case token.LBRACE: // TODO
+		case token.STRING, token.INT, token.FLOAT, token.IDENT:
+			// Enforce true/false for ident
+			if item.Typ == token.IDENT {
+				switch item.Val {
+				case "true", "false":
+					item.Typ = token.BOOL
+				case "null":
+					item.Typ = token.NULL
+				default:
+					p.unexpected(item, "parseValue")
+				}
+			}
+
+			// Construct basic literal
+			v = &ast.BasicLit{
+				ValuePos: item.Pos,
+				Value:    item.Val,
+				Kind:     item.Typ,
+			}
+			item = p.next()
+			return
+		default:
+			p.unexpected(item, "parseValue")
+		}
+	}
 }
 
 // parseArgsDef parses a list of argument definitions.
@@ -461,7 +491,7 @@ func (p *parser) parseArgsDef(pdg *ast.DocGroup) (args []*ast.Field, rpos token.
 		}
 
 		if item.Typ != token.IDENT {
-			p.unexpected(item, "parseArgsDef")
+			p.unexpected(item, "parseArgsDef:MustHaveName")
 		}
 		f := &ast.Field{
 			Doc: cdg,
@@ -472,9 +502,9 @@ func (p *parser) parseArgsDef(pdg *ast.DocGroup) (args []*ast.Field, rpos token.
 		}
 		args = append(args, f)
 
-		p.expect(token.COLON, "parseArgsDef")
+		p.expect(token.COLON, "parseArgsDef:MustHaveColon")
 
-		item = p.expect(token.IDENT, "parseArgsDef")
+		item = p.expect(token.IDENT, "parseArgsDef:MustHaveType")
 		f.Type = &ast.Ident{
 			NamePos: item.Pos,
 			Name:    item.Val,
@@ -482,11 +512,11 @@ func (p *parser) parseArgsDef(pdg *ast.DocGroup) (args []*ast.Field, rpos token.
 
 		item = p.peek()
 		if item.Typ == token.ASSIGN {
-			item = p.expect(token.IDENT, "parseArgsDef")
-			f.Default, item = p.parseValue()
+			p.pk = lexer.Item{}
+			f.Default, p.pk = p.parseValue()
 		}
 
-		f.Dirs, p.pk = p.parseDirectives()
+		f.Dirs, p.pk = p.parseDirectives(pdg)
 	}
 }
 
@@ -508,19 +538,47 @@ func (p *parser) parseScalar(item lexer.Item, dg *ast.DocGroup, doc *ast.Documen
 			Name:    name.Val,
 		},
 	}
+	scalarGen.Specs = append(scalarGen.Specs, scalarSpec)
 
-	scalarSpec.Dirs, item = p.parseDirectives()
+	scalarSpec.Dirs, p.pk = p.parseDirectives(dg)
 
 	scalarType := &ast.ScalarType{
-		Name: scalarSpec.Name,
+		Scalar: item.Pos,
+		Name:   scalarSpec.Name,
 	}
 	scalarSpec.Type = scalarType
 }
 
-// TODO
-
 // parseObject parses an object declaration
-func (p *parser) parseObject(item lexer.Item, dg *ast.DocGroup, doc *ast.Document) {}
+func (p *parser) parseObject(item lexer.Item, dg *ast.DocGroup, doc *ast.Document) {
+	objGen := &ast.GenDecl{
+		Doc:    dg,
+		TokPos: item.Pos,
+		Tok:    token.TYPE,
+	}
+	doc.Types = append(doc.Types, objGen)
+
+	name := p.expect(token.IDENT, "parseObject")
+
+	objSpec := &ast.TypeSpec{
+		Doc: dg,
+		Name: &ast.Ident{
+			NamePos: name.Pos,
+			Name:    name.Val,
+		},
+	}
+	objGen.Specs = append(objGen.Specs, objSpec)
+
+	objType := &ast.ObjectType{
+		Object: item.Pos,
+	}
+	objSpec.Type = objType
+
+	// TODO: parse interfaces
+	// TODO: parse fields
+}
+
+// TODO
 
 // parseInterface parses an interface declaration
 func (p *parser) parseInterface(item lexer.Item, dg *ast.DocGroup, doc *ast.Document) {}
@@ -534,5 +592,84 @@ func (p *parser) parseEnum(item lexer.Item, dg *ast.DocGroup, doc *ast.Document)
 // parseInput parses an input declaration
 func (p *parser) parseInput(item lexer.Item, dg *ast.DocGroup, doc *ast.Document) {}
 
+// directive locations
+var dirLocs = map[string]ast.Loc{
+	"QUERY":                  ast.QUERY,
+	"MUTATION":               ast.MUTATION,
+	"SUBSCRIPTION":           ast.SUBSCRIPTION,
+	"FIELD":                  ast.FIELD,
+	"FRAGMENT_DEFINITION":    ast.FRAGMENT_DEFINITION,
+	"FRAGMENT_SPREAD":        ast.FRAGMENT_SPREAD,
+	"INLINE_FRAGMENT":        ast.INLINE_FRAGMENT,
+	"VARIABLE_DEFINITION":    ast.VARIABLE_DEFINITION,
+	"SCHEMA":                 ast.SCHEMA,
+	"SCALAR":                 ast.SCALAR,
+	"OBJECT":                 ast.OBJECT,
+	"FIELD_DEFINITION":       ast.FIELD_DEFINITION,
+	"ARGUMENT_DEFINITION":    ast.ARGUMENT_DEFINITION,
+	"INTERFACE":              ast.INTERFACE,
+	"UNION":                  ast.UNION,
+	"ENUM":                   ast.ENUM,
+	"ENUM_VALUE":             ast.ENUM_VALUE,
+	"INPUT_OBJECT":           ast.INPUT_OBJECT,
+	"INPUT_FIELD_DEFINITION": ast.INPUT_FIELD_DEFINITION,
+}
+
 // parseDirective parses a directive declaration
-func (p *parser) parseDirective(item lexer.Item, dg *ast.DocGroup, doc *ast.Document) {}
+func (p *parser) parseDirective(item lexer.Item, dg *ast.DocGroup, doc *ast.Document) {
+	dirGen := &ast.GenDecl{
+		Doc:    dg,
+		TokPos: item.Pos,
+		Tok:    token.DIRECTIVE,
+	}
+	doc.Types = append(doc.Types, dirGen)
+
+	p.expect(token.AT, "parseDirective")
+	name := p.expect(token.IDENT, "parseDirective")
+
+	dirSpec := &ast.TypeSpec{
+		Doc: dg,
+		Name: &ast.Ident{
+			NamePos: name.Pos,
+			Name:    name.Val,
+		},
+	}
+	dirGen.Specs = append(dirGen.Specs, dirSpec)
+
+	dirType := &ast.DirectiveType{
+		Directive: item.Pos,
+	}
+	dirSpec.Type = dirType
+
+	item = p.next()
+	if item.Typ == token.LPAREN {
+		args, rpos := p.parseArgsDef(dg)
+
+		dirType.Args = &ast.FieldList{
+			Opening: item.Pos,
+			List:    args,
+			Closing: rpos,
+		}
+
+		item = p.next()
+	}
+
+	if item.Typ != token.ON {
+		p.unexpected(item, "parseDirective")
+	}
+	dirType.OnPos = item.Pos
+
+	for {
+		item = p.peek()
+		if item.Typ != token.IDENT {
+			return
+		}
+
+		loc, valid := dirLocs[item.Val]
+		if !valid {
+			p.unexpected(item, "parseDirectives:InvalidDirectiveLocation")
+		}
+
+		dirType.Locs = append(dirType.Locs, &ast.DirectiveLocation{Start: item.Pos, Loc: loc})
+	}
+}
