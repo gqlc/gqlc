@@ -65,7 +65,7 @@ func ParseDoc(dset *token.DocSet, name string, src io.Reader, mode Mode) (*ast.D
 	}
 
 	// Create parser and doc to doc set. Then, parse doc.
-	p := new(parser)
+	p := &parser{name: name}
 	d := dset.AddDoc(name, -1, len(b))
 	return p.parse(d, b, mode)
 }
@@ -96,6 +96,12 @@ type parser struct {
 
 // next returns the next token
 func (p *parser) next() (i lexer.Item) {
+	defer func() {
+		if i.Line > p.line {
+			p.line = i.Line
+		}
+	}()
+
 	if p.pk.Line != 0 {
 		i = p.pk
 		p.pk = lexer.Item{}
@@ -485,7 +491,7 @@ func (p *parser) parseValue() (v ast.Expr, item lexer.Item) {
 func (p *parser) parseArgsDef(pdg *ast.DocGroup) (args []*ast.Field, rpos token.Pos) {
 	for {
 		cdg, item := p.addDocs(pdg)
-		if item.Typ == token.RPAREN {
+		if item.Typ == token.RPAREN || item.Typ == token.RBRACE {
 			rpos = item.Pos
 			return
 		}
@@ -574,8 +580,19 @@ func (p *parser) parseObject(item lexer.Item, dg *ast.DocGroup, doc *ast.Documen
 	}
 	objSpec.Type = objType
 
-	// TODO: parse interfaces
-	// TODO: parse fields
+	item = p.peek()
+	if item.Typ == token.INTERFACE {
+		// TODO: Parse interfaces
+		item = p.peek()
+	}
+
+	objSpec.Dirs, item = p.parseDirectives(dg)
+
+	if item.Typ != token.LBRACE {
+		return
+	}
+
+	// TODO: Parse fields
 }
 
 // TODO

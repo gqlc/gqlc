@@ -38,7 +38,7 @@ func TestParseDoc(t *testing.T) {
 	query: Query
 	mut: Mutation
 }`,
-			Err: fmt.Errorf("parser: :0: unexpected \"mut\" in parseSchema"),
+			Err: fmt.Errorf("parser: invalidSchema:3: unexpected \"mut\" in parseSchema"),
 		},
 		{
 			Name: "scalar",
