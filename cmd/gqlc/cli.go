@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"github.com/Zaba505/gqlc/compiler"
@@ -7,11 +7,11 @@ import (
 
 var (
 	pluginPrefix string
-	gens         map[string]compiler.CodeGenerator
+	geners       map[string]compiler.CodeGenerator
 )
 
 func init() {
-	gens = make(map[string]compiler.CodeGenerator)
+	geners = make(map[string]compiler.CodeGenerator)
 }
 
 // CLI is an implementation of the compiler interface, which
@@ -30,7 +30,7 @@ func (c *CLI) AllowPlugins(prefix string) { pluginPrefix = prefix }
 
 func (c *CLI) RegisterGenerator(name string, g compiler.CodeGenerator, help string) {
 	c.root.Flags().String(name, "", help)
-	gens[name] = g
+	geners[name] = g
 }
 
 func (c *CLI) Run(args []string) error {

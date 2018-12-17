@@ -1,9 +1,9 @@
-package cmd
+package main
 
 import (
 	"context"
 	"fmt"
-	"github.com/Zaba505/gqlc/cmd/util"
+	"github.com/Zaba505/gqlc/cmd/gqlc/util"
 	"github.com/Zaba505/gqlc/compiler"
 	"github.com/Zaba505/gqlc/graphql/ast"
 	"github.com/Zaba505/gqlc/graphql/parser"
@@ -69,7 +69,7 @@ directories will be searched in order.  If not
 given, the current working directory is used.`)
 	rootCmd.Flags().BoolP("verbose", "v", false, "Output logging")
 	rootCmd.SetUsageTemplate(`Usage:
-	gqlc [command|flags] files{{if .HasAvailableSubCommands}}
+	gqlc flags files{{if .HasAvailableSubCommands}}
 
 Available Commands:{{range .Commands}}
   {{rpad .Name .NamePadding}} {{.Short}}{{end}}{{end}}{{$flags := in .LocalFlags "_out"}}{{if gt (len $flags.FlagUsages) 0}}
@@ -91,7 +91,7 @@ func runRoot(cmd *cobra.Command, args []string) (err error) {
 			return
 		}
 
-		gen, exists := gens[f.Name]
+		gen, exists := geners[f.Name]
 		if exists {
 			gs = append(gs, gen)
 			if f.Name == "doc_out" {
