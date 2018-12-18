@@ -3,9 +3,9 @@
 [![Build Status](https://travis-ci.org/Zaba505/gqlc.svg?branch=master)](https://travis-ci.org/Zaba505/gqlc)
 [![codecov](https://codecov.io/gh/Zaba505/gqlc/branch/master/graph/badge.svg)](https://codecov.io/gh/Zaba505/gqlc)
 
-# GraphQL Schema Language Compiler
+# GraphQL IDL Compiler
 
-`gqlc` is a compiler for the "GraphQL Schema Language", as defined by the [GraphQL spec](http://facebook.github.io/graphql).
+`gqlc` is a compiler for the GraphQL IDL, as defined by the [GraphQL spec](http://facebook.github.io/graphql).
 Current spec implementation: Current Working Draft i.e. >June2018
 
 # Table of Contents
@@ -14,11 +14,27 @@ Current spec implementation: Current Working Draft i.e. >June2018
 - [Design](#design)
     * [IDL packages](#idl-pacakges)
     * [Code generation](#code-generation-and-cli)
+- [WIP](#wip)
 
 ## Usage
 To use `gqlc`, there are two options: the `gqlc` cli tool or writing your own
 cli. In order to use the `gqlc` cli tool you must either download a pre-built
 [binary]() or if you are familiar using the Go toolchain: `go get github.com/Zaba505/gqlc/cmd/gqlc`
+
+Languages currently supported by `gqlc` cli:
+* [Dart](https://dartlang.org)
+* [Documentation](https://commonmark.org)
+* [Go](https://golang.org)
+* [Javascript](https://javascript.com)
+
+Example:
+```text
+gqlc -I . --dart_out ./dartapi
+        \ --doc_out ./docs
+        \ --go_out ./goapi
+        \ --js_out ./jsapi
+        \ api.gql
+```
 
 ## Design
 
@@ -34,3 +50,20 @@ and Rob Pike's talk on ["Lexical Scanning in Go"](https://talks.golang.org/2011/
 
 The code generation and CLI designs were both pulled from Google's Protocol Buffer compiler, in order
 to allow for extensibility and ease of maintainability.
+
+## WIP
+This is all current work desired to be completed in order to release v1.
+
+- [ ] cmd/gqlc
+    - [ ] type checking
+    - [ ] generator options flag
+- [ ] compiler
+    - [ ] Dart generator
+    - [ ] Documentation generator
+    - [ ] Go generator
+    - [ ] Javascript generator
+- [x] graphql
+    - [x] ast
+    - [x] lexer
+    - [x] parser
+    - [x] token
