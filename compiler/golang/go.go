@@ -1,5 +1,5 @@
-// Package _go contains a Go generator for GraphQL Documents.
-package _go
+// Package golang contains a Go generator for GraphQL Documents.
+package golang
 
 import (
 	"context"
