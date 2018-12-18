@@ -83,7 +83,7 @@ func TestLexImports(t *testing.T) {
 				{Typ: token.STRING, Line: 1, Pos: 10, Val: `"a"`},
 				{Typ: token.STRING, Line: 1, Pos: 15, Val: `"b"`},
 				{Typ: token.STRING, Line: 1, Pos: 20, Val: `"c"`},
-				{Typ: token.ERR, Line: 1, Pos: 24, Val: `invalid list seperator: -1`},
+				{Typ: token.ERR, Line: 1, Pos: 24, Val: `invalid list separator: -1`},
 			}...)
 		})
 
@@ -119,7 +119,7 @@ func TestLexImports(t *testing.T) {
 				{Typ: token.LPAREN, Line: 1, Pos: 8, Val: "("},
 				{Typ: token.STRING, Line: 2, Pos: 15, Val: `"a"`},
 				{Typ: token.STRING, Line: 3, Pos: 24, Val: `"b"`},
-				{Typ: token.ERR, Line: 3, Pos: 27, Val: `list seperator must remain the same throughout the list`},
+				{Typ: token.ERR, Line: 3, Pos: 27, Val: `list separator must remain the same throughout the list`},
 			}...)
 		})
 
@@ -136,7 +136,7 @@ func TestLexImports(t *testing.T) {
 				{Typ: token.LPAREN, Line: 1, Pos: 8, Val: "("},
 				{Typ: token.STRING, Line: 2, Pos: 15, Val: `"a"`},
 				{Typ: token.STRING, Line: 3, Pos: 25, Val: `"b"`},
-				{Typ: token.ERR, Line: 3, Pos: 28, Val: `list seperator must remain the same throughout the list`},
+				{Typ: token.ERR, Line: 3, Pos: 28, Val: `list separator must remain the same throughout the list`},
 			}...)
 		})
 
@@ -312,7 +312,7 @@ func TestLexObject(t *testing.T) {
 			expectEOF(triT, l)
 		})
 
-		subT.Run("invalidSeperator", func(triT *testing.T) {
+		subT.Run("invalidSeparator", func(triT *testing.T) {
 			fset := token.NewDocSet()
 			src := []byte(`type Rect implements One , Two & Three`)
 			l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
@@ -321,7 +321,7 @@ func TestLexObject(t *testing.T) {
 				{Typ: token.IDENT, Line: 1, Pos: 6, Val: "Rect"},
 				{Typ: token.IMPLEMENTS, Line: 1, Pos: 11, Val: "implements"},
 				{Typ: token.IDENT, Line: 1, Pos: 22, Val: "One"},
-				{Typ: token.ERR, Line: 1, Pos: 26, Val: "invalid list seperator: 44"},
+				{Typ: token.ERR, Line: 1, Pos: 26, Val: "invalid list separator: 44"},
 			}...)
 
 			fset = token.NewDocSet()
@@ -333,7 +333,7 @@ func TestLexObject(t *testing.T) {
 				{Typ: token.IMPLEMENTS, Line: 1, Pos: 11, Val: "implements"},
 				{Typ: token.IDENT, Line: 1, Pos: 22, Val: "One"},
 				{Typ: token.IDENT, Line: 1, Pos: 28, Val: "Two"},
-				{Typ: token.ERR, Line: 1, Pos: 32, Val: "invalid list seperator: 44"},
+				{Typ: token.ERR, Line: 1, Pos: 32, Val: "invalid list separator: 44"},
 			}...)
 		})
 	})

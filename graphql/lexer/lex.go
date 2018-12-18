@@ -774,6 +774,7 @@ func (l *lxr) scanValue() (ok bool) {
 		tok := l.scanIdentifier()
 		if tok == token.ERR {
 			emitter = func() { l.errorf("") }
+			break
 		}
 		emitter = func() { l.emit(tok) }
 		ok = true
@@ -781,6 +782,7 @@ func (l *lxr) scanValue() (ok bool) {
 		ok = l.scanString()
 		if !ok {
 			emitter = func() { l.errorf("") }
+			break
 		}
 		emitter = func() { l.emit(token.STRING) }
 	case isAlphaNumeric(r):
@@ -830,7 +832,7 @@ func (l *lxr) scanValue() (ok bool) {
 			ll.ignore()
 
 			if !ll.accept(":") {
-				ll.errorf("expected field name-value seperator ':' but got %s", string(ll.src[l.pos]))
+				ll.errorf("expected field name-value separator ':' but got %s", string(ll.src[l.pos]))
 				return false
 			}
 			ll.emit(token.COLON)
@@ -880,7 +882,7 @@ func (l *lxr) scanList(endDelims, sep string, rsep rune, elemScanner func(l *lxr
 		return false
 	}
 
-	// Enforce same list seperator
+	// Enforce same list separator
 loop:
 	r := l.next()
 	switch {
@@ -896,7 +898,7 @@ loop:
 		goto loop
 	case r == '#':
 		if sep == "," {
-			l.errorf("expected a comma list seperator before comment in list")
+			l.errorf("expected a comma list separator before comment in list")
 			return false
 		}
 		l.ignoreComment()
@@ -907,7 +909,7 @@ loop:
 			if r == '\n' {
 				l.backup()
 			}
-			l.errorf("list seperator must remain the same throughout the list")
+			l.errorf("list separator must remain the same throughout the list")
 			return false
 		}
 
@@ -920,7 +922,7 @@ loop:
 		}
 		fallthrough
 	default:
-		l.errorf("invalid list seperator: %v", r)
+		l.errorf("invalid list separator: %v", r)
 		return false
 	}
 

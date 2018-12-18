@@ -5,7 +5,7 @@ import (
 	"github.com/Zaba505/gqlc/compiler"
 	"github.com/Zaba505/gqlc/compiler/dart"
 	"github.com/Zaba505/gqlc/compiler/doc"
-	"github.com/Zaba505/gqlc/compiler/go"
+	"github.com/Zaba505/gqlc/compiler/golang"
 	"github.com/Zaba505/gqlc/compiler/js"
 	"os"
 )
@@ -25,7 +25,7 @@ func init() {
 		"Generate Documentation from GraphQL schema.")
 
 	// Register Go generator
-	cli.RegisterGenerator("go_out", &_go.Generator{},
+	cli.RegisterGenerator("go_out", &golang.Generator{},
 		"Generate Go source.")
 
 	// Register Javascript generator

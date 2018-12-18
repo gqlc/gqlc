@@ -186,7 +186,7 @@ type (
 		Name    string
 	}
 
-	// BasicList represents a literal of basic type.
+	// BasicLit represents a literal of basic type.
 	BasicLit struct {
 		ValuePos token.Pos   // literal position
 		Kind     token.Token // token.INT, token.FLOAT, or token.STRING
@@ -255,7 +255,7 @@ type (
 		Fields    *FieldList
 	}
 
-	// ObjectType represents a union type declaration.
+	// UnionType represents a union type declaration.
 	UnionType struct {
 		Union   token.Pos // position of "union" keyword
 		Members []*Ident
@@ -406,10 +406,12 @@ func (*ImportSpec) specNode() {}
 func (*TypeSpec) specNode()   {}
 
 type (
+	// BadDecl represents a malformed declaration.
 	BadDecl struct {
 		From, To token.Pos
 	}
 
+	// GenDecl represents a general type declaration.
 	GenDecl struct {
 		Doc    *DocGroup   // associated documentation; or nil
 		TokPos token.Pos   // position of Tok

@@ -1,5 +1,14 @@
-github.com/Zaba505/gqlc v0.0.0-20181217042551-e45140e34eb5 h1:kB+0vkWsgNDfHyLwsCzWtxz+8tCdI8RkwNrlvsoJBQ0=
-github.com/Zaba505/gqlc v0.0.0-20181217042551-e45140e34eb5/go.mod h1:tLekfHRfRCO8CV5qbXqdraCrvhH8+ftqjM0o4NnHBnE=
+github.com/Zaba505/gqlc v0.0.0-20181218045653-e0823b39ef15/go.mod h1:tLekfHRfRCO8CV5qbXqdraCrvhH8+ftqjM0o4NnHBnE=
+github.com/Zaba505/gqlc v0.0.0-20181218171234-b69d19cefdf6 h1:TsZcrzA7fzkfleiE1M15m3GTBP+1pN7j84wCevl1CyI=
+github.com/Zaba505/gqlc v0.0.0-20181218171234-b69d19cefdf6/go.mod h1:tLekfHRfRCO8CV5qbXqdraCrvhH8+ftqjM0o4NnHBnE=
+github.com/Zaba505/gqlc/compiler/dart v0.0.0-20181218171234-b69d19cefdf6 h1:M1v9+H4maZOQDfpSoOVNSlfoBqUo0YuNpwsXC8DemNg=
+github.com/Zaba505/gqlc/compiler/dart v0.0.0-20181218171234-b69d19cefdf6/go.mod h1:QJlvkewMTuLjBFT3iqc5myvqoz0lbk/YVnux6yXQXL4=
+github.com/Zaba505/gqlc/compiler/doc v0.0.0-20181218171234-b69d19cefdf6 h1:Tqc1rhFjEiXjKVhFx9JjPaaGNIhLsnk38YMvszFmj8Q=
+github.com/Zaba505/gqlc/compiler/doc v0.0.0-20181218171234-b69d19cefdf6/go.mod h1:GPo4wCsk2Z6lnHzykaKkasu9ro5KDYNhxj/SgIBy/lc=
+github.com/Zaba505/gqlc/compiler/golang v0.0.0-20181218171234-b69d19cefdf6 h1:g4yKztnqxZN9B/t99ICPAxCJMtSHJncYB7nxyrO6xIQ=
+github.com/Zaba505/gqlc/compiler/golang v0.0.0-20181218171234-b69d19cefdf6/go.mod h1:NwlZ4RAXX9wkOssNYcRx7Q4XPijSPZwwoo+JOdDuYc4=
+github.com/Zaba505/gqlc/compiler/js v0.0.0-20181218171234-b69d19cefdf6 h1:U4Nn+lIEjtraL+Qbf9RoOkTb2FYqmt2dlghcPnbQPfg=
+github.com/Zaba505/gqlc/compiler/js v0.0.0-20181218171234-b69d19cefdf6/go.mod h1:trcDI6pucez4B1D3RPtLKsgF7XI6JwMKFM2jiKjWRdw=
 github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NHg9XEKhtSvM=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/spf13/cobra v0.0.3 h1:ZlrZ4XsMRm04Fr5pSFxBgfND2EBVa1nLpiy1stUsX/8=
