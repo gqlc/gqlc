@@ -1,8 +1,4 @@
 language: go
-go:
-  - "1.10"
-  - "1.11"
-  - "tip"
 
 env:
 - GO111MODULE=on
@@ -12,9 +8,13 @@ git:
 
 jobs:
   allow_failures:
-    - go: tip
+    - go: "tip"
   include:
     - stage: gqlc core tests
+      go:
+        - "1.10"
+        - "1.11"
+        - "tip"
       script:
         - go get -v ./...
         - diff -u <(echo -n) <(gofmt -d .)
@@ -23,8 +23,16 @@ jobs:
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - stage: generator tests
-      script: for dir in compiler/*/; do cd $dir;   diff -u <(echo -n) <(gofmt -d .); go vet ./...; go test -v -race -cover ./...; cd ../..}; done
+      go:
+        - "1.10"
+        - "1.11"
+        - "tip"
+      script: for dir in compiler/*/; do cd $dir; diff -u <(echo -n) <(gofmt -d .); go vet ./...; go test -v -race -cover ./...; cd ../..; done
     - stage: cli tests
+      go:
+        - "1.10"
+        - "1.11"
+        - "tip"
       script:
         - cd cmd/gqlc
         - go get -v ./...
@@ -32,6 +40,7 @@ jobs:
         - go vet ./...
         - go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
     - stage: deploy to github releases
+      go: "1.11"
       script: false
       deploy:
         provider: releases
