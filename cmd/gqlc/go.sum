@@ -1,5 +1,5 @@
-github.com/Zaba505/gqlc v0.0.0-20181217025021-df6041917349 h1:ndiGFWDyBv7NDGdd3wbLPUNveDvg/RUBD9XGxKuCmtc=
-github.com/Zaba505/gqlc v0.0.0-20181217025021-df6041917349/go.mod h1:1nJs2QKpPRd0y0et7p03p3h1trm7mk2XI1LkWu7S31E=
+github.com/Zaba505/gqlc v0.0.0-20181217042551-e45140e34eb5 h1:kB+0vkWsgNDfHyLwsCzWtxz+8tCdI8RkwNrlvsoJBQ0=
+github.com/Zaba505/gqlc v0.0.0-20181217042551-e45140e34eb5/go.mod h1:tLekfHRfRCO8CV5qbXqdraCrvhH8+ftqjM0o4NnHBnE=
 github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NHg9XEKhtSvM=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/spf13/cobra v0.0.3 h1:ZlrZ4XsMRm04Fr5pSFxBgfND2EBVa1nLpiy1stUsX/8=

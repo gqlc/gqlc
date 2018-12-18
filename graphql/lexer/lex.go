@@ -47,6 +47,7 @@ type stateFn func(*lxr) stateFn
 // A Mode value is a set of flags (or 0). They control lexer behaviour
 type Mode uint
 
+// Mode Options
 const (
 	ScanComments Mode = 1 << iota // Return comments as COMMENT tokens
 )
@@ -388,13 +389,13 @@ func lexObject(l *lxr) stateFn {
 	return lexDoc
 }
 
-// lexFieldDefs scans a FieldsDefinition, EnumValuesDefinition, InputFieldsDefinition list
+// lexFields scans a FieldsDefinition, EnumValuesDefinition, InputFieldsDefinition list
 func lexFields(l *lxr) stateFn {
 	l.accept("{")
 	l.emit(token.LBRACE)
 
 	ok := l.scanList("}", defListSep, 0, func(ll *lxr) bool {
-		if ll.accept("\"") {
+		for ll.accept("\"") {
 			ll.backup()
 			ok := ll.scanString()
 			if !ok {
@@ -459,7 +460,12 @@ func lexFields(l *lxr) stateFn {
 
 				if lll.accept("@") {
 					lll.backup()
-					return lll.scanDirectives(",)\r\n", " \t")
+					ok := lll.scanDirectives(",)\r\n", " \t")
+					if !ok {
+						return false
+					}
+					lll.backup()
+					return true
 				}
 
 				return true

@@ -127,6 +127,7 @@ func init() {
 	}
 }
 
+// Lookup returns the appropriate token for the provided string.
 func Lookup(ident string) Token {
 	if tok, isKeyword := keywords[ident]; isKeyword {
 		return tok

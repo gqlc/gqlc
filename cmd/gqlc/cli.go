@@ -14,25 +14,25 @@ func init() {
 	geners = make(map[string]compiler.CodeGenerator)
 }
 
-// CLI is an implementation of the compiler interface, which
+// ccli is an implementation of the compiler interface, which
 // simply wraps a github.com/spf13/cobra.Command
-type CLI struct {
+type ccli struct {
 	root *cobra.Command
 }
 
-func NewCLI() *CLI {
-	return &CLI{
+func newCLI() *ccli {
+	return &ccli{
 		root: rootCmd,
 	}
 }
 
-func (c *CLI) AllowPlugins(prefix string) { pluginPrefix = prefix }
+func (c *ccli) AllowPlugins(prefix string) { pluginPrefix = prefix }
 
-func (c *CLI) RegisterGenerator(name string, g compiler.CodeGenerator, help string) {
+func (c *ccli) RegisterGenerator(name string, g compiler.CodeGenerator, help string) {
 	c.root.Flags().String(name, "", help)
 	geners[name] = g
 }
 
-func (c *CLI) Run(args []string) error {
+func (c *ccli) Run(args []string) error {
 	return c.root.Execute()
 }

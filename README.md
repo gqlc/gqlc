@@ -1,4 +1,7 @@
 [![GoDoc](https://godoc.org/github.com/Zaba505/gqlc?status.svg)](https://godoc.org/github.com/Zaba505/gqlc)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Zaba505/gqlc)](https://goreportcard.com/report/github.com/Zaba505/gqlc)
+[![Build Status](https://travis-ci.org/Zaba505/gqlc.svg?branch=master)](https://travis-ci.org/Zaba505/gqlc)
+[![codecov](https://codecov.io/gh/Zaba505/gqlc/branch/master/graph/badge.svg)](https://codecov.io/gh/Zaba505/gqlc)
 
 # GraphQL Schema Language Compiler
 
@@ -21,13 +24,13 @@ cli. In order to use the `gqlc` cli tool you must either download a pre-built
 
 The overall design of the compiler is heavily influenced by [Google's Protocol Buffer](https://github.com/protocolbuffers/protobuf) compiler.
 
-#### IDL Pacakges
+### IDL Pacakges
 
 Overall structure and "connected-ness" is heavily influenced by Go's [go](https://golang.org/pkg/go) package for working with Go source files.
 The lexer and parser are implemented following the [text/template/parse](https://golang.org/pkg/text/template/parse) package
 and Rob Pike's talk on ["Lexical Scanning in Go"](https://talks.golang.org/2011/lex.slide).
 
-#### Code Generation and CLI
+### Code Generation and CLI
 
 The code generation and CLI designs were both pulled from Google's Protocol Buffer compiler, in order
 to allow for extensibility and ease of maintainability.

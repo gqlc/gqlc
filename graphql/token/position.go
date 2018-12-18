@@ -72,7 +72,7 @@ func (pos Position) String() string {
 //
 type Pos int
 
-// The zero value for Pos is NoPos; there is no document and line information
+// NoPos is the zero value for Pos; there is no document and line information
 // associated with it, and NoPos.IsValid() is false. NoPos is always
 // smaller than any other Pos value. The corresponding Position value
 // for NoPos is the zero value for Position.
@@ -346,7 +346,7 @@ type DocSet struct {
 	last  *Doc         // cache of last document looked up
 }
 
-// NewFileSet creates a new file set.
+// NewDocSet creates a new document set.
 func NewDocSet() *DocSet {
 	return &DocSet{
 		base: 1, // 0 == NoPos

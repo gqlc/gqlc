@@ -7,25 +7,19 @@ import (
 	"strings"
 )
 
-// Node
+// Node represents a Node in the GraphQL IDL parse tree.
 type Node interface {
 	Pos() token.Pos
 	End() token.Pos
 }
 
-// Expr
+// Expr represents an expression.
 type Expr interface {
 	Node
 	exprNode()
 }
 
-// Stmt
-type Stmt interface {
-	Node
-	stmtNode()
-}
-
-// Decl
+// Decl represents a declaration.
 type Decl interface {
 	Node
 	declNode()
@@ -37,10 +31,12 @@ type Arg struct {
 	Value Expr
 }
 
+// Pos returns the starting position of the argument.
 func (a *Arg) Pos() token.Pos {
 	return a.Name.Pos()
 }
 
+// End returns the ending position of the argument.
 func (a *Arg) End() token.Pos {
 	return a.Value.End()
 }
@@ -49,14 +45,15 @@ func (a *Arg) End() token.Pos {
 // or an argument declaration in an arguments declaration.
 //
 type Field struct {
-	Doc     *DocGroup // associated documentation; or nil
-	Name    *Ident    // field/parameter names; or nil
-	Args    *CallExpr // field arguments; or nil
-	Type    Expr      // field/parameter type
-	Default Expr      // parameter default value; or nil
-	Dirs    []Expr    // directives; or nil
+	Doc     *DocGroup  // associated documentation; or nil
+	Name    *Ident     // field/parameter names; or nil
+	Args    *FieldList // field arguments; or nil
+	Type    Expr       // field/parameter type
+	Default Expr       // parameter default value; or nil
+	Dirs    []Expr     // directives; or nil
 }
 
+// Pos returns the starting position of the field.
 func (f *Field) Pos() token.Pos {
 	if f.Name != nil {
 		return f.Name.Pos()
@@ -64,6 +61,7 @@ func (f *Field) Pos() token.Pos {
 	return f.Type.Pos()
 }
 
+// End returns the ending position of the field.
 func (f *Field) End() token.Pos {
 	if f.Dirs != nil {
 		return f.Dirs[0].End()
@@ -78,6 +76,7 @@ type FieldList struct {
 	Closing token.Pos // position of closing parenthesis/brace, if any
 }
 
+// Pos returns the starting position of the field list.
 func (f *FieldList) Pos() token.Pos {
 	if f.Opening.IsValid() {
 		return f.Opening
@@ -90,6 +89,7 @@ func (f *FieldList) Pos() token.Pos {
 	return token.NoPos
 }
 
+// End returns the ending position of the field list.
 func (f *FieldList) End() token.Pos {
 	if f.Closing.IsValid() {
 		return f.Closing + 1
@@ -113,6 +113,7 @@ func (f *FieldList) NumFields() (n int) {
 // Loc represents one of the allowed directive locations.
 type Loc uint
 
+// DirectiveLocations
 const (
 	// ExecutableDirectiveLocations
 
@@ -172,44 +173,50 @@ func IsValidLoc(l string) (loc Loc, ok bool) {
 // or more of the following concrete expression nodes.
 //
 type (
-	// A BadExpr node is a placeholder for expressions containing
+	// BadExpr is a placeholder for expressions containing
 	// syntax errors for which no correct expression nodes can be
 	// created.
 	BadExpr struct {
 		From, To token.Pos
 	}
 
-	// An Ident node represents an identifier.
+	// Ident represents an identifier.
 	Ident struct {
 		NamePos token.Pos
 		Name    string
 	}
 
-	// A BasicList node represents a literal of basic type.
+	// BasicList represents a literal of basic type.
 	BasicLit struct {
 		ValuePos token.Pos   // literal position
 		Kind     token.Token // token.INT, token.FLOAT, or token.STRING
 		Value    string
 	}
 
-	// A NonNull represents an identifier with the non-null character, '!'
+	// List represents a List type.
+	List struct {
+		Type Expr
+	}
+
+	// NonNull represents an identifier with the non-null character, '!', after it.
 	NonNull struct {
 		Type Expr
 	}
 
-	// A DirectiveLit node presents an applied directive
+	// DirectiveLit presents an applied directive
 	DirectiveLit struct {
 		AtPos token.Pos // position of '@'
 		Name  string    // name following '@'
 		Args  *CallExpr // Any arguments; or nil
 	}
 
+	// DirectiveLocation represents a defined directive location in a directive declaration.
 	DirectiveLocation struct {
 		Start token.Pos
 		Loc   Loc
 	}
 
-	// A CallExpr node represents an expression followed by an argument list.
+	// CallExpr represents an expression followed by an argument list.
 	CallExpr struct {
 		Lparen token.Pos // position of '('
 		Args   []*Arg    // arguments; or nil
@@ -222,42 +229,51 @@ type (
 // nodes.
 //
 type (
+	// SchemaType represents a schema type declaration.
 	SchemaType struct {
 		Schema token.Pos // position of "schema" keyword
 		Fields *FieldList
 	}
 
+	// ScalarType represents a scalar type declaration.
 	ScalarType struct {
 		Scalar token.Pos // position of "scalar" keyword
 		Name   *Ident
 	}
 
+	// ObjectType represents an object type declaration.
 	ObjectType struct {
-		Object token.Pos // position of "type" keyword
-		Impls  []Expr    // implemented interfaces; or nil
-		Fields *FieldList
+		Object  token.Pos // position of "type" keyword
+		ImplPos token.Pos // position of "implements" keyword
+		Impls   []*Ident  // implemented interfaces; or nil
+		Fields  *FieldList
 	}
 
+	// InterfaceType represents an interface type declaration.
 	InterfaceType struct {
 		Interface token.Pos // position of "interface" keyword
 		Fields    *FieldList
 	}
 
+	// ObjectType represents a union type declaration.
 	UnionType struct {
 		Union   token.Pos // position of "union" keyword
-		Members []Expr
+		Members []*Ident
 	}
 
+	// EnumType represents an enum type declaration.
 	EnumType struct {
 		Enum   token.Pos // position of "enum" keyword
 		Fields *FieldList
 	}
 
+	// InputType represents an input type declaration.
 	InputType struct {
 		Input  token.Pos // position of "input" keyword
 		Fields *FieldList
 	}
 
+	// DirectiveType represents a directive type declaration.
 	DirectiveType struct {
 		Directive token.Pos            // position of "directive" keyword
 		Args      *FieldList           // defined args for the directive; or nil
@@ -265,6 +281,7 @@ type (
 		Locs      []*DirectiveLocation // valid locations where this directive can be applied
 	}
 
+	// Extension represents an type extension.
 	Extension struct {
 		Extend token.Pos // position of "extend" keyword
 		Type   *TypeSpec // the extended type
@@ -273,7 +290,8 @@ type (
 
 func (x *BadExpr) Pos() token.Pos           { return x.From }
 func (x *Ident) Pos() token.Pos             { return x.NamePos }
-func (x *BasicLit) Pos() token.Pos          { return 0 } // TODO
+func (x *BasicLit) Pos() token.Pos          { return x.ValuePos }
+func (x *List) Pos() token.Pos              { return x.Type.Pos() - 1 }
 func (x *NonNull) Pos() token.Pos           { return x.Type.Pos() }
 func (x *DirectiveLit) Pos() token.Pos      { return x.AtPos }
 func (x *DirectiveLocation) Pos() token.Pos { return x.Start }
@@ -289,7 +307,8 @@ func (x *Extension) Pos() token.Pos         { return x.Extend }
 
 func (x *BadExpr) End() token.Pos  { return x.To }
 func (x *Ident) End() token.Pos    { return token.Pos(int(x.NamePos) + len(x.Name)) }
-func (x *BasicLit) End() token.Pos { return 0 } // TODO
+func (x *BasicLit) End() token.Pos { return x.ValuePos + token.Pos(len(x.Value)) }
+func (x *List) End() token.Pos     { return x.Type.End() + 1 }
 func (x *NonNull) End() token.Pos  { return x.Type.End() + 1 }
 func (x *DirectiveLit) End() token.Pos {
 	if x.Args == nil {
@@ -318,6 +337,7 @@ func (x *Extension) End() token.Pos     { return x.Type.End() }
 func (*BadExpr) exprNode()           {}
 func (*Ident) exprNode()             {}
 func (*BasicLit) exprNode()          {}
+func (*List) exprNode()              {}
 func (*NonNull) exprNode()           {}
 func (*DirectiveLit) exprNode()      {}
 func (*DirectiveLocation) exprNode() {}

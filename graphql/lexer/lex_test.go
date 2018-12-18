@@ -613,8 +613,8 @@ func TestLexObject(t *testing.T) {
 	right descr
 	"""
 	RIGHT
-	"down descr"
-	DOWN
+	"down descr above"
+	"down descr before" DOWN
 }`)
 				l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 				expectItems(qt, l, []Item{
@@ -627,9 +627,10 @@ func TestLexObject(t *testing.T) {
 					{Typ: token.IDENT, Line: 3, Pos: 44, Val: "UP"},
 					{Typ: token.DESCRIPTION, Line: 6, Pos: 48, Val: "\"\"\"\n\tright descr\n\t\"\"\""},
 					{Typ: token.IDENT, Line: 7, Pos: 71, Val: "RIGHT"},
-					{Typ: token.DESCRIPTION, Line: 8, Pos: 78, Val: `"down descr"`},
-					{Typ: token.IDENT, Line: 9, Pos: 92, Val: "DOWN"},
-					{Typ: token.RBRACE, Line: 10, Pos: 97, Val: "}"},
+					{Typ: token.DESCRIPTION, Line: 8, Pos: 78, Val: `"down descr above"`},
+					{Typ: token.DESCRIPTION, Line: 9, Pos: 98, Val: `"down descr before"`},
+					{Typ: token.IDENT, Line: 9, Pos: 118, Val: "DOWN"},
+					{Typ: token.RBRACE, Line: 10, Pos: 123, Val: "}"},
 				}...)
 				expectEOF(qt, l)
 			})
@@ -783,14 +784,17 @@ func TestLexObject(t *testing.T) {
 
 		fset := token.NewDocSet()
 		src := []byte(`type Rect implements Shape & Obj @green @blue {
-	"one descr" one: One @one
+	"one descr" one(): One @one @two
+
 	"""
 	two descr
 	"""
-	two(
-		"a descr" a: A = 1 @ptle
-	): Two
-	thr: Thr = 3 @ptle @ptle
+	two("one descr" one: One = 1): Two! @one @two
+
+	"three descr"
+	thr(one: One = 1, two: Two): [Thr]! @one @two
+
+	for(one: One = 1 @one @two, two: Two = 2 @one @two, thr: Thr = 3 @one @two): [For!]! @one @two
 }`)
 		l := Lex(fset.AddDoc("", fset.Base(), len(src)), src, 0)
 		expectItems(subT, l, []Item{
@@ -806,34 +810,93 @@ func TestLexObject(t *testing.T) {
 			{Typ: token.LBRACE, Line: 1, Pos: 47, Val: "{"},
 			{Typ: token.DESCRIPTION, Line: 2, Pos: 50, Val: `"one descr"`},
 			{Typ: token.IDENT, Line: 2, Pos: 62, Val: "one"},
-			{Typ: token.COLON, Line: 2, Pos: 65, Val: ":"},
-			{Typ: token.IDENT, Line: 2, Pos: 67, Val: "One"},
-			{Typ: token.AT, Line: 2, Pos: 71, Val: "@"},
-			{Typ: token.IDENT, Line: 2, Pos: 72, Val: "one"},
-			{Typ: token.DESCRIPTION, Line: 5, Pos: 77, Val: "\"\"\"\n\ttwo descr\n\t\"\"\""},
-			{Typ: token.IDENT, Line: 6, Pos: 98, Val: "two"},
-			{Typ: token.LPAREN, Line: 6, Pos: 101, Val: "("},
-			{Typ: token.DESCRIPTION, Line: 7, Pos: 105, Val: `"a descr"`},
-			{Typ: token.IDENT, Line: 7, Pos: 115, Val: "a"},
-			{Typ: token.COLON, Line: 7, Pos: 116, Val: ":"},
-			{Typ: token.IDENT, Line: 7, Pos: 118, Val: "A"},
-			{Typ: token.ASSIGN, Line: 7, Pos: 120, Val: "="},
-			{Typ: token.INT, Line: 7, Pos: 122, Val: "1"},
-			{Typ: token.AT, Line: 7, Pos: 124, Val: "@"},
-			{Typ: token.IDENT, Line: 7, Pos: 125, Val: "ptle"},
-			{Typ: token.RPAREN, Line: 8, Pos: 131, Val: ")"},
-			{Typ: token.COLON, Line: 8, Pos: 132, Val: ":"},
-			{Typ: token.IDENT, Line: 8, Pos: 134, Val: "Two"},
-			{Typ: token.IDENT, Line: 9, Pos: 139, Val: "thr"},
-			{Typ: token.COLON, Line: 9, Pos: 142, Val: ":"},
-			{Typ: token.IDENT, Line: 9, Pos: 144, Val: "Thr"},
-			{Typ: token.ASSIGN, Line: 9, Pos: 148, Val: "="},
-			{Typ: token.INT, Line: 9, Pos: 150, Val: "3"},
-			{Typ: token.AT, Line: 9, Pos: 152, Val: "@"},
-			{Typ: token.IDENT, Line: 9, Pos: 153, Val: "ptle"},
-			{Typ: token.AT, Line: 9, Pos: 158, Val: "@"},
-			{Typ: token.IDENT, Line: 9, Pos: 159, Val: "ptle"},
-			{Typ: token.RBRACE, Line: 10, Pos: 164, Val: "}"},
+			{Typ: token.LPAREN, Line: 2, Pos: 65, Val: "("},
+			{Typ: token.RPAREN, Line: 2, Pos: 66, Val: ")"},
+			{Typ: token.COLON, Line: 2, Pos: 67, Val: ":"},
+			{Typ: token.IDENT, Line: 2, Pos: 69, Val: "One"},
+			{Typ: token.AT, Line: 2, Pos: 73, Val: "@"},
+			{Typ: token.IDENT, Line: 2, Pos: 74, Val: "one"},
+			{Typ: token.AT, Line: 2, Pos: 78, Val: "@"},
+			{Typ: token.IDENT, Line: 2, Pos: 79, Val: "two"},
+			{Typ: token.DESCRIPTION, Line: 6, Pos: 85, Val: "\"\"\"\n\ttwo descr\n\t\"\"\""},
+			{Typ: token.IDENT, Line: 7, Pos: 106, Val: "two"},
+			{Typ: token.LPAREN, Line: 7, Pos: 109, Val: "("},
+			{Typ: token.DESCRIPTION, Line: 7, Pos: 110, Val: `"one descr"`},
+			{Typ: token.IDENT, Line: 7, Pos: 122, Val: "one"},
+			{Typ: token.COLON, Line: 7, Pos: 125, Val: ":"},
+			{Typ: token.IDENT, Line: 7, Pos: 127, Val: "One"},
+			{Typ: token.ASSIGN, Line: 7, Pos: 131, Val: "="},
+			{Typ: token.INT, Line: 7, Pos: 133, Val: "1"},
+			{Typ: token.RPAREN, Line: 7, Pos: 134, Val: ")"},
+			{Typ: token.COLON, Line: 7, Pos: 135, Val: ":"},
+			{Typ: token.IDENT, Line: 7, Pos: 137, Val: "Two"},
+			{Typ: token.NOT, Line: 7, Pos: 140, Val: "!"},
+			{Typ: token.AT, Line: 7, Pos: 142, Val: "@"},
+			{Typ: token.IDENT, Line: 7, Pos: 143, Val: "one"},
+			{Typ: token.AT, Line: 7, Pos: 147, Val: "@"},
+			{Typ: token.IDENT, Line: 7, Pos: 148, Val: "two"},
+			{Typ: token.DESCRIPTION, Line: 9, Pos: 154, Val: "\"three descr\""},
+			{Typ: token.IDENT, Line: 10, Pos: 169, Val: "thr"},
+			{Typ: token.LPAREN, Line: 10, Pos: 172, Val: "("},
+			{Typ: token.IDENT, Line: 10, Pos: 173, Val: "one"},
+			{Typ: token.COLON, Line: 10, Pos: 176, Val: ":"},
+			{Typ: token.IDENT, Line: 10, Pos: 178, Val: "One"},
+			{Typ: token.ASSIGN, Line: 10, Pos: 182, Val: "="},
+			{Typ: token.INT, Line: 10, Pos: 184, Val: "1"},
+			{Typ: token.IDENT, Line: 10, Pos: 187, Val: "two"},
+			{Typ: token.COLON, Line: 10, Pos: 190, Val: ":"},
+			{Typ: token.IDENT, Line: 10, Pos: 192, Val: "Two"},
+			{Typ: token.RPAREN, Line: 10, Pos: 195, Val: ")"},
+			{Typ: token.COLON, Line: 10, Pos: 196, Val: ":"},
+			{Typ: token.LBRACK, Line: 10, Pos: 198, Val: "["},
+			{Typ: token.IDENT, Line: 10, Pos: 199, Val: "Thr"},
+			{Typ: token.RBRACK, Line: 10, Pos: 202, Val: "]"},
+			{Typ: token.NOT, Line: 10, Pos: 203, Val: "!"},
+			{Typ: token.AT, Line: 10, Pos: 205, Val: "@"},
+			{Typ: token.IDENT, Line: 10, Pos: 206, Val: "one"},
+			{Typ: token.AT, Line: 10, Pos: 210, Val: "@"},
+			{Typ: token.IDENT, Line: 10, Pos: 211, Val: "two"},
+			{Typ: token.IDENT, Line: 12, Pos: 217, Val: "for"},
+			{Typ: token.LPAREN, Line: 12, Pos: 220, Val: "("},
+			{Typ: token.IDENT, Line: 12, Pos: 221, Val: "one"},
+			{Typ: token.COLON, Line: 12, Pos: 224, Val: ":"},
+			{Typ: token.IDENT, Line: 12, Pos: 226, Val: "One"},
+			{Typ: token.ASSIGN, Line: 12, Pos: 230, Val: "="},
+			{Typ: token.INT, Line: 12, Pos: 232, Val: "1"},
+			{Typ: token.AT, Line: 12, Pos: 234, Val: "@"},
+			{Typ: token.IDENT, Line: 12, Pos: 235, Val: "one"},
+			{Typ: token.AT, Line: 12, Pos: 239, Val: "@"},
+			{Typ: token.IDENT, Line: 12, Pos: 240, Val: "two"},
+			{Typ: token.IDENT, Line: 12, Pos: 245, Val: "two"},
+			{Typ: token.COLON, Line: 12, Pos: 248, Val: ":"},
+			{Typ: token.IDENT, Line: 12, Pos: 250, Val: "Two"},
+			{Typ: token.ASSIGN, Line: 12, Pos: 254, Val: "="},
+			{Typ: token.INT, Line: 12, Pos: 256, Val: "2"},
+			{Typ: token.AT, Line: 12, Pos: 258, Val: "@"},
+			{Typ: token.IDENT, Line: 12, Pos: 259, Val: "one"},
+			{Typ: token.AT, Line: 12, Pos: 263, Val: "@"},
+			{Typ: token.IDENT, Line: 12, Pos: 264, Val: "two"},
+			{Typ: token.IDENT, Line: 12, Pos: 269, Val: "thr"},
+			{Typ: token.COLON, Line: 12, Pos: 272, Val: ":"},
+			{Typ: token.IDENT, Line: 12, Pos: 274, Val: "Thr"},
+			{Typ: token.ASSIGN, Line: 12, Pos: 278, Val: "="},
+			{Typ: token.INT, Line: 12, Pos: 280, Val: "3"},
+			{Typ: token.AT, Line: 12, Pos: 282, Val: "@"},
+			{Typ: token.IDENT, Line: 12, Pos: 283, Val: "one"},
+			{Typ: token.AT, Line: 12, Pos: 287, Val: "@"},
+			{Typ: token.IDENT, Line: 12, Pos: 288, Val: "two"},
+			{Typ: token.RPAREN, Line: 12, Pos: 291, Val: ")"},
+			{Typ: token.COLON, Line: 12, Pos: 292, Val: ":"},
+			{Typ: token.LBRACK, Line: 12, Pos: 294, Val: "["},
+			{Typ: token.IDENT, Line: 12, Pos: 295, Val: "For"},
+			{Typ: token.NOT, Line: 12, Pos: 298, Val: "!"},
+			{Typ: token.RBRACK, Line: 12, Pos: 299, Val: "]"},
+			{Typ: token.NOT, Line: 12, Pos: 300, Val: "!"},
+			{Typ: token.AT, Line: 12, Pos: 302, Val: "@"},
+			{Typ: token.IDENT, Line: 12, Pos: 303, Val: "one"},
+			{Typ: token.AT, Line: 12, Pos: 307, Val: "@"},
+			{Typ: token.IDENT, Line: 12, Pos: 308, Val: "two"},
+			{Typ: token.RBRACE, Line: 13, Pos: 312, Val: "}"},
 		}...)
 		expectEOF(subT, l)
 	})

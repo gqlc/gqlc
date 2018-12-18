@@ -1,4 +1,4 @@
-// Package go contains a Go generator for GraphQL Documents.
+// Package _go contains a Go generator for GraphQL Documents.
 package _go
 
 import (
@@ -9,7 +9,7 @@ import (
 // Generator generates Go code for a GraphQL schema.
 type Generator struct{}
 
-// GenerateAll generates Go code for all schemas found within the given document.
+// Generate generates Go code for all schemas found within the given document.
 func (gen *Generator) Generate(ctx context.Context, doc *ast.Document, opts string) error {
 	return nil
 }

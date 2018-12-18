@@ -13,8 +13,12 @@ import (
 var cli compiler.CommandLine
 
 func init() {
-	cli = NewCLI()
+	cli = newCLI()
 	cli.AllowPlugins("gqlc-gen-")
+
+	// Register Dart generator
+	cli.RegisterGenerator("dart_out", &dart.Generator{},
+		"Generate Dart source.")
 
 	// Register Documentation generator
 	cli.RegisterGenerator("doc_out", &doc.Generator{},
@@ -27,10 +31,6 @@ func init() {
 	// Register Javascript generator
 	cli.RegisterGenerator("js_out", &js.Generator{},
 		"Generate Javascript source.")
-
-	// Register Dart generator
-	cli.RegisterGenerator("dart_out", &dart.Generator{},
-		"Generate Dart source.")
 }
 
 func main() {

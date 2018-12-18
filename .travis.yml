@@ -1,0 +1,42 @@
+language: go
+
+env:
+- GO111MODULE=on
+
+git:
+  depth: 1
+
+matrix:
+  include:
+  - go: '1.10'
+  - go: '1.11'
+  - go: tip
+  allow_failures:
+  - go: tip
+  fast_finish: true
+
+notifications:
+  email: false
+
+script:
+- go get -t -v ./...
+- diff -u <(echo -n) <(gofmt -d .)
+- go vet ./...
+- go test -v -race -coverprofile=cover.txt -covermode=atomic ./...
+- cd cmd/gqlc
+- diff -u <(echo -n) <(gofmt -d .)
+- go vet ./...
+# TODO: Build cmd/gqlc and deploy it to Github Releases
+
+after_success:
+- bash <(curl -s https://codecov.io/bash)
+
+deploy:
+  provider: releases
+  api_key:
+    secure: MsvF+1FjsAX8PwFGyeXPuEBDFAd5aQspc86rHoxMtsNm9gCuHAwReGPEDCrnZPcp90fWs1DwILunKKUA11ochzJnJ1LFxkkc88bu1KB3hx4xvMMsrNlJaVY8KxgibjWvD8XbOt4YL712m8o/QGHvKgBOwPrQi0RCNMRdtpv7MoXMhLSvq/68dVwMf4jP0aOO5WIFXFnemFSJjBE/chnl2MbkvqnN0ezlGR5Wdk6tJJ1j+wHL6OuLlGSIRjdpSxUcrdenaIFsBN3qwC8PvxqOQv+cWq41u07lwbshqVxpHo4kl06E5udMVwOngF0cDsIP51nVTvlKd683RATOwFyhg3tbFiP0H+MVUTortQq10Kbw5lUeiPNMf7V7suY9btI9qUKNupGF9jSJs3srpx+DPgfM2lQExfUlkV7JiG+sMs9qLPOZwaI25drIIoGWBWOzYn0SAuU+jJHHpD0gUkFv07b3LlMC2MgJXqHXbXJDL5EzNZOHrYYES6ixSPEzXG2/WYT/UWJmXCrN/UazlTI0RSlgZr0p9dFvSuA0BCReAOHWMLI2WFOBgtD5O45c59XLMqryKr5pQ+lw0DzUnlcGOcE7TNopy3wCPgwNxVIc33wppabL1k22i6TaKYlqDmNQkmH7hllEMULLyLdvoT/hK8LUsuRYcQULdmgAXNvrd6A=
+  file: ''
+  skip_cleanup: true
+  on:
+    repo: Zaba505/gqlc
+    tags: true
