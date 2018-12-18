@@ -10,19 +10,19 @@ env:
 git:
   depth: 1
 
+script:
+  - go get -v ./...
+  - diff -u <(echo -n) <(gofmt -d .)
+  - go vet ./...
+  - go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+
 jobs:
   allow_failures:
     - go: "tip"
   include:
-    - stage: gqlc core tests
-      script:
-        - go get -v ./...
-        - diff -u <(echo -n) <(gofmt -d .)
-        - go vet ./...
-        - go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
-
     - stage: generator tests
       script: for dir in compiler/*/; do cd $dir; diff -u <(echo -n) <(gofmt -d .); go vet ./...; go test -v -race -cover ./...; cd ../..; done
 
