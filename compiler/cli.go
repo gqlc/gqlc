@@ -4,7 +4,18 @@ package compiler
 // CLIs for compiling GraphQL Schema Language
 type CommandLine interface {
 	// RegisterGenerator register a language generator with CLI
-	RegisterGenerator(flagName string, gen CodeGenerator, helpText string)
+	// flagDetails can be either two, three, or more than three strings.
+	//		Case two:
+	//			first - flag name
+	//			second - flag help text
+	//		Case three:
+	//			first - flag name
+	//			second - flag option name
+	//			third - flag help text
+	//		Case more than three:
+	//			Same as Case three but ignores extras
+	//
+	RegisterGenerator(gen CodeGenerator, flagDetails ...string)
 
 	// AllowPlugins enables "plugins". If a command-line flag ends with "_out"
 	// but does not match any register code generator, the compiler will

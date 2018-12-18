@@ -39,7 +39,7 @@ The currently supported languages by gqlc for generation are:
 * [Go](https://golang.org)
 * [Javascript](https://javascript.com)
 
-There will most likely be more to come and feel free to submit an issue to
+There will most likely be more to come. Feel free to submit an issue to
 discuss supporting your language of choice.
 
 ## Design
@@ -63,6 +63,7 @@ This is all current work desired to be completed in order to release v1.
 - [ ] cmd/gqlc
     - [ ] type checking
     - [ ] generator options flag
+    - [ ] support plugins
 - [ ] compiler
     - [ ] Dart generator
     - [ ] Documentation generator
