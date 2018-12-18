@@ -1,4 +1,8 @@
 language: go
+go:
+  - "1.10"
+  - "1.11"
+  - "tip"
 
 env:
 - GO111MODULE=on
@@ -7,6 +11,8 @@ git:
   depth: 1
 
 jobs:
+  allow_failures:
+    - go: tip
   include:
     - stage: gqlc core tests
       script:
@@ -17,7 +23,7 @@ jobs:
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - stage: generator tests
-      script: for dir in compiler/*/; do   dir=${dir%*/}; cd ${dir##*/};   diff -u <(echo -n) <(gofmt -d .); go vet ./...; go test -v -race -cover ./...}; done
+      script: for dir in compiler/*/; do cd $dir;   diff -u <(echo -n) <(gofmt -d .); go vet ./...; go test -v -race -cover ./...; cd ../..}; done
     - stage: cli tests
       script:
         - cd cmd/gqlc
