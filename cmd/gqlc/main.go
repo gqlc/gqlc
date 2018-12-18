@@ -17,20 +17,29 @@ func init() {
 	cli.AllowPlugins("gqlc-gen-")
 
 	// Register Dart generator
-	cli.RegisterGenerator("dart_out", &dart.Generator{},
-		"Generate Dart source.")
+	cli.RegisterGenerator(&dart.Generator{},
+		"dart_out",
+		"Generate Dart source.",
+	)
 
 	// Register Documentation generator
-	cli.RegisterGenerator("doc_out", &doc.Generator{},
-		"Generate Documentation from GraphQL schema.")
+	cli.RegisterGenerator(&doc.Generator{},
+		"doc_out",
+		"doc_opt",
+		"Generate Documentation from GraphQL schema.",
+	)
 
 	// Register Go generator
-	cli.RegisterGenerator("go_out", &golang.Generator{},
-		"Generate Go source.")
+	cli.RegisterGenerator(&golang.Generator{},
+		"go_out",
+		"Generate Go source.",
+	)
 
 	// Register Javascript generator
-	cli.RegisterGenerator("js_out", &js.Generator{},
-		"Generate Javascript source.")
+	cli.RegisterGenerator(&js.Generator{},
+		"js_out",
+		"Generate Javascript source.",
+	)
 }
 
 func main() {

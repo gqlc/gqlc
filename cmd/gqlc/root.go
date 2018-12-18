@@ -86,18 +86,23 @@ func runRoot(cmd *cobra.Command, args []string) (err error) {
 	// Accumulate selected code generators
 	var mode parser.Mode
 	var gs []compiler.CodeGenerator
+	flagOpts := make(map[compiler.CodeGenerator]string)
 	cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed {
 			return
 		}
 
-		gen, exists := geners[f.Name]
-		if exists {
-			gs = append(gs, gen)
-			if f.Name == "doc_out" {
-				mode = parser.ParseComments
-			}
+		g, isOpt := opts[f.Name]
+		if isOpt {
+			flagOpts[g] = f.Value.String()
+			return
 		}
+
+		gen, exists := geners[f.Name]
+		if !exists {
+			return
+		}
+		gs = append(gs, gen)
 	})
 
 	// Parse files
@@ -134,7 +139,9 @@ func runRoot(cmd *cobra.Command, args []string) (err error) {
 	defer cancel()
 	for _, g := range gs {
 		for _, doc := range docs {
-			err = g.Generate(ctx, doc, "")
+			opt, _ := flagOpts[g]
+
+			err = g.Generate(ctx, doc, opt)
 			if err != nil {
 				return
 			}
