@@ -62,7 +62,7 @@ This is all current work desired to be completed in order to release v1.
 
 - [ ] cmd/gqlc
     - [ ] type checking
-    - [ ] generator options flag
+    - [x] generator options flag
     - [ ] support plugins
 - [ ] compiler
     - [ ] Dart generator
