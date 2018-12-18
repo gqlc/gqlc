@@ -11,6 +11,7 @@ Current spec implementation: Current Working Draft i.e. >June2018
 # Table of Contents
 
 - [Usage](#usage)
+    * [Support Languages](*supported-languages)
 - [Design](#design)
     * [IDL packages](#idl-pacakges)
     * [Code generation](#code-generation-and-cli)
@@ -21,12 +22,6 @@ To use `gqlc`, there are two options: the `gqlc` cli tool or writing your own
 cli. In order to use the `gqlc` cli tool you must either download a pre-built
 [binary]() or if you are familiar using the Go toolchain: `go get github.com/Zaba505/gqlc/cmd/gqlc`
 
-Languages currently supported by `gqlc` cli:
-* [Dart](https://dartlang.org)
-* [Documentation](https://commonmark.org)
-* [Go](https://golang.org)
-* [Javascript](https://javascript.com)
-
 Example:
 ```text
 gqlc -I . --dart_out ./dartapi
@@ -35,6 +30,17 @@ gqlc -I . --dart_out ./dartapi
         \ --js_out ./jsapi
         \ api.gql
 ```
+
+### Supported Languages
+The currently supported languages by gqlc for generation are:
+
+* [Dart](https://dartlang.org)
+* [Documentation](https://commonmark.org)
+* [Go](https://golang.org)
+* [Javascript](https://javascript.com)
+
+There will most likely be more to come and feel free to submit an issue to
+discuss supporting your language of choice.
 
 ## Design
 
