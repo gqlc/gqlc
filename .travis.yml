@@ -4,12 +4,8 @@ go:
   - "1.11"
   - tip
 
-matrix:
-  allow_failures:
-    - go: tip
-
 env:
-- GO111MODULE=on
+  - GO111MODULE=on
 
 git:
   depth: 1
@@ -39,8 +35,8 @@ jobs:
         - go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 
     - stage: deploy to github releases
+      script: skip
       after_success: skip
-      script: false
       deploy:
         provider: releases
         api_key:

@@ -50,7 +50,7 @@ type Field struct {
 	Args    *FieldList // field arguments; or nil
 	Type    Expr       // field/parameter type
 	Default Expr       // parameter default value; or nil
-	Dirs    []Expr     // directives; or nil
+	Dirs    []*DirectiveLit     // directives; or nil
 }
 
 // Pos returns the starting position of the field.
@@ -370,7 +370,7 @@ type (
 	TypeSpec struct {
 		Doc  *DocGroup // associated documentation; or nil
 		Name *Ident    // type name; or nil
-		Dirs []Expr    // applied directives; or nil
+		Dirs []*DirectiveLit    // applied directives; or nil
 		Type Expr      // *Ident, or any of the *XxxTypes
 	}
 )

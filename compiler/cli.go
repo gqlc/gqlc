@@ -1,9 +1,9 @@
 package compiler
 
 // CommandLine provides a clean and concise way to implement
-// CLIs for compiling GraphQL Schema Language
+// CLIs for compiling the GraphQL IDL.
 type CommandLine interface {
-	// RegisterGenerator register a language generator with CLI
+	// RegisterGenerator registers a language generator with the CLI
 	// flagDetails can be either two, three, or more than three strings.
 	//		Case two:
 	//			first - flag name

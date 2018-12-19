@@ -1,2 +1,2 @@
-// Package compiler contains types and implementations for translating the GraphQL IDL.
+// Package compiler contains types for compiling the GraphQL IDL.
 package compiler

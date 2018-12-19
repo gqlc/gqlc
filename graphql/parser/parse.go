@@ -394,7 +394,7 @@ func (p *parser) parseSchema(item lexer.Item, dg *ast.DocGroup, doc *ast.Documen
 }
 
 // parseDirectives parses a list of applied directives
-func (p *parser) parseDirectives(dg *ast.DocGroup) (dirs []ast.Expr, item lexer.Item) {
+func (p *parser) parseDirectives(dg *ast.DocGroup) (dirs []*ast.DirectiveLit, item lexer.Item) {
 	item = p.next()
 	for {
 		if item.Typ != token.AT {
