@@ -45,12 +45,12 @@ func (a *Arg) End() token.Pos {
 // or an argument declaration in an arguments declaration.
 //
 type Field struct {
-	Doc     *DocGroup  // associated documentation; or nil
-	Name    *Ident     // field/parameter names; or nil
-	Args    *FieldList // field arguments; or nil
-	Type    Expr       // field/parameter type
-	Default Expr       // parameter default value; or nil
-	Dirs    []*DirectiveLit     // directives; or nil
+	Doc     *DocGroup       // associated documentation; or nil
+	Name    *Ident          // field/parameter names; or nil
+	Args    *FieldList      // field arguments; or nil
+	Type    Expr            // field/parameter type
+	Default Expr            // parameter default value; or nil
+	Dirs    []*DirectiveLit // directives; or nil
 }
 
 // Pos returns the starting position of the field.
@@ -368,10 +368,10 @@ type (
 
 	// A TypeSpec node represents a GraphQL type declaration.
 	TypeSpec struct {
-		Doc  *DocGroup // associated documentation; or nil
-		Name *Ident    // type name; or nil
-		Dirs []*DirectiveLit    // applied directives; or nil
-		Type Expr      // *Ident, or any of the *XxxTypes
+		Doc  *DocGroup       // associated documentation; or nil
+		Name *Ident          // type name; or nil
+		Dirs []*DirectiveLit // applied directives; or nil
+		Type Expr            // *Ident, or any of the *XxxTypes
 	}
 )
 
