@@ -50,7 +50,7 @@ func TestParseDoc(t *testing.T) {
 				one(): One @one @two
 				two(one: One): Two! @one @two
 				thr(one: One = 1, two: Two): [Thr]! @one @two
-				for(one: One = 1 @one @two, two: Two = 2 @one @two, thr: Thr = 3 @one @two): [For!]! @one @two
+				for(one: One = 1 @one @two, two: Two = 2 @one @two, thr: Thr = 3 @one @two): [For!]! @one @two	
 			}`,
 		},
 		{

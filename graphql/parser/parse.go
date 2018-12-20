@@ -549,6 +549,7 @@ func (p *parser) parseType(item lexer.Item) (e ast.Expr) {
 
 		item = p.next()
 		if item.Typ != token.NOT {
+			p.pk = item
 			return
 		}
 

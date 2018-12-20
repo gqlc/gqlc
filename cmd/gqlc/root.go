@@ -45,7 +45,7 @@ var rootCmd = &cobra.Command{
 Generators are specified by using a *_out flag. The argument given to this
 type of flag can be either:
 	1) *_out=some/directory/to/output/file(s)/to
-	2) *_out=comma=seperated,key=val,generator=option,pairs=then:some/directory/to/output/file(s)/to
+	2) *_out=comma=separated,key=val,generator=option,pairs=then:some/directory/to/output/file(s)/to
 
 An additional flag, *_opt, can be used to pass options to a generator. The
 argument given to this type of flag is the same format as the *_opt
