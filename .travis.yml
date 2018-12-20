@@ -22,11 +22,10 @@ after_success:
 jobs:
   include:
     - stage: generator tests
+      script: for dir in compiler/*/; do cd $dir; diff -u <(echo -n) <(gofmt -d .); go vet ./...; go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...; bash <(curl -s https://codecov.io/bash); cd ../..; done
       after_success: skip
-      script: for dir in compiler/*/; do cd $dir; diff -u <(echo -n) <(gofmt -d .); go vet ./...; go test -v -race -cover ./...; cd ../..; done
 
     - stage: cli tests
-      after_success: skip
       script:
         - cd cmd/gqlc
         - go get -v ./...
@@ -35,8 +34,8 @@ jobs:
         - go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 
     - stage: deploy to github releases
-      script: skip
-      after_success: skip
+      script: false
+      after_success: false
       deploy:
         provider: releases
         api_key:
