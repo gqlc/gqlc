@@ -1,7 +1,25 @@
 package compiler
 
+import "github.com/Zaba505/gqlc/graphql/ast"
+
+// PluginRequest represents the JSON request which is written
+// to the plugins' STDIN.
+//
+type PluginRequest struct {
+	// Docs represents the provided GraphQL Documents.
+	Docs []*ast.Document `json:"docs"`
+
+	// Options is a JSON encoded string which contains
+	// the options provided to the CommandLine.
+	Options string	`json:"options"`
+
+	// OutputDir is the output directory given to the CommandLine.
+	OutputDir string	`json:"outputDir"`
+}
+
 // CommandLine provides a clean and concise way to implement
 // CLIs for compiling the GraphQL IDL.
+//
 type CommandLine interface {
 	// RegisterGenerator registers a language generator with the CLI
 	// flagDetails can be either two, three, or more than three strings.
@@ -46,6 +64,7 @@ type CommandLine interface {
 	// names or relative to the current directory.  If any errors occur, error
 	// messages should be written to stderr.  If an error is fatal, the plugin
 	// should exit with a non-zero exit code.
+	//
 	AllowPlugins(exeNamePrefix string)
 
 	// Run the compiler with the given command-line parameters.

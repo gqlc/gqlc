@@ -6,8 +6,7 @@ import (
 )
 
 // CodeGenerator provides a simple API for creating a code generator for
-// any language desired. It also represents a `gqlc` plugin, where the input
-// is the ast.Document(s) encoded as JSON sent to the plugin STDIN.
+// any language desired.
 //
 type CodeGenerator interface {
 	// Generate should handle multiple schemas in a single file.
