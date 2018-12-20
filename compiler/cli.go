@@ -11,10 +11,10 @@ type PluginRequest struct {
 
 	// Options is a JSON encoded string which contains
 	// the options provided to the CommandLine.
-	Options string	`json:"options"`
+	Options string `json:"options"`
 
 	// OutputDir is the output directory given to the CommandLine.
-	OutputDir string	`json:"outputDir"`
+	OutputDir string `json:"outputDir"`
 }
 
 // CommandLine provides a clean and concise way to implement
