@@ -40,8 +40,18 @@ var tmplFs = map[string]interface{}{
 var rootCmd = &cobra.Command{
 	Use:   "gqlc",
 	Short: "A GraphQL IDL compiler",
-	Long:  ``,
-	Args:  cobra.MinimumNArgs(1), // Make sure at least one file is provided.
+	Long: `gqlc is a multi-language GraphQL implementation generator.
+
+Generators are specified by using a *_out flag. The argument given to this
+type of flag can be either:
+	1) *_out=some/directory/to/output/file(s)/to
+	2) *_out=comma=seperated,key=val,generator=option,pairs=then:some/directory/to/output/file(s)/to
+
+An additional flag, *_opt, can be used to pass options to a generator. The
+argument given to this type of flag is the same format as the *_opt
+key=value pairs above.`,
+	Example: "gqlc -I . --dart_out ./dartservice --doc_out ./docs --go_out ./goservice --js_out ./jsservice api.gql",
+	Args:    cobra.MinimumNArgs(1), // Make sure at least one file is provided.
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Name() == "help" {
 			return nil
@@ -78,7 +88,10 @@ Generator Flags:
 {{$flags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{$flags = ex .LocalFlags "_out"}}{{if gt (len $flags.FlagUsages) 0}}
 
 General Flags:
-{{$flags.FlagUsages | trimTrailingWhitespaces}}{{end}}
+{{$flags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasExample}}
+
+Example:
+	{{.Example}}{{end}}
 `)
 }
 
