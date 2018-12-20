@@ -856,7 +856,11 @@ const defListSep = ",\n"
 // scanList does not handle descriptions but it does handle comments
 func (l *lxr) scanList(endDelims, sep string, rsep rune, elemScanner func(l *lxr) bool) bool {
 	// start delim has already been lexed
-	l.ignoreSpace()
+	if strings.Contains(sep, " \t") {
+		l.acceptRun(" \t")
+	} else {
+		l.ignoreSpace()
+	}
 	if r := l.next(); strings.ContainsRune(endDelims, r) {
 		// return early if there was nothing in the list
 		return true

@@ -2,6 +2,7 @@ package parser
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/Zaba505/gqlc/graphql/token"
 	"os"
@@ -50,7 +51,7 @@ func TestParseDoc(t *testing.T) {
 				one(): One @one @two
 				two(one: One): Two! @one @two
 				thr(one: One = 1, two: Two): [Thr]! @one @two
-				for(one: One = 1 @one @two, two: Two = 2 @one @two, thr: Thr = 3 @one @two): [For!]! @one @two	
+				for(one: One = 1 @one @two, two: Two = 2 @one @two, thr: Thr = 3 @one @two): [For!]! @one @two 
 			}`,
 		},
 		{
@@ -119,6 +120,8 @@ func TestParseDoc(t *testing.T) {
 	}
 }
 
+var printDir = flag.Bool("printDir", false, "print the ast from ParseDir test")
+
 func TestParseDir(t *testing.T) {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -138,8 +141,11 @@ func TestParseDir(t *testing.T) {
 
 	doc, ok := docs["test.gql"]
 	if !ok {
-		fmt.Println(docs)
 		t.Fail()
+	}
+
+	if !*printDir {
+		return
 	}
 
 	enc := json.NewEncoder(os.Stdout)
