@@ -1,7 +1,7 @@
-[![GoDoc](https://godoc.org/github.com/Zaba505/gqlc?status.svg)](https://godoc.org/github.com/Zaba505/gqlc)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Zaba505/gqlc)](https://goreportcard.com/report/github.com/Zaba505/gqlc)
-[![Build Status](https://travis-ci.org/Zaba505/gqlc.svg?branch=master)](https://travis-ci.org/Zaba505/gqlc)
-[![codecov](https://codecov.io/gh/Zaba505/gqlc/branch/master/graph/badge.svg)](https://codecov.io/gh/Zaba505/gqlc)
+[![GoDoc](https://godoc.org/github.com/gqlc/gqlc?status.svg)](https://godoc.org/github.com/gqlc/gqlc)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gqlc/gqlc)](https://goreportcard.com/report/github.com/gqlc/gqlc)
+[![Build Status](https://travis-ci.org/gqlc/gqlc.svg?branch=master)](https://travis-ci.org/gqlc/gqlc)
+[![codecov](https://codecov.io/gh/gqlc/gqlc/branch/master/graph/badge.svg)](https://codecov.io/gh/gqlc/gqlc)
 
 # GraphQL IDL Compiler
 
