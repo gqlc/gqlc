@@ -1,6 +1,6 @@
 package util
 
-import "github.com/Zaba505/gqlc/graphql/ast"
+import "github.com/gqlc/graphql/ast"
 
 // TypeError represents a type error.
 type TypeError struct {

@@ -1,0 +1,16 @@
+github.com/gqlc/compiler v0.0.0-20181224045014-2de37843c1da h1:o18NWQJeaAc+7QdN/LL/hgJricap26LD50GnZA1l1qo=
+github.com/gqlc/compiler v0.0.0-20181224045014-2de37843c1da/go.mod h1:eawViZnkxQaZk7tT8LkE0i1NyH0BhlH1+Jcy8Tx1Gc0=
+github.com/gqlc/compiler/dart v0.0.0-20181224045014-2de37843c1da h1:rqHXt5b/h5xIdl5tdnMmip9tvNjm423zim+NyvvTPUI=
+github.com/gqlc/compiler/dart v0.0.0-20181224045014-2de37843c1da/go.mod h1:PszSzRjCu2yawTJbBHZuli7cpgc2WrPxGhmCWrhmAqA=
+github.com/gqlc/compiler/doc v0.0.0-20181224045014-2de37843c1da h1:cabEKC1QZfYASz07/uWybBu+nyna0QF0s5Ym+U6vmQQ=
+github.com/gqlc/compiler/doc v0.0.0-20181224045014-2de37843c1da/go.mod h1:REon1gYyKw5RzNy7qHktiUnmYQo4SLdwVKoS9K3rdSw=
+github.com/gqlc/compiler/golang v0.0.0-20181224045014-2de37843c1da h1:KWvyx+PjYuoPQ6BaLztImqBiiCTjL713rMmckFD7zaQ=
+github.com/gqlc/compiler/golang v0.0.0-20181224045014-2de37843c1da/go.mod h1:lpT4lCC0UQF90LkDl/OuDcaDZEZNZx+BjVg1eRN34kk=
+github.com/gqlc/compiler/js v0.0.0-20181224045014-2de37843c1da h1:wTtG19m6ph3HlbcZgkXB1NEpUH7Z9IiwcbK6xXovmJc=
+github.com/gqlc/compiler/js v0.0.0-20181224045014-2de37843c1da/go.mod h1:aGpJHfuN1rGZsCAB1saxufvrYLgpGmlTo8SGitpUmPs=
+github.com/gqlc/graphql v0.0.0-20181224042329-5990952e1bf6 h1:o8M983H/gkUMb/GtKIGn3BVPKLURRz9OKlboE6CJGcA=
+github.com/gqlc/graphql v0.0.0-20181224042329-5990952e1bf6/go.mod h1:2hk1vC8Py/nF1Ftobzm8nFfbLj0DtJ0FYoRuWqtCmK4=
+github.com/spf13/cobra v0.0.3 h1:ZlrZ4XsMRm04Fr5pSFxBgfND2EBVa1nLpiy1stUsX/8=
+github.com/spf13/cobra v0.0.3/go.mod h1:1l0Ry5zgKvJasoi3XT1TypsSe7PqH0Sj9dhYf7v3XqQ=
+github.com/spf13/pflag v1.0.3 h1:zPAT6CGy6wXeQ7NtTnaTerfKOsV6V6F8agHXFiazDkg=
+github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=

@@ -19,30 +19,11 @@ script:
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 
-jobs:
-  include:
-    - stage: generator tests
-      script: for dir in compiler/*/; do cd $dir; diff -u <(echo -n) <(gofmt -d .); go vet ./...; go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...; bash <(curl -s https://codecov.io/bash); cd ../..; done
-      after_success: skip
-
-    - stage: cli tests
-      script:
-        - cd cmd/gqlc
-        - go get -v ./...
-        - diff -u <(echo -n) <(gofmt -d .)
-        - go vet ./...
-        - go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
-
-    - stage: deploy to github releases
-      script: false
-      after_success: false
-      deploy:
-        provider: releases
-        api_key:
-          secure: MsvF+1FjsAX8PwFGyeXPuEBDFAd5aQspc86rHoxMtsNm9gCuHAwReGPEDCrnZPcp90fWs1DwILunKKUA11ochzJnJ1LFxkkc88bu1KB3hx4xvMMsrNlJaVY8KxgibjWvD8XbOt4YL712m8o/QGHvKgBOwPrQi0RCNMRdtpv7MoXMhLSvq/68dVwMf4jP0aOO5WIFXFnemFSJjBE/chnl2MbkvqnN0ezlGR5Wdk6tJJ1j+wHL6OuLlGSIRjdpSxUcrdenaIFsBN3qwC8PvxqOQv+cWq41u07lwbshqVxpHo4kl06E5udMVwOngF0cDsIP51nVTvlKd683RATOwFyhg3tbFiP0H+MVUTortQq10Kbw5lUeiPNMf7V7suY9btI9qUKNupGF9jSJs3srpx+DPgfM2lQExfUlkV7JiG+sMs9qLPOZwaI25drIIoGWBWOzYn0SAuU+jJHHpD0gUkFv07b3LlMC2MgJXqHXbXJDL5EzNZOHrYYES6ixSPEzXG2/WYT/UWJmXCrN/UazlTI0RSlgZr0p9dFvSuA0BCReAOHWMLI2WFOBgtD5O45c59XLMqryKr5pQ+lw0DzUnlcGOcE7TNopy3wCPgwNxVIc33wppabL1k22i6TaKYlqDmNQkmH7hllEMULLyLdvoT/hK8LUsuRYcQULdmgAXNvrd6A=
-        file: ''
-        skip_cleanup: true
-        on:
-          repo: Zaba505/gqlc
-          tags: true
-      # TODO: Build cmd/gqlc and deploy it to Github Releases
+deploy:
+  provider: releases
+  api_key:
+    secure: MsvF+1FjsAX8PwFGyeXPuEBDFAd5aQspc86rHoxMtsNm9gCuHAwReGPEDCrnZPcp90fWs1DwILunKKUA11ochzJnJ1LFxkkc88bu1KB3hx4xvMMsrNlJaVY8KxgibjWvD8XbOt4YL712m8o/QGHvKgBOwPrQi0RCNMRdtpv7MoXMhLSvq/68dVwMf4jP0aOO5WIFXFnemFSJjBE/chnl2MbkvqnN0ezlGR5Wdk6tJJ1j+wHL6OuLlGSIRjdpSxUcrdenaIFsBN3qwC8PvxqOQv+cWq41u07lwbshqVxpHo4kl06E5udMVwOngF0cDsIP51nVTvlKd683RATOwFyhg3tbFiP0H+MVUTortQq10Kbw5lUeiPNMf7V7suY9btI9qUKNupGF9jSJs3srpx+DPgfM2lQExfUlkV7JiG+sMs9qLPOZwaI25drIIoGWBWOzYn0SAuU+jJHHpD0gUkFv07b3LlMC2MgJXqHXbXJDL5EzNZOHrYYES6ixSPEzXG2/WYT/UWJmXCrN/UazlTI0RSlgZr0p9dFvSuA0BCReAOHWMLI2WFOBgtD5O45c59XLMqryKr5pQ+lw0DzUnlcGOcE7TNopy3wCPgwNxVIc33wppabL1k22i6TaKYlqDmNQkmH7hllEMULLyLdvoT/hK8LUsuRYcQULdmgAXNvrd6A=
+  file: ''
+  skip_cleanup: true
+  on:
+    tags: true

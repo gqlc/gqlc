@@ -1,12 +1,12 @@
-package main
+package cmd
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/Zaba505/gqlc/compiler"
-	"github.com/Zaba505/gqlc/graphql/ast"
+	"github.com/gqlc/compiler"
+	"github.com/gqlc/graphql/ast"
 	"os/exec"
 	"strings"
 )

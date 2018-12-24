@@ -1,13 +1,13 @@
-package main
+package cmd
 
 import (
 	"context"
 	"fmt"
-	"github.com/Zaba505/gqlc/cmd/gqlc/util"
-	"github.com/Zaba505/gqlc/compiler"
-	"github.com/Zaba505/gqlc/graphql/ast"
-	"github.com/Zaba505/gqlc/graphql/parser"
-	"github.com/Zaba505/gqlc/graphql/token"
+	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/cmd/util"
+	"github.com/gqlc/graphql/ast"
+	"github.com/gqlc/graphql/parser"
+	"github.com/gqlc/graphql/token"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"os"

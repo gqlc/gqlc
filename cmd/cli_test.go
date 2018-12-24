@@ -1,8 +1,8 @@
-package main
+package cmd
 
 import (
 	"context"
-	"github.com/Zaba505/gqlc/graphql/ast"
+	"github.com/gqlc/graphql/ast"
 	"testing"
 )
 

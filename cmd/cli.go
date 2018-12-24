@@ -1,8 +1,8 @@
-package main
+package cmd
 
 import (
 	"fmt"
-	"github.com/Zaba505/gqlc/compiler"
+	"github.com/gqlc/compiler"
 	"github.com/spf13/cobra"
 	"strconv"
 	"strings"
@@ -26,7 +26,8 @@ type ccli struct {
 	root *cobra.Command
 }
 
-func newCLI() *ccli {
+// NewCLI returns a compiler.CommandLine implementation.
+func NewCLI() *ccli {
 	return &ccli{
 		root: rootCmd,
 	}

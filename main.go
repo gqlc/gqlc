@@ -1,20 +1,21 @@
 // Command gqlc is a multi-language GraphQL implementation generator.
-package main
+package gqlc
 
 import (
 	"fmt"
-	"github.com/Zaba505/gqlc/compiler"
-	"github.com/Zaba505/gqlc/compiler/dart"
-	"github.com/Zaba505/gqlc/compiler/doc"
-	"github.com/Zaba505/gqlc/compiler/golang"
-	"github.com/Zaba505/gqlc/compiler/js"
+	"github.com/gqlc/compiler"
+	"github.com/gqlc/compiler/dart"
+	"github.com/gqlc/compiler/doc"
+	"github.com/gqlc/compiler/golang"
+	"github.com/gqlc/compiler/js"
+	"github.com/gqlc/gqlc/cmd"
 	"os"
 )
 
 var cli compiler.CommandLine
 
 func init() {
-	cli = newCLI()
+	cli = cmd.NewCLI()
 	cli.AllowPlugins("gqlc-gen-")
 
 	// Register Dart generator
