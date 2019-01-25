@@ -1,5 +1,5 @@
 // Command gqlc is a multi-language GraphQL implementation generator.
-package gqlc
+package main
 
 import (
 	"fmt"
