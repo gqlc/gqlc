@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/gqlc/compiler"
-	"github.com/gqlc/gqlc/cmd/util"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
 	"github.com/gqlc/graphql/token"
@@ -141,7 +140,7 @@ func runRoot(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	// Perform type checking
-	errs := util.CheckTypes(docs)
+	errs := compiler.CheckTypes(docs)
 	if len(errs) > 0 {
 		// TODO: Compound errors into a single error and return.
 		return
