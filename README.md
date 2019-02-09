@@ -61,10 +61,10 @@ to allow for extensibility and ease of maintainability.
 This is all current work desired to be completed in order to release v1.
 
 - [ ] cmd/gqlc
-    - [ ] type checking
     - [x] generator options flag
     - [ ] support plugins
 - [ ] compiler
+    - [x] type checking (will be improved in the future)
     - [ ] Dart generator
     - [ ] Documentation generator
     - [ ] Go generator
