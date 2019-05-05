@@ -1,30 +1,24 @@
 language: go
-
 go:
-  - '1.12'
-  - tip
-
+- '1.12'
+- tip
 git:
   depth: 1
-
 env:
-  global:
-    - GITHUB_TOKEN="8b604d8bbc64af2c0a9fa574aceb06881c9b9544"
   matrix:
-    - GO111MODULE=on
-
+  - GO111MODULE=on
 script:
-  - diff -u <(echo -n) <(gofmt -d .)
-  - go vet ./...
-  - go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
-
+- diff -u <(echo -n) <(gofmt -d .)
+- go vet ./...
+- go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
-
+- bash <(curl -s https://codecov.io/bash)
 deploy:
 - provider: script
   skip_cleanup: true
   script: curl -sL https://git.io/goreleaser | bash
   on:
     tags: true
-    condition: $TRAVIS_OS_NAME = linux
+    condition: "$TRAVIS_OS_NAME = linux"
+GITHUB_TOKEN:
+  secure: 024uliwfRtUk6fjkLGtqM3DNrU4YI/HoR/W5zr2mOsrMYRLWDfeVMrnCLNxFD9rJi3e1If1E3V5/gmUI3rTOyg8d1C8pVnJGIHBavrbGMOzUeuIBLTodq8VbmNYEKxhThoYLOk/COh0vWVZWxeja3BrECyXvao96Buj0Y8/5+iHq00aYO7Ulk0arxRsbHv7yMKFfz4YzchQnAqWC+AD0gv9xsbY8mkhk52RRrzgd0mdEiRxbuClRPn3lTWpkdwR4Wc2K/vRkWXdRc5EAbIsA75pKxM9rhZBnrdZN6e/VAj2in7NlLCXn54R07LQp8nbhk31+dLnwNLE5fNyejNR9/y92BRJTePfDa1ZwyKOX3GT/leKkiXFTaOgVC+y2ffsd4skbx4accHDL4582CrMXGffPLXKMxnjbRtgHPNMrAIkzDCkIEDaOxwdy0YYZ9fSFkG5eseiO6IV3KYe+XgdJnL3Gd697Skm3semQYWTM87g2OU5FTwPQ8kVJs/0tBULinvkbf2LTXRt3U64Z3N3Ib8MSMqIr2UVjtO7OLixOnOk8osTlC4RUiIixSBDJaAnfDpqI9MSKJ9czn2E8Nopn5/O7DaVaqXpgV0o5hgFRsWjl3kwWmPu4QwbnR4vnRhn9YN/cbo0vP5RK2ijhAdlyCPFoRC2a61h1J5IzmvyYxxA=
