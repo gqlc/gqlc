@@ -10,6 +10,7 @@ Current spec implementation: Current Working Draft i.e. >June2018
 
 # Table of Contents
 
+- [Installing](#installing)
 - [Usage](#usage)
     * [Support Languages](*supported-languages)
 - [Design](#design)
@@ -20,6 +21,9 @@ Current spec implementation: Current Working Draft i.e. >June2018
         - [Guidelines](#guidelines)
         - [Code Generators](#code-generators)
     * [WIP](#wip)
+
+## Installing
+You can either `git clone` this repo and build from source or download one of the prebuilt [releases](https://github.com/gqlc/gqlc/releases).
 
 ## Usage
 To use `gqlc`, there are two options: the `gqlc` cli tool or writing your own
