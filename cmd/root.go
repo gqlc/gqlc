@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/cmd/plugin"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
 	"github.com/gqlc/graphql/token"
@@ -84,7 +85,7 @@ Example:
 `)
 }
 
-func preRunRoot(geners, opts map[string]compiler.Generator, genOpts map[compiler.Generator]*oFlag) func(cmd *cobra.Command, args []string) error {
+func preRunRoot(prefix *string, geners, opts map[string]compiler.Generator, genOpts map[compiler.Generator]*oFlag) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		if cmd.Name() == "help" {
 			return nil
@@ -111,12 +112,12 @@ func preRunRoot(geners, opts map[string]compiler.Generator, genOpts map[compiler
 			}
 
 			f := &oFlag{opts: make(map[string]interface{}), outDir: new(string)}
-			pg := &pluginGenerator{Name: strings.TrimSuffix(name, "_out")}
+			pg := &plugin.Generator{Name: strings.TrimSuffix(name, "_out"), Prefix: *prefix}
 
 			outFlag := *f
 			outFlag.isOut = true
 			cmd.Flags().Var(outFlag, name, "")
-			geners[a] = pg
+			geners[name] = pg
 
 			optName := strings.Replace(name, "_out", "_opt", 1)
 			optFlag := *f

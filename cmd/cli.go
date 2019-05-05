@@ -17,7 +17,7 @@ import (
 type ccli struct {
 	root *cobra.Command
 
-	pluginPrefix string
+	pluginPrefix *string
 	geners       map[string]compiler.Generator
 	opts         map[string]compiler.Generator
 	genOpts      map[compiler.Generator]*oFlag
@@ -26,18 +26,19 @@ type ccli struct {
 // NewCLI returns a compiler.CommandLine implementation.
 func NewCLI() *ccli {
 	c := &ccli{
-		root:    rootCmd,
-		geners:  make(map[string]compiler.Generator),
-		opts:    make(map[string]compiler.Generator),
-		genOpts: make(map[compiler.Generator]*oFlag),
+		root:         rootCmd,
+		geners:       make(map[string]compiler.Generator),
+		opts:         make(map[string]compiler.Generator),
+		genOpts:      make(map[compiler.Generator]*oFlag),
+		pluginPrefix: new(string),
 	}
 
-	c.root.PreRunE = preRunRoot(c.geners, c.opts, c.genOpts)
+	c.root.PreRunE = preRunRoot(c.pluginPrefix, c.geners, c.opts, c.genOpts)
 	c.root.RunE = runRoot(afero.NewOsFs(), c.genOpts)
 	return c
 }
 
-func (c *ccli) AllowPlugins(prefix string) { c.pluginPrefix = prefix }
+func (c *ccli) AllowPlugins(prefix string) { *c.pluginPrefix = prefix }
 
 func (c *ccli) RegisterGenerator(g compiler.Generator, details ...string) {
 	l := len(details)

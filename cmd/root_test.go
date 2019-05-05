@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-type testRunFn func(map[string]compiler.Generator, map[string]compiler.Generator, map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error
+type testRunFn func(*string, map[string]compiler.Generator, map[string]compiler.Generator, map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error
 
 func newTestCli(preRunE, runE testRunFn) *ccli {
 	c := &ccli{
@@ -23,18 +23,19 @@ func newTestCli(preRunE, runE testRunFn) *ccli {
 			DisableFlagParsing: true,
 			Args:               cobra.MinimumNArgs(1),
 		},
-		geners:  make(map[string]compiler.Generator),
-		opts:    make(map[string]compiler.Generator),
-		genOpts: make(map[compiler.Generator]*oFlag),
+		geners:       make(map[string]compiler.Generator),
+		opts:         make(map[string]compiler.Generator),
+		genOpts:      make(map[compiler.Generator]*oFlag),
+		pluginPrefix: new(string),
 	}
-	c.root.PreRunE = preRunE(c.geners, c.opts, c.genOpts)
-	c.root.RunE = runE(c.geners, c.opts, c.genOpts)
+	c.root.PreRunE = preRunE(c.pluginPrefix, c.geners, c.opts, c.genOpts)
+	c.root.RunE = runE(c.pluginPrefix, c.geners, c.opts, c.genOpts)
 	c.root.Flags().StringSliceP("import_path", "I", []string{"."}, ``)
 
 	return c
 }
 
-func noopRun(map[string]compiler.Generator, map[string]compiler.Generator, map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error {
+func noopRun(*string, map[string]compiler.Generator, map[string]compiler.Generator, map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error {
 	return nil
 }
 
@@ -269,7 +270,7 @@ func TestRun(t *testing.T) {
 			ctrl := gomock.NewController(subT)
 			testGen := NewMockCodeGenerator(ctrl)
 
-			testCli := newTestCli(preRunRoot, func(_, _ map[string]compiler.Generator, flags map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error {
+			testCli := newTestCli(preRunRoot, func(_ *string, _, _ map[string]compiler.Generator, flags map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error {
 				return runRoot(testFs, flags)
 			})
 			testCli.RegisterGenerator(testGen, "test_out", "test_opt", "Test generator")
