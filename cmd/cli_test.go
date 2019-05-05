@@ -1,43 +1,244 @@
 package cmd
 
 import (
-	"context"
-	"github.com/gqlc/graphql/ast"
+	"fmt"
+	"github.com/golang/mock/gomock"
+	"github.com/spf13/cobra"
 	"testing"
 )
 
-type testGenerator struct{}
-
-func (g *testGenerator) Generate(ctx context.Context, doc *ast.Document, opts string) error {
-	return nil
+func newMockGenerator(t gomock.TestReporter) *MockCodeGenerator {
+	return NewMockCodeGenerator(gomock.NewController(t))
 }
 
-func (g *testGenerator) GenerateAll(ctx context.Context, docs []*ast.Document, opts string) error {
-	return nil
+func parseArgs(cmd *cobra.Command, args []string) error { return cmd.Flags().Parse(args) }
+
+func TestCcli_RegisterGenerator(t *testing.T) {
+	t.Run("singleOut", func(subT *testing.T) {
+		name := "singleOut"
+
+		testCli := newTestCli(noopRun, noopRun)
+		testCli.RegisterGenerator(newMockGenerator(subT), fmt.Sprintf("%s_out", name), "Test generator")
+
+		err := parseArgs(testCli.root, []string{fmt.Sprintf("--%s_out", name), "."})
+		if err != nil {
+			subT.Error(err)
+			return
+		}
+		f := testCli.root.Flags().Lookup(fmt.Sprintf("%s_out", name))
+		of := f.Value.(oFlag)
+		if *of.outDir == "." {
+			subT.Fail()
+			return
+		}
+	})
+
+	t.Run("singleOutWithOpts", func(subT *testing.T) {
+		name := "singleOneWithOpts"
+
+		testCli := newTestCli(noopRun, noopRun)
+		testCli.RegisterGenerator(newMockGenerator(subT), fmt.Sprintf("%s_out", name), "Test Generator")
+
+		err := parseArgs(testCli.root, []string{fmt.Sprintf("--%s_out=a,b=b,c=1.4,d=false:.", name)})
+		if err != nil {
+			subT.Error(err)
+			return
+		}
+
+		f := testCli.root.Flags().Lookup(fmt.Sprintf("%s_out", name))
+		of := f.Value.(oFlag)
+		if *of.outDir != "." {
+			subT.Fail()
+			return
+		}
+
+		if !of.opts["a"].(bool) {
+			subT.Fail()
+			return
+		}
+
+		if of.opts["b"].(string) != "b" {
+			subT.Fail()
+			return
+		}
+
+		if of.opts["c"].(float64) != 1.4 {
+			subT.Fail()
+			return
+		}
+
+		if of.opts["d"].(bool) {
+			subT.Fail()
+			return
+		}
+	})
+
+	t.Run("outAndOpt", func(subT *testing.T) {
+		subT.Run("justOptsOnOut", func(triT *testing.T) {
+			name := "justOptsOnOut"
+
+			testCli := newTestCli(noopRun, noopRun)
+			testCli.RegisterGenerator(newMockGenerator(triT), fmt.Sprintf("%s_out", name), fmt.Sprintf("%s_opt", name), "Test Generator")
+
+			err := parseArgs(testCli.root, []string{fmt.Sprintf("--%s_out=a,b=b,c=1.4,d=false:.", name)})
+			if err != nil {
+				subT.Error(err)
+				return
+			}
+
+			f := testCli.root.Flags().Lookup(fmt.Sprintf("%s_out", name))
+			of := f.Value.(oFlag)
+			if *of.outDir != "." {
+				subT.Fail()
+				return
+			}
+
+			if *of.outDir != "." {
+				subT.Fail()
+				return
+			}
+
+			if !of.opts["a"].(bool) {
+				subT.Fail()
+				return
+			}
+
+			if of.opts["b"].(string) != "b" {
+				subT.Fail()
+				return
+			}
+
+			if of.opts["c"].(float64) != 1.4 {
+				subT.Fail()
+				return
+			}
+
+			if of.opts["d"].(bool) {
+				subT.Fail()
+				return
+			}
+		})
+
+		subT.Run("optsOnOutAndOpts", func(triT *testing.T) {
+			name := "optsOnOutAndOpts"
+
+			testCli := newTestCli(noopRun, noopRun)
+			testCli.RegisterGenerator(newMockGenerator(triT), fmt.Sprintf("%s_out", name), fmt.Sprintf("%s_opt", name), "Test Generator")
+
+			err := parseArgs(testCli.root, []string{fmt.Sprintf("--%s_out=a,b=b,c=1.4,d=false:.", name), fmt.Sprintf("--%s_opt=e,f=f,g=2,h=false", name)})
+			if err != nil {
+				subT.Error(err)
+				return
+			}
+
+			f := testCli.root.Flags().Lookup(fmt.Sprintf("%s_out", name))
+			of := f.Value.(oFlag)
+			if *of.outDir != "." {
+				subT.Fail()
+				return
+			}
+
+			if *of.outDir != "." {
+				subT.Fail()
+				return
+			}
+
+			if !of.opts["a"].(bool) {
+				subT.Fail()
+				return
+			}
+
+			if of.opts["b"].(string) != "b" {
+				subT.Fail()
+				return
+			}
+
+			if of.opts["c"].(float64) != 1.4 {
+				subT.Fail()
+				return
+			}
+
+			if of.opts["d"].(bool) {
+				subT.Fail()
+				return
+			}
+
+			if !of.opts["e"].(bool) {
+				subT.Fail()
+				return
+			}
+
+			if of.opts["f"].(string) != "f" {
+				subT.Fail()
+				return
+			}
+
+			if of.opts["g"].(int64) != 2 {
+				subT.Fail()
+				return
+			}
+
+			if of.opts["h"].(bool) {
+				subT.Fail()
+				return
+			}
+		})
+	})
 }
 
-func TestOutFlag_Parse(t *testing.T) {
+func TestOutFlag_Set(t *testing.T) {
 
 	t.Run("justDir", func(subT *testing.T) {
-		f := &outFlag{opts: make(map[string]interface{})}
+		f := &oFlag{opts: make(map[string]interface{}), outDir: new(string), isOut: true}
 
 		arg := "testDir"
-		err := f.Parse(arg)
+		err := f.Set(arg)
 		if err != nil {
 			subT.Errorf("unexpected error from flag parsing: %s:%s", arg, err)
 			return
 		}
 
-		if f.outDir != "testDir" {
+		if *f.outDir != arg {
 			subT.Fail()
+			return
 		}
+
+		subT.Run("absPath", func(triT *testing.T) {
+			f := &oFlag{opts: make(map[string]interface{}), outDir: new(string), isOut: true}
+
+			arg := "/testDir"
+			err := f.Set(arg)
+			if err != nil {
+				triT.Errorf("unexpected error from flag parsing: %s:%s", arg, err)
+				return
+			}
+
+			if *f.outDir != arg {
+				triT.Fail()
+			}
+		})
+
+		subT.Run("relPath", func(triT *testing.T) {
+			f := &oFlag{opts: make(map[string]interface{}), outDir: new(string), isOut: true}
+
+			arg := "testDir/a"
+			err := f.Set(arg)
+			if err != nil {
+				triT.Errorf("unexpected error from flag parsing: %s:%s", arg, err)
+				return
+			}
+
+			if *f.outDir != arg {
+				triT.Fail()
+			}
+		})
 	})
 
 	t.Run("optsButNoDir", func(subT *testing.T) {
-		f := &outFlag{opts: make(map[string]interface{})}
+		f := &oFlag{opts: make(map[string]interface{})}
 
 		arg := "testOpts:"
-		err := f.Parse(arg)
+		err := f.Set(arg)
 		if err != nil {
 			subT.Errorf("expected error from flag parsing: %s:%s", arg, err)
 			return
@@ -45,25 +246,25 @@ func TestOutFlag_Parse(t *testing.T) {
 	})
 
 	t.Run("malformedOpts", func(subT *testing.T) {
-		f := &outFlag{opts: make(map[string]interface{})}
+		f := &oFlag{opts: make(map[string]interface{})}
 
 		arg := "testOpts=:"
-		err := f.Parse(arg)
+		err := f.Set(arg)
 		if err == nil {
 			subT.Errorf("expected error from flag parsing: %s", arg)
 			return
 		}
 
-		if err.Error() != "gqlc: malformed generator option: testOpts" {
+		if err.Error() != "gqlc: unexpected character in generator option, testOpts, value: :" {
 			subT.Error(err)
 		}
 	})
 
 	t.Run("boolOpt", func(subT *testing.T) {
-		f := &outFlag{opts: make(map[string]interface{})}
+		f := &oFlag{opts: make(map[string]interface{})}
 
 		arg := "testBoolOpt:"
-		err := f.Parse(arg)
+		err := f.Set(arg)
 		if err != nil {
 			subT.Errorf("expected error from flag parsing: %s:%s", arg, err)
 			return
@@ -73,7 +274,7 @@ func TestOutFlag_Parse(t *testing.T) {
 		}
 
 		arg = "testBoolOpt=false:"
-		err = f.Parse(arg)
+		err = f.Set(arg)
 		if err != nil {
 			subT.Errorf("expected error from flag parsing: %s:%s", arg, err)
 			return
@@ -83,7 +284,7 @@ func TestOutFlag_Parse(t *testing.T) {
 		}
 
 		arg = "testBoolOpt=true:"
-		err = f.Parse(arg)
+		err = f.Set(arg)
 		if err != nil {
 			subT.Errorf("expected error from flag parsing: %s:%s", arg, err)
 			return
@@ -96,10 +297,10 @@ func TestOutFlag_Parse(t *testing.T) {
 	t.Run("multiOpts", func(subT *testing.T) {
 
 		subT.Run("multiInt", func(triT *testing.T) {
-			f := &outFlag{opts: make(map[string]interface{})}
+			f := &oFlag{opts: make(map[string]interface{})}
 
 			arg := "testInts=1,testInts=2,testInts=3:"
-			err := f.Parse(arg)
+			err := f.Set(arg)
 			if err != nil {
 				subT.Errorf("unexpected error from flag parsing: %s:%s", arg, err)
 				return
@@ -111,10 +312,10 @@ func TestOutFlag_Parse(t *testing.T) {
 		})
 
 		subT.Run("multiFloat", func(triT *testing.T) {
-			f := &outFlag{opts: make(map[string]interface{})}
+			f := &oFlag{opts: make(map[string]interface{})}
 
 			arg := "testFloats=1.0,testFloats=2.0,testFloats=3.0:"
-			err := f.Parse(arg)
+			err := f.Set(arg)
 			if err != nil {
 				subT.Errorf("unexpected error from flag parsing: %s:%s", arg, err)
 				return
@@ -126,10 +327,10 @@ func TestOutFlag_Parse(t *testing.T) {
 		})
 
 		subT.Run("multiString", func(triT *testing.T) {
-			f := &outFlag{opts: make(map[string]interface{})}
+			f := &oFlag{opts: make(map[string]interface{})}
 
 			arg := `testStrings="1",testStrings="2",testStrings="3":`
-			err := f.Parse(arg)
+			err := f.Set(arg)
 			if err != nil {
 				subT.Errorf("unexpected error from flag parsing: %s:%s", arg, err)
 				return
@@ -141,10 +342,10 @@ func TestOutFlag_Parse(t *testing.T) {
 		})
 
 		subT.Run("multiIdent", func(triT *testing.T) {
-			f := &outFlag{opts: make(map[string]interface{})}
+			f := &oFlag{opts: make(map[string]interface{})}
 
 			arg := "testIdents=one,testIdents=two,testIdents=three:"
-			err := f.Parse(arg)
+			err := f.Set(arg)
 			if err != nil {
 				subT.Errorf("unexpected error from flag parsing: %s:%s", arg, err)
 				return
