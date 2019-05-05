@@ -1,6 +1,6 @@
 package cmd
 
-//go:generate mockgen -package=cmd -destination=./mock_test.go github.com/gqlc/compiler CodeGenerator
+//go:generate mockgen -package=cmd -destination=./mock_test.go github.com/gqlc/compiler Generator
 
 import (
 	"github.com/golang/mock/gomock"
@@ -233,34 +233,34 @@ func TestRun(t *testing.T) {
 	testCases := []struct {
 		Name   string
 		Args   []string
-		expect func(g *MockCodeGenerator)
+		expect func(g *MockGenerator)
 	}{
 		{
 			Name: "SingleWoImports",
 			Args: []string{"gqlc", "/home/graphql/imports/thr.gql"},
-			expect: func(g *MockCodeGenerator) {
-				g.EXPECT().GenerateAll(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expect: func(g *MockGenerator) {
+				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
 		{
 			Name: "SingleWImports",
 			Args: []string{"gqlc", "-I", "/usr/imports", "-I", "/home/graphql/imports", "five.gql"},
-			expect: func(g *MockCodeGenerator) {
-				g.EXPECT().GenerateAll(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expect: func(g *MockGenerator) {
+				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
 		{
 			Name: "MultiWoImports",
 			Args: []string{"gqlc", "-I", "/home", "-I", "/home/graphql/imports", "thr.gql", "four.gql"},
-			expect: func(g *MockCodeGenerator) {
-				g.EXPECT().GenerateAll(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expect: func(g *MockGenerator) {
+				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
 		{
 			Name: "MultiWImports",
 			Args: []string{"gqlc", "-I", "/usr/imports", "-I", "/home", "-I=/home/graphql", "-I", "/home/graphql/imports", "one.gql", "five.gql"},
-			expect: func(g *MockCodeGenerator) {
-				g.EXPECT().GenerateAll(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			expect: func(g *MockGenerator) {
+				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
 	}
@@ -268,7 +268,7 @@ func TestRun(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(subT *testing.T) {
 			ctrl := gomock.NewController(subT)
-			testGen := NewMockCodeGenerator(ctrl)
+			testGen := NewMockGenerator(ctrl)
 
 			testCli := newTestCli(preRunRoot, func(_ *string, _, _ map[string]compiler.Generator, flags map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error {
 				return runRoot(testFs, flags)

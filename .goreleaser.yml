@@ -1,0 +1,51 @@
+# This is an example goreleaser.yaml file with some sane defaults.
+# Make sure to check the documentation at http://goreleaser.com
+before:
+  hooks:
+    - go mod download
+    - go generate ./...
+    - mkdir -p ./include/gqlc/protobuf/compiler
+    - wget -P ./include/gqlc/protobuf https://raw.githubusercontent.com/gqlc/graphql/master/ast/ast.proto
+    - wget -P ./include/gqlc/protobuf/compiler https://raw.githubusercontent.com/gqlc/gqlc/master/cmd/plugin/plugin.proto
+builds:
+  -
+    binary: bin/gqlc
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - 386
+      - amd64
+      - arm
+      - arm64
+archives:
+  -
+    name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    replacements:
+      darwin: osx
+      linux: linux
+      windows: win
+      386: i386
+      amd64: x86_64
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE*
+      - readme.txt
+      - include/**/*
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+    - Merge Pull Request
+    - Merge branch

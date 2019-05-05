@@ -10,11 +10,13 @@ import (
 	"os/exec"
 )
 
+// Generator is a plugin generator.
 type Generator struct {
 	Name   string
 	Prefix string
 }
 
+// Generate executes a plugin given the GraphQL Document.
 func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string) (err error) {
 	defer func() {
 		if err != nil {

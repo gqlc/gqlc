@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-func newMockGenerator(t gomock.TestReporter) *MockCodeGenerator {
-	return NewMockCodeGenerator(gomock.NewController(t))
+func newMockGenerator(t gomock.TestReporter) *MockGenerator {
+	return NewMockGenerator(gomock.NewController(t))
 }
 
 func parseArgs(cmd *cobra.Command, args []string) error { return cmd.Flags().Parse(args) }
