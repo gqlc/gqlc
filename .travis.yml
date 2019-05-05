@@ -14,15 +14,13 @@ env:
     - GO111MODULE=on
 
 script:
-  - go get -u -v ./...
   - diff -u <(echo -n) <(gofmt -d .)
-  - GO111MODULE=off go get -u github.com/golang/mock/mockgen
-  - go generate ./...
   - go vet ./...
   - go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+  - rm coverage.txt
 
 deploy:
 - provider: script
