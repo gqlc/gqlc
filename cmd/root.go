@@ -193,16 +193,16 @@ func runRoot(fs afero.Fs, genOpts map[compiler.Generator]*oFlag) func(*cobra.Com
 			return
 		}
 
-		// Perform type checking
-		errs := compiler.CheckTypes(docs)
-		if len(errs) > 0 {
-			// TODO: Compound errors into a single error and return.
+		// First, Resolve imports (this must occur before type checking)
+		docs, err = compiler.ReduceImports(docs)
+		if err != nil {
 			return
 		}
 
-		// Resolve imports
-		docs, err = compiler.ReduceImports(docs)
-		if err != nil {
+		// Then, Perform type checking
+		errs := compiler.CheckTypes(docs, compiler.TypeCheckerFn(compiler.Validate))
+		if len(errs) > 0 {
+			// TODO: Compound errors into a single error and return/or log each error.
 			return
 		}
 

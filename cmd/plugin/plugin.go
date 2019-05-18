@@ -20,7 +20,7 @@ type Generator struct {
 func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string) (err error) {
 	defer func() {
 		if err != nil {
-			err = compiler.Error{
+			err = compiler.GeneratorError{
 				GenName: g.Name,
 				DocName: doc.Name,
 				Msg:     err.Error(),
