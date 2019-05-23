@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -202,8 +203,15 @@ func runRoot(fs afero.Fs, genOpts map[compiler.Generator]*oFlag) func(*cobra.Com
 		// Then, Perform type checking
 		errs := compiler.CheckTypes(docs, compiler.TypeCheckerFn(compiler.Validate))
 		if len(errs) > 0 {
-			// TODO: Compound errors into a single error and return/or log each error.
+			for _, err = range errs {
+				log.Println(err)
+			}
 			return
+		}
+
+		// Remove Builtin types and any Generator registered types
+		for _, doc := range docs {
+			doc.Types = doc.Types[:len(doc.Types)-len(compiler.Types)]
 		}
 
 		// Run code generators
@@ -212,6 +220,8 @@ func runRoot(fs afero.Fs, genOpts map[compiler.Generator]*oFlag) func(*cobra.Com
 		var b bytes.Buffer
 		enc := json.NewEncoder(&b)
 		for g, genOpt := range genOpts {
+			b.Reset()
+
 			err = enc.Encode(genOpt.opts)
 			if err != nil {
 				return
@@ -225,7 +235,6 @@ func runRoot(fs afero.Fs, genOpts map[compiler.Generator]*oFlag) func(*cobra.Com
 					return
 				}
 			}
-			b.Reset()
 		}
 
 		return

@@ -1,3 +1,4 @@
+// Package plugin contains a Generator for running external plugins as Generators.
 package plugin
 
 import (
@@ -6,14 +7,19 @@ import (
 	"errors"
 	"github.com/golang/protobuf/proto"
 	"github.com/gqlc/compiler"
+	gqlc "github.com/gqlc/gqlc/cmd/plugin/proto"
 	"github.com/gqlc/graphql/ast"
 	"os/exec"
 )
 
-// Generator is a plugin generator.
+// Generator executes an external plugin as a generator.
+// The name of the plugin is given by the generators Prefix and Name fields.
+//
 type Generator struct {
 	Name   string
 	Prefix string
+
+	*exec.Cmd
 }
 
 // Generate executes a plugin given the GraphQL Document.
@@ -29,7 +35,7 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 	}()
 
 	// Marshall doc
-	b, perr := proto.Marshal(&PluginRequest{
+	b, perr := proto.Marshal(&gqlc.PluginRequest{
 		FileToGenerate: []string{doc.Name},
 		Parameter:      opts,
 		Documents:      []*ast.Document{doc},
@@ -40,20 +46,23 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 	}
 
 	// Create plugin command
-	out := new(bytes.Buffer)
 	pluginName := g.Prefix + g.Name
-	cmd := exec.Command(pluginName)
-	cmd.Stdin = bytes.NewReader(b)
-	cmd.Stdout = out
+	if g.Cmd == nil {
+		g.Cmd = exec.CommandContext(ctx, pluginName)
+	}
+	out := new(bytes.Buffer)
+	g.Stdin = bytes.NewReader(b)
+	g.Stdout = out
 
 	// Exec plugin
-	err = cmd.Run()
+	err = g.Run()
+	g.Cmd = nil
 	if err != nil {
 		return
 	}
 
 	// Unmarshall response
-	var resp PluginResponse
+	var resp gqlc.PluginResponse
 	err = proto.Unmarshal(out.Bytes(), &resp)
 	if err != nil {
 		return

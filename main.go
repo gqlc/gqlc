@@ -6,6 +6,7 @@ import (
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/doc"
 	"github.com/gqlc/gqlc/cmd"
+	"github.com/gqlc/js"
 	"os"
 )
 
@@ -37,11 +38,11 @@ func init() {
 	//	)
 
 	// Register Javascript generator
-	//	cli.RegisterGenerator(&js.Generator{},
-	//		"js_out",
-	//		"js_opt",
-	//		"Generate Javascript source.",
-	//	)
+	cli.RegisterGenerator(&js.Generator{},
+		"js_out",
+		"js_opt",
+		"Generate Javascript source.",
+	)
 }
 
 func main() {

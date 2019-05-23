@@ -46,6 +46,7 @@ var (
 type Service implements Doc {
 	t: Time
 	obj: Obj
+	v: Version
 }`
 	twoGql = `@import(paths: ["./thr.gql"])
 
