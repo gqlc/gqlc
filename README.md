@@ -6,7 +6,7 @@
 # GraphQL IDL Compiler
 
 `gqlc` is a compiler for the GraphQL IDL, as defined by the [GraphQL spec](http://facebook.github.io/graphql).
-Current spec implementation: Current Working Draft i.e. >June2018
+Current spec implementation: [Current Working Draft](https://graphql.github.io/graphql-spec/draft/)
 
 # Table of Contents
 
@@ -20,20 +20,17 @@ Current spec implementation: Current Working Draft i.e. >June2018
     * [Getting Started](#getting-started)
         - [Guidelines](#guidelines)
         - [Code Generators](#code-generators)
-    * [WIP](#wip)
+- [WIP](#wip)
 
 ## Installing
 You can either `git clone` this repo and build from source or download one of the prebuilt [releases](https://github.com/gqlc/gqlc/releases).
 
 ## Usage
-To use `gqlc`, there are two options: the `gqlc` cli tool or writing your own
-cli. In order to use the `gqlc` cli tool you must either download a pre-built
-[binary]() or if you are familiar using the Go toolchain: `go get github.com/Zaba505/gqlc/cmd/gqlc`
+To use `gqlc`, all that's needed is a GraphQL Document (only type system defs) and a directory to output generated code to.
 
 Example:
 ```text
-gqlc -I . --dart_out ./dartapi
-        \ --doc_out ./docs
+gqlc -I . --doc_out ./docs
         \ --go_out ./goapi
         \ --js_out ./jsapi
         \ api.gql
@@ -42,13 +39,11 @@ gqlc -I . --dart_out ./dartapi
 ### Supported Languages
 The currently supported languages by gqlc for generation are:
 
-* [Dart](https://dartlang.org)
 * [Documentation](https://commonmark.org)
 * [Go](https://golang.org)
 * [Javascript](https://javascript.com)
 
-There will most likely be more to come. Feel free to submit an issue to
-discuss supporting your language of choice.
+*Note*: There will most likely be more to come. Check out the [Code Generators](#code-generators) section for more on this.
 
 ## Design
 
@@ -76,29 +71,30 @@ Thank you for wanting to help keep this project awesome!
 Before diving straight into the [WIP](#wip) list or issues, here are a few things to help your contribution be accepted:
 
 #### Guidelines
-When making any sort of contribution remember to follow the [Contribution guidelines]().
+When making any sort of contribution remember to follow the [Contribution guidelines](https://github.com/gqlc/gqlc/blob/master/CONTRIBUTING.md).
 
 #### Code Generators
-Not every language can be supported, so please first create an issue and discuss adding support for your language there.
-If the community shows enough consensus that your language should be directly supported then a PR can be submitted/accepted. 
+Not every language can be supported directly, so please first create an issue and discuss adding support for your language there.
+If the community shows enough consensus that your language should be directly supported, then a @gqlc team member will initialize
+the repository for it and work can commence on implementing it.
 
-If you desire to contribute a code generator, a @gqlc team member will init a repo in the @gqlc org
-for it. Once the generator is complete and tested, it can be registered with the CLI.
+If your desired language doesn't show enough support from the community to deem direct support in gqlc, then implementing a plugin
+is highly encouraged. Check out [compiler/plugin](https://github.com/gqlc/compiler/tree/master/plugin) for more information on how
+plugins are expected to behave when interacting with gqlc.
 
-### WIP
+## WIP
 This is all current work desired to be completed in order to release v1.
 
-- [x] cmd/gqlc
+- [x] gqlc ([cmd](https://github.com/gqlc/gqlc/tree/master/cmd))
     - [x] generator options flag
-    - [x] support plugins
-- [ ] compiler
-    - [ ] type checking
+    - [x] Plugin generator ([plugin](https://github.com/gqlc/gqlc/tree/master/cmd/plugin))
+- [x] Documentation generator ([doc](https://github.com/gqlc/doc))
+- [ ] Go generator ([golang](https://github.com/gqlc/golang))
+- [x] Javascript generator ([js](https://github.com/gqlc/js))
+- [x] [compiler](https://github.com/gqlc/compiler)
+    - [x] type checking
     - [x] import resolution
-    - [ ] Dart generator
-    - [x] Documentation generator
-    - [ ] Go generator
-    - [ ] Javascript generator
-- [x] graphql
+- [x] [graphql](https://github.com/gqlc/graphql)
     - [x] ast
     - [x] lexer
     - [x] parser
