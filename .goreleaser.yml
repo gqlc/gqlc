@@ -5,7 +5,7 @@ before:
     - go mod download
     - mkdir -p ./include/gqlc/protobuf/compiler
     - wget -P ./include/gqlc/protobuf https://raw.githubusercontent.com/gqlc/graphql/master/ast/ast.proto
-    - wget -P ./include/gqlc/protobuf/compiler https://raw.githubusercontent.com/gqlc/gqlc/master/cmd/plugin/plugin.proto
+    - wget -P ./include/gqlc/protobuf/compiler https://raw.githubusercontent.com/gqlc/compiler/master/plugin/plugin.proto
 builds:
   -
     binary: bin/gqlc

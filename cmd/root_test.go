@@ -16,9 +16,9 @@ import (
 
 type testRunFn func(*string, map[string]compiler.Generator, map[string]compiler.Generator, map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error
 
-func newTestCli(preRunE, runE testRunFn) *ccli {
-	c := &ccli{
-		root: &cobra.Command{
+func newTestCli(preRunE func(*cli) func(*cobra.Command, []string) error, runE testRunFn) *cli {
+	c := &cli{
+		Command: &cobra.Command{
 			Use:                "gqlc",
 			DisableFlagParsing: true,
 			Args:               cobra.MinimumNArgs(1),
@@ -28,11 +28,17 @@ func newTestCli(preRunE, runE testRunFn) *ccli {
 		genOpts:      make(map[compiler.Generator]*oFlag),
 		pluginPrefix: new(string),
 	}
-	c.root.PreRunE = preRunE(c.pluginPrefix, c.geners, c.opts, c.genOpts)
-	c.root.RunE = runE(c.pluginPrefix, c.geners, c.opts, c.genOpts)
-	c.root.Flags().StringSliceP("import_path", "I", []string{"."}, ``)
+	c.PreRunE = preRunE(c)
+	c.RunE = runE(c.pluginPrefix, c.geners, c.opts, c.genOpts)
+	c.Flags().StringSliceP("import_path", "I", []string{"."}, ``)
 
 	return c
+}
+
+func noopPreRunE(c *cli) func(*cobra.Command, []string) error {
+	return func(*cobra.Command, []string) error {
+		return nil
+	}
 }
 
 func noopRun(*string, map[string]compiler.Generator, map[string]compiler.Generator, map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error {
@@ -82,57 +88,6 @@ func TestMain(m *testing.M) {
 	afero.WriteFile(testFs, "/usr/imports/six.gql", []byte(sixGql), 0644)
 
 	os.Exit(m.Run())
-}
-
-func TestPreRun(t *testing.T) {
-	testCli := newTestCli(preRunRoot, noopRun)
-	testGen := newMockGenerator(t)
-	testCli.RegisterGenerator(testGen, "a_out", "A test generator.")
-	testCli.RegisterGenerator(testGen, "b_out", "b_opt", "A second test generator")
-
-	testCases := []struct {
-		Name string
-		Args []string
-		Err  string
-	}{
-		{
-			Name: "perfect",
-			Args: []string{"--a_out", "aDir", "--b_out", "bDir", "test.gql"},
-		},
-		{
-			Name: "missingFile(s)",
-			Args: []string{},
-			Err:  "requires at least 1 arg(s), only received 0",
-		},
-		{
-			Name: "outWithOpts",
-			Args: []string{"--b_out=a,b=b,c=1.5,d=false:bDir", "--b_opt=e,f=f,g=2", "test.gql"},
-		},
-		{
-			Name: "justPlugin",
-			Args: []string{"--plugin_out", ".", "test.gql"},
-		},
-		{
-			Name: "pluginWithOpts",
-			Args: []string{"--new_plugin_out=a,b=b,c=1.4,d=false:.", "--new_plugin_opt=e,f=f,g=2,h=false", "test.gql"},
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.Name, func(subT *testing.T) {
-			err := testCli.root.PreRunE(testCli.root, testCase.Args)
-			if err != nil {
-				if err.Error() != testCase.Err {
-					subT.Errorf("expected error: %s but got: %s", testCase.Err, err)
-					return
-				}
-				return
-			}
-			if testCase.Err != "" {
-				subT.Fail()
-			}
-		})
-	}
 }
 
 func TestParseInputFiles(t *testing.T) {
@@ -266,12 +221,21 @@ func TestRun(t *testing.T) {
 		},
 	}
 
+	preRunE := func(c *cli) func(*cobra.Command, []string) error {
+		return chainPreRunEs(
+			parseFlags(c.pluginPrefix, c.geners, c.opts),
+			validateArgs,
+			accumulateGens(c.pluginPrefix, c.geners, c.opts, c.genOpts),
+			validatePluginTypes,
+		)
+	}
+
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(subT *testing.T) {
 			ctrl := gomock.NewController(subT)
 			testGen := NewMockGenerator(ctrl)
 
-			testCli := newTestCli(preRunRoot, func(_ *string, _, _ map[string]compiler.Generator, flags map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error {
+			testCli := newTestCli(preRunE, func(_ *string, _, _ map[string]compiler.Generator, flags map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error {
 				return runRoot(testFs, flags)
 			})
 			testCli.RegisterGenerator(testGen, "test_out", "test_opt", "Test generator")

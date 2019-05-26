@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/gqlc/compiler"
-	gqlc "github.com/gqlc/gqlc/cmd/plugin/proto"
+	"github.com/gqlc/compiler/plugin"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
 	"github.com/gqlc/graphql/token"
@@ -73,6 +73,27 @@ func TestGenerator_Generate(t *testing.T) {
 	if !bytes.EqualFold(b.Bytes(), []byte(outDoc)) {
 		t.Fail()
 		return
+	}
+}
+
+func TestUnknownPlugin(t *testing.T) {
+	g := &Generator{Name: "nonexistent", Prefix: "gqlc-gen-"}
+
+	err1 := g.Generate(nil, &ast.Document{Name: "Test"}, "")
+	if err1 == nil {
+		t.Fail()
+		return
+	}
+
+	err2 := g.Generate(nil, &ast.Document{Name: "Test"}, "")
+	if err2 == nil {
+		t.Fail()
+		return
+	}
+
+	ce1, ce2 := err1.(compiler.GeneratorError), err2.(compiler.GeneratorError)
+	if ce1.Msg != ce2.Msg {
+		t.Fail()
 	}
 }
 
@@ -162,7 +183,7 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(0)
 		}
 
-		var req gqlc.PluginRequest
+		var req plugin.Request
 		err = proto.Unmarshal(b, &req)
 		if err != nil {
 			fmt.Fprintln(os.Stdout, err)
@@ -174,8 +195,8 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(0)
 		}
 
-		resp := &gqlc.PluginResponse{
-			File: []*gqlc.PluginResponse_File{
+		resp := &plugin.Response{
+			File: []*plugin.Response_File{
 				{
 					Name:    "test.txt",
 					Content: outDoc,
@@ -200,7 +221,7 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(0)
 		}
 
-		var req gqlc.PluginRequest
+		var req plugin.Request
 		err = proto.Unmarshal(b, &req)
 		if err != nil {
 			fmt.Fprintln(os.Stdout, err)
@@ -216,7 +237,7 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(0)
 		}
 
-		var req gqlc.PluginRequest
+		var req plugin.Request
 		err = proto.Unmarshal(b, &req)
 		if err != nil {
 			fmt.Fprintln(os.Stdout, err)
@@ -228,7 +249,7 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(0)
 		}
 
-		resp := &gqlc.PluginResponse{
+		resp := &plugin.Response{
 			Error: "testing error response",
 		}
 		b, err = proto.Marshal(resp)

@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gqlc/compiler"
-	"github.com/gqlc/gqlc/cmd/plugin"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
 	"github.com/gqlc/graphql/token"
@@ -86,92 +85,6 @@ Example:
 `)
 }
 
-func preRunRoot(prefix *string, geners, opts map[string]compiler.Generator, genOpts map[compiler.Generator]*oFlag) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		if cmd.Name() == "help" {
-			return nil
-		}
-
-		// Parse flags and handle plugin flags
-		var name string
-		for _, a := range args {
-			// Filter for output flags
-			switch strings.Contains(a, "_out") {
-			case false:
-				continue
-			case strings.Contains(a, ":"):
-				ss := strings.Split(a, ":")
-				name = ss[0][:strings.IndexRune(ss[0], '=')]
-			default:
-				name = a
-			}
-
-			// Trim "--" prefix
-			name = name[2:]
-			if f := cmd.Flags().Lookup(name); f != nil {
-				continue
-			}
-
-			f := &oFlag{opts: make(map[string]interface{}), outDir: new(string)}
-			pg := &plugin.Generator{Name: strings.TrimSuffix(name, "_out"), Prefix: *prefix}
-
-			outFlag := *f
-			outFlag.isOut = true
-			cmd.Flags().Var(outFlag, name, "")
-			geners[name] = pg
-
-			optName := strings.Replace(name, "_out", "_opt", 1)
-			optFlag := *f
-			cmd.Flags().Var(optFlag, optName, "")
-			opts[optName] = pg
-		}
-		if err := cmd.Flags().Parse(args); err != nil {
-			return err
-		}
-		args = cmd.Flags().Args()
-
-		// Validate args
-		if err := cmd.ValidateArgs(args); err != nil {
-			return err
-		}
-
-		// Validate file names
-		for _, fileName := range args {
-			ext := filepath.Ext(fileName)
-			if ext != ".gql" && ext != ".graphql" {
-				return fmt.Errorf("gqlc: invalid file extension: %s", fileName)
-			}
-		}
-
-		// Accumulate selected code generators
-		cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
-			if !f.Changed {
-				return
-			}
-
-			var fg compiler.Generator
-			g, isOpt := opts[f.Name]
-			gen, exists := geners[f.Name]
-			switch {
-			case isOpt:
-				fg = g
-			case exists:
-				fg = gen
-			default:
-				return
-			}
-
-			if genOpts[fg] != nil {
-				return
-			}
-
-			of := f.Value.(oFlag)
-			genOpts[fg] = &of
-		})
-		return nil
-	}
-}
-
 type genCtx struct {
 	fs  afero.Fs
 	dir string
@@ -236,7 +149,6 @@ func runRoot(fs afero.Fs, genOpts map[compiler.Generator]*oFlag) func(*cobra.Com
 				}
 			}
 		}
-
 		return
 	}
 }

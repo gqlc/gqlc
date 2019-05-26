@@ -1,3 +1,4 @@
+// Package cmd provides a compiler.CommandLine implementation.
 package cmd
 
 import (
@@ -12,10 +13,10 @@ import (
 	"text/scanner"
 )
 
-// ccli is an implementation of the compiler interface, which
-// simply wraps a github.com/spf13/cobra.Command
-type ccli struct {
-	root *cobra.Command
+// ccli is an implementation of the compiler.CommandLine interface, which
+// simply extends a github.com/spf13/cobra.Command
+type cli struct {
+	*cobra.Command
 
 	pluginPrefix *string
 	geners       map[string]compiler.Generator
@@ -24,23 +25,30 @@ type ccli struct {
 }
 
 // NewCLI returns a compiler.CommandLine implementation.
-func NewCLI() *ccli {
-	c := &ccli{
-		root:         rootCmd,
+func NewCLI() *cli {
+	c := &cli{
+		Command:      rootCmd,
 		geners:       make(map[string]compiler.Generator),
 		opts:         make(map[string]compiler.Generator),
 		genOpts:      make(map[compiler.Generator]*oFlag),
 		pluginPrefix: new(string),
 	}
 
-	c.root.PreRunE = preRunRoot(c.pluginPrefix, c.geners, c.opts, c.genOpts)
-	c.root.RunE = runRoot(afero.NewOsFs(), c.genOpts)
+	fs := afero.NewOsFs()
+	c.PreRunE = chainPreRunEs(
+		parseFlags(c.pluginPrefix, c.geners, c.opts),
+		validateArgs,
+		accumulateGens(c.pluginPrefix, c.geners, c.opts, c.genOpts),
+		validatePluginTypes,
+		mkGenDirs(fs, c.genOpts),
+	)
+	c.RunE = runRoot(fs, c.genOpts)
 	return c
 }
 
-func (c *ccli) AllowPlugins(prefix string) { *c.pluginPrefix = prefix }
+func (c *cli) AllowPlugins(prefix string) { *c.pluginPrefix = prefix }
 
-func (c *ccli) RegisterGenerator(g compiler.Generator, details ...string) {
+func (c *cli) RegisterGenerator(g compiler.Generator, details ...string) {
 	l := len(details)
 	var name, opt, help string
 	switch {
@@ -57,19 +65,19 @@ func (c *ccli) RegisterGenerator(g compiler.Generator, details ...string) {
 	f := &oFlag{opts: make(map[string]interface{}), outDir: new(string)}
 	outFlag := *f
 	outFlag.isOut = true
-	c.root.Flags().Var(outFlag, name, help)
+	c.Flags().Var(outFlag, name, help)
 	c.geners[name] = g
 
 	if opt != "" {
 		optFlag := *f
-		c.root.Flags().Var(optFlag, opt, "Pass additional options to generator.")
+		c.Flags().Var(optFlag, opt, "Pass additional options to generator.")
 		c.opts[opt] = g
 	}
 }
 
-func (c *ccli) Run(args []string) error {
-	c.root.SetArgs(args[1:])
-	return c.root.Execute()
+func (c *cli) Run(args []string) error {
+	c.SetArgs(args[1:])
+	return c.Execute()
 }
 
 // oFlag represents a generator output/option flag

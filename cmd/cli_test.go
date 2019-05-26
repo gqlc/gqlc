@@ -17,15 +17,15 @@ func TestCcli_RegisterGenerator(t *testing.T) {
 	t.Run("singleOut", func(subT *testing.T) {
 		name := "singleOut"
 
-		testCli := newTestCli(noopRun, noopRun)
+		testCli := newTestCli(noopPreRunE, noopRun)
 		testCli.RegisterGenerator(newMockGenerator(subT), fmt.Sprintf("%s_out", name), "Test generator")
 
-		err := parseArgs(testCli.root, []string{fmt.Sprintf("--%s_out", name), "."})
+		err := parseArgs(testCli.Command, []string{fmt.Sprintf("--%s_out", name), "."})
 		if err != nil {
 			subT.Error(err)
 			return
 		}
-		f := testCli.root.Flags().Lookup(fmt.Sprintf("%s_out", name))
+		f := testCli.Flags().Lookup(fmt.Sprintf("%s_out", name))
 		of := f.Value.(oFlag)
 		if *of.outDir == "." {
 			subT.Fail()
@@ -36,16 +36,16 @@ func TestCcli_RegisterGenerator(t *testing.T) {
 	t.Run("singleOutWithOpts", func(subT *testing.T) {
 		name := "singleOneWithOpts"
 
-		testCli := newTestCli(noopRun, noopRun)
+		testCli := newTestCli(noopPreRunE, noopRun)
 		testCli.RegisterGenerator(newMockGenerator(subT), fmt.Sprintf("%s_out", name), "Test Generator")
 
-		err := parseArgs(testCli.root, []string{fmt.Sprintf("--%s_out=a,b=b,c=1.4,d=false:.", name)})
+		err := parseArgs(testCli.Command, []string{fmt.Sprintf("--%s_out=a,b=b,c=1.4,d=false:.", name)})
 		if err != nil {
 			subT.Error(err)
 			return
 		}
 
-		f := testCli.root.Flags().Lookup(fmt.Sprintf("%s_out", name))
+		f := testCli.Flags().Lookup(fmt.Sprintf("%s_out", name))
 		of := f.Value.(oFlag)
 		if *of.outDir != "." {
 			subT.Fail()
@@ -77,16 +77,16 @@ func TestCcli_RegisterGenerator(t *testing.T) {
 		subT.Run("justOptsOnOut", func(triT *testing.T) {
 			name := "justOptsOnOut"
 
-			testCli := newTestCli(noopRun, noopRun)
+			testCli := newTestCli(noopPreRunE, noopRun)
 			testCli.RegisterGenerator(newMockGenerator(triT), fmt.Sprintf("%s_out", name), fmt.Sprintf("%s_opt", name), "Test Generator")
 
-			err := parseArgs(testCli.root, []string{fmt.Sprintf("--%s_out=a,b=b,c=1.4,d=false:.", name)})
+			err := parseArgs(testCli.Command, []string{fmt.Sprintf("--%s_out=a,b=b,c=1.4,d=false:.", name)})
 			if err != nil {
 				subT.Error(err)
 				return
 			}
 
-			f := testCli.root.Flags().Lookup(fmt.Sprintf("%s_out", name))
+			f := testCli.Flags().Lookup(fmt.Sprintf("%s_out", name))
 			of := f.Value.(oFlag)
 			if *of.outDir != "." {
 				subT.Fail()
@@ -122,16 +122,16 @@ func TestCcli_RegisterGenerator(t *testing.T) {
 		subT.Run("optsOnOutAndOpts", func(triT *testing.T) {
 			name := "optsOnOutAndOpts"
 
-			testCli := newTestCli(noopRun, noopRun)
+			testCli := newTestCli(noopPreRunE, noopRun)
 			testCli.RegisterGenerator(newMockGenerator(triT), fmt.Sprintf("%s_out", name), fmt.Sprintf("%s_opt", name), "Test Generator")
 
-			err := parseArgs(testCli.root, []string{fmt.Sprintf("--%s_out=a,b=b,c=1.4,d=false:.", name), fmt.Sprintf("--%s_opt=e,f=f,g=2,h=false", name)})
+			err := parseArgs(testCli.Command, []string{fmt.Sprintf("--%s_out=a,b=b,c=1.4,d=false:.", name), fmt.Sprintf("--%s_opt=e,f=f,g=2,h=false", name)})
 			if err != nil {
 				subT.Error(err)
 				return
 			}
 
-			f := testCli.root.Flags().Lookup(fmt.Sprintf("%s_out", name))
+			f := testCli.Flags().Lookup(fmt.Sprintf("%s_out", name))
 			of := f.Value.(oFlag)
 			if *of.outDir != "." {
 				subT.Fail()

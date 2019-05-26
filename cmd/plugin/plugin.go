@@ -7,19 +7,24 @@ import (
 	"errors"
 	"github.com/golang/protobuf/proto"
 	"github.com/gqlc/compiler"
-	gqlc "github.com/gqlc/gqlc/cmd/plugin/proto"
+	"github.com/gqlc/compiler/plugin"
 	"github.com/gqlc/graphql/ast"
 	"os/exec"
+	"sync"
 )
 
 // Generator executes an external plugin as a generator.
 // The name of the plugin is given by the generators Prefix and Name fields.
 //
 type Generator struct {
+	*exec.Cmd
+
 	Name   string
 	Prefix string
 
-	*exec.Cmd
+	lookOnce    sync.Once
+	path        string
+	lookPathErr error
 }
 
 // Generate executes a plugin given the GraphQL Document.
@@ -27,15 +32,25 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 	defer func() {
 		if err != nil {
 			err = compiler.GeneratorError{
-				GenName: g.Name,
+				GenName: g.Prefix + g.Name,
 				DocName: doc.Name,
 				Msg:     err.Error(),
 			}
 		}
 	}()
 
+	// Lookup plugin only once
+	g.lookOnce.Do(func() {
+		pluginName := g.Prefix + g.Name
+		g.path, g.lookPathErr = exec.LookPath(pluginName)
+	})
+	if g.lookPathErr != nil {
+		err = g.lookPathErr
+		return
+	}
+
 	// Marshall doc
-	b, perr := proto.Marshal(&gqlc.PluginRequest{
+	b, perr := proto.Marshal(&plugin.Request{
 		FileToGenerate: []string{doc.Name},
 		Parameter:      opts,
 		Documents:      []*ast.Document{doc},
@@ -45,10 +60,9 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 		return
 	}
 
-	// Create plugin command
-	pluginName := g.Prefix + g.Name
+	// Configure plugin command
 	if g.Cmd == nil {
-		g.Cmd = exec.CommandContext(ctx, pluginName)
+		g.Cmd = exec.CommandContext(ctx, g.path)
 	}
 	out := new(bytes.Buffer)
 	g.Stdin = bytes.NewReader(b)
@@ -62,7 +76,7 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 	}
 
 	// Unmarshall response
-	var resp gqlc.PluginResponse
+	var resp plugin.Response
 	err = proto.Unmarshal(out.Bytes(), &resp)
 	if err != nil {
 		return
