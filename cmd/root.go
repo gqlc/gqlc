@@ -168,9 +168,20 @@ func resolveImportPaths(docs []*ast.Document) {
 
 				compLit := arg.Value.(*ast.Arg_CompositeLit).CompositeLit
 				listLit := compLit.Value.(*ast.CompositeLit_ListLit).ListLit.List
-				paths := listLit.(*ast.ListLit_BasicList).BasicList
 
-				for _, p := range paths.Values {
+				var paths []*ast.BasicLit
+				switch v := listLit.(type) {
+				case *ast.ListLit_BasicList:
+					paths = append(paths, v.BasicList.Values...)
+				case *ast.ListLit_CompositeList:
+					cpaths := v.CompositeList.Values
+					paths = make([]*ast.BasicLit, len(cpaths))
+					for i, c := range cpaths {
+						paths[i] = c.Value.(*ast.CompositeLit_BasicLit).BasicLit
+					}
+				}
+
+				for _, p := range paths {
 					iPath := strings.Trim(p.Value, "\"")
 					iName := filepath.Base(iPath)
 
@@ -241,9 +252,20 @@ func parseImports(dset *token.DocSet, fs afero.Fs, importPaths []string, docMap 
 
 				compLit := arg.Value.(*ast.Arg_CompositeLit).CompositeLit
 				listLit := compLit.Value.(*ast.CompositeLit_ListLit).ListLit.List
-				paths := listLit.(*ast.ListLit_BasicList).BasicList
 
-				for _, p := range paths.Values {
+				var paths []*ast.BasicLit
+				switch v := listLit.(type) {
+				case *ast.ListLit_BasicList:
+					paths = append(paths, v.BasicList.Values...)
+				case *ast.ListLit_CompositeList:
+					cpaths := v.CompositeList.Values
+					paths = make([]*ast.BasicLit, len(cpaths))
+					for i, c := range cpaths {
+						paths[i] = c.Value.(*ast.CompositeLit_BasicLit).BasicLit
+					}
+				}
+
+				for _, p := range paths {
 					iPath := strings.Trim(p.Value, "\"")
 					iName := filepath.Base(iPath)
 					if _, exists := docMap[iName]; exists {
@@ -281,9 +303,20 @@ func parseImports(dset *token.DocSet, fs afero.Fs, importPaths []string, docMap 
 
 				compLit := arg.Value.(*ast.Arg_CompositeLit).CompositeLit
 				listLit := compLit.Value.(*ast.CompositeLit_ListLit).ListLit.List
-				paths := listLit.(*ast.ListLit_BasicList).BasicList
 
-				for _, p := range paths.Values {
+				var paths []*ast.BasicLit
+				switch v := listLit.(type) {
+				case *ast.ListLit_BasicList:
+					paths = append(paths, v.BasicList.Values...)
+				case *ast.ListLit_CompositeList:
+					cpaths := v.CompositeList.Values
+					paths = make([]*ast.BasicLit, len(cpaths))
+					for i, c := range cpaths {
+						paths[i] = c.Value.(*ast.CompositeLit_BasicLit).BasicLit
+					}
+				}
+
+				for _, p := range paths {
 					iPath := strings.Trim(p.Value, "\"")
 					iName := filepath.Base(iPath)
 					if _, exists := docMap[iName]; exists {

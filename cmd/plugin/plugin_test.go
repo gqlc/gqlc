@@ -155,6 +155,7 @@ func TestResponseError(t *testing.T) {
 
 // TestHelperProcess isn't a real test. It's used as a helper process
 // for TestParameterRun.
+//
 func TestHelperProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return

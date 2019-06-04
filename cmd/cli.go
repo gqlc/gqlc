@@ -40,7 +40,7 @@ func NewCLI() *cli {
 		validateArgs,
 		accumulateGens(c.pluginPrefix, c.geners, c.opts, c.genOpts),
 		validatePluginTypes,
-		mkGenDirs(fs, c.genOpts),
+		initGenDirs(fs, c.genOpts),
 	)
 	c.RunE = runRoot(fs, c.genOpts)
 	return c

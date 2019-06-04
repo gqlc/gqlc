@@ -161,8 +161,8 @@ func validatePluginTypes(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// mkGenDirs creates the directory each generator will be outputting to.
-func mkGenDirs(fs afero.Fs, genOpts map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error {
+// initGenDirs initializes each directory each generator will be outputting to.
+func initGenDirs(fs afero.Fs, genOpts map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) (err error) {
 		for _, genOpt := range genOpts {
 			err = fs.MkdirAll(*genOpt.outDir, os.ModeDir)
