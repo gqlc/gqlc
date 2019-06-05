@@ -94,8 +94,8 @@ func (ctx *genCtx) Open(name string) (io.WriteCloser, error) {
 	return ctx.fs.OpenFile(filepath.Join(ctx.dir, name), os.O_WRONLY|os.O_CREATE, 0755)
 }
 
-func runRoot(fs afero.Fs, genOpts map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error {
-	return func(cmd *cobra.Command, args []string) (err error) {
+func root(fs afero.Fs, geners *[]*genFlag) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, _ []string) (err error) {
 		importPaths, err := cmd.Flags().GetStringSlice("import_path")
 		if err != nil {
 			return
@@ -132,18 +132,18 @@ func runRoot(fs afero.Fs, genOpts map[compiler.Generator]*oFlag) func(*cobra.Com
 		defer cancel()
 		var b bytes.Buffer
 		enc := json.NewEncoder(&b)
-		for g, genOpt := range genOpts {
+		for _, gen := range *geners {
 			b.Reset()
 
-			err = enc.Encode(genOpt.opts)
+			err = enc.Encode(gen.opts)
 			if err != nil {
 				return
 			}
 
-			ctx = compiler.WithContext(ctx, &genCtx{dir: *genOpt.outDir, fs: fs})
+			ctx = compiler.WithContext(ctx, &genCtx{dir: *gen.outDir, fs: fs})
 
 			for _, doc := range docs {
-				err = g.Generate(ctx, doc, b.String())
+				err = gen.Generate(ctx, doc, b.String())
 				if err != nil {
 					return
 				}

@@ -4,7 +4,6 @@ package cmd
 
 import (
 	"github.com/golang/mock/gomock"
-	"github.com/gqlc/compiler"
 	"github.com/gqlc/graphql/ast"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -13,37 +12,6 @@ import (
 	"strings"
 	"testing"
 )
-
-type testRunFn func(*string, map[string]compiler.Generator, map[string]compiler.Generator, map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error
-
-func newTestCli(preRunE func(*cli) func(*cobra.Command, []string) error, runE testRunFn) *cli {
-	c := &cli{
-		Command: &cobra.Command{
-			Use:                "gqlc",
-			DisableFlagParsing: true,
-			Args:               cobra.MinimumNArgs(1),
-		},
-		geners:       make(map[string]compiler.Generator),
-		opts:         make(map[string]compiler.Generator),
-		genOpts:      make(map[compiler.Generator]*oFlag),
-		pluginPrefix: new(string),
-	}
-	c.PreRunE = preRunE(c)
-	c.RunE = runE(c.pluginPrefix, c.geners, c.opts, c.genOpts)
-	c.Flags().StringSliceP("import_path", "I", []string{"."}, ``)
-
-	return c
-}
-
-func noopPreRunE(c *cli) func(*cobra.Command, []string) error {
-	return func(*cobra.Command, []string) error {
-		return nil
-	}
-}
-
-func noopRun(*string, map[string]compiler.Generator, map[string]compiler.Generator, map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error {
-	return nil
-}
 
 var (
 	testFs afero.Fs
@@ -197,7 +165,7 @@ func TestParseInputFiles(t *testing.T) {
 	}
 }
 
-func TestRun(t *testing.T) {
+func TestRoot(t *testing.T) {
 	testCases := []struct {
 		Name   string
 		Args   []string
@@ -205,54 +173,48 @@ func TestRun(t *testing.T) {
 	}{
 		{
 			Name: "SingleWoImports",
-			Args: []string{"gqlc", "/home/graphql/imports/thr.gql"},
+			Args: []string{"/home/graphql/imports/thr.gql"},
 			expect: func(g *MockGenerator) {
 				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
 		{
 			Name: "SingleWImports",
-			Args: []string{"gqlc", "-I", "/usr/imports", "-I", "/home/graphql/imports", "five.gql"},
+			Args: []string{"-I", "/usr/imports", "-I", "/home/graphql/imports", "five.gql"},
 			expect: func(g *MockGenerator) {
 				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
 		{
 			Name: "MultiWoImports",
-			Args: []string{"gqlc", "-I", "/home", "-I", "/home/graphql/imports", "thr.gql", "four.gql"},
+			Args: []string{"-I", "/home", "-I", "/home/graphql/imports", "thr.gql", "four.gql"},
 			expect: func(g *MockGenerator) {
 				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
 		{
 			Name: "MultiWImports",
-			Args: []string{"gqlc", "-I", "/usr/imports", "-I", "/home", "-I=/home/graphql", "-I", "/home/graphql/imports", "one.gql", "five.gql"},
+			Args: []string{"-I", "/usr/imports", "-I", "/home", "-I=/home/graphql", "-I", "/home/graphql/imports", "one.gql", "five.gql"},
 			expect: func(g *MockGenerator) {
 				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
 	}
 
-	preRunE := func(c *cli) func(*cobra.Command, []string) error {
-		return chainPreRunEs(
-			parseFlags(c.pluginPrefix, c.geners, c.opts),
-			validateArgs,
-			accumulateGens(c.pluginPrefix, c.geners, c.opts, c.genOpts),
-			validatePluginTypes,
-		)
-	}
-
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(subT *testing.T) {
-			ctrl := gomock.NewController(subT)
-			testGen := NewMockGenerator(ctrl)
+			cmd := &cobra.Command{
+				Args: cobra.MinimumNArgs(1),
+			}
+			cmd.Flags().StringSliceP("import_path", "I", nil, "")
 
-			testCli := newTestCli(preRunE, func(_ *string, _, _ map[string]compiler.Generator, flags map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error {
-				return runRoot(testFs, flags)
-			})
-			testCli.RegisterGenerator(testGen, "test_out", "test_opt", "Test generator")
+			err := cmd.Flags().Parse(testCase.Args)
+			if err != nil {
+				subT.Error(err)
+				return
+			}
 
-			err := testCli.Run(testCase.Args)
+			err = root(testFs, new([]*genFlag))(cmd, nil)
 			if err != nil {
 				subT.Error(err)
 				return

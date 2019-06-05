@@ -4,12 +4,8 @@ import (
 	"fmt"
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/gqlc/cmd/plugin"
-	"github.com/gqlc/graphql/ast"
-	"github.com/gqlc/graphql/parser"
-	"github.com/gqlc/graphql/token"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,7 +21,7 @@ func chainPreRunEs(preRunEs ...func(*cobra.Command, []string) error) func(*cobra
 }
 
 // parseFlags parses the flags given and handles plugin flags
-func parseFlags(prefix *string, geners, opts map[string]compiler.Generator) func(*cobra.Command, []string) error {
+func parseFlags(prefix *string, geners *[]*genFlag, fp *fparser) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		if cmd.Name() == "help" {
 			return nil
@@ -51,18 +47,17 @@ func parseFlags(prefix *string, geners, opts map[string]compiler.Generator) func
 				continue
 			}
 
-			f := &oFlag{opts: make(map[string]interface{}), outDir: new(string)}
-			pg := &plugin.Generator{Name: strings.TrimSuffix(name, "_out"), Prefix: *prefix}
-
-			outFlag := *f
-			outFlag.isOut = true
-			cmd.Flags().Var(outFlag, name, "")
-			geners[name] = pg
+			opts := make(map[string]interface{})
+			cmd.Flags().Var(&genFlag{
+				Generator: &plugin.Generator{Name: strings.TrimSuffix(name, "_out"), Prefix: *prefix},
+				outDir:    new(string),
+				opts:      opts,
+				geners:    geners,
+				fp:        fp,
+			}, name, "")
 
 			optName := strings.Replace(name, "_out", "_opt", 1)
-			optFlag := *f
-			cmd.Flags().Var(optFlag, optName, "")
-			opts[optName] = pg
+			cmd.Flags().Var(&genOptFlag{opts: opts, fp: fp}, optName, "")
 		}
 
 		return cmd.Flags().Parse(args)
@@ -89,80 +84,45 @@ func validateArgs(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// accumulateGens accumulates the selected code generators
-func accumulateGens(prefix *string, geners, opts map[string]compiler.Generator, genOpts map[compiler.Generator]*oFlag) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
-			if !f.Changed {
-				return
-			}
-
-			var fg compiler.Generator
-			g, isOpt := opts[f.Name]
-			gen, exists := geners[f.Name]
-			switch {
-			case isOpt:
-				fg = g
-			case exists:
-				fg = gen
-			default:
-				return
-			}
-
-			if genOpts[fg] != nil {
-				return
-			}
-
-			of := f.Value.(oFlag)
-			genOpts[fg] = &of
-		})
-		return nil
-	}
-}
-
-var pluginTypes []string
-
 func init() {
-	rootCmd.Flags().StringSliceVarP(&pluginTypes, "types", "t", nil, "Provide .gql files containing types you wish to register with the compiler.")
+	rootCmd.Flags().StringSliceP("types", "t", nil, "Provide .gql files containing types you wish to register with the compiler.")
 }
 
 // validatePluginTypes parses and validates any types given by the --types flag.
-func validatePluginTypes(cmd *cobra.Command, args []string) error {
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	docs := make([]*ast.Document, 0, len(pluginTypes))
-	for _, t := range pluginTypes {
-		path := t
-		if !filepath.IsAbs(t) {
-			path = filepath.Join(wd, path)
+func validatePluginTypes(fs afero.Fs) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		pluginTypes, _ := cmd.LocalFlags().GetStringSlice("types")
+		if len(pluginTypes) == 0 {
+			return nil
 		}
 
-		f, err := os.Open(path)
+		importPaths, err := cmd.Flags().GetStringSlice("import_path")
 		if err != nil {
 			return err
 		}
 
-		doc, err := parser.ParseDoc(token.NewDocSet(), filepath.Base(path), f, 0)
+		docs, err := parseInputFiles(fs, importPaths, pluginTypes)
 		if err != nil {
 			return err
 		}
-		docs = append(docs, doc)
-	}
 
-	errs := compiler.CheckTypes(docs, compiler.TypeCheckerFn(compiler.Validate))
-	if len(errs) > 0 {
-		// TODO: Compound errs
+		docs, err = compiler.ReduceImports(docs)
+		if err != nil {
+			return err
+		}
+
+		errs := compiler.CheckTypes(docs, compiler.TypeCheckerFn(compiler.Validate))
+		if len(errs) > 0 {
+			// TODO: Compound errs
+			return nil
+		}
+
 		return nil
 	}
-
-	return nil
 }
 
 // initGenDirs initializes each directory each generator will be outputting to.
-func initGenDirs(fs afero.Fs, genOpts map[compiler.Generator]*oFlag) func(*cobra.Command, []string) error {
+func initGenDirs(fs afero.Fs, genOpts []*genFlag) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) (err error) {
 		for _, genOpt := range genOpts {
 			err = fs.MkdirAll(*genOpt.outDir, os.ModeDir)

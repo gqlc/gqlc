@@ -3,358 +3,278 @@ package cmd
 import (
 	"fmt"
 	"github.com/golang/mock/gomock"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"os"
 	"testing"
+	"text/scanner"
 )
 
 func newMockGenerator(t gomock.TestReporter) *MockGenerator {
 	return NewMockGenerator(gomock.NewController(t))
 }
 
-func parseArgs(cmd *cobra.Command, args []string) error { return cmd.Flags().Parse(args) }
+type testRunFn func(afero.Fs, *[]*genFlag) func(*cobra.Command, []string) error
 
-func TestCcli_RegisterGenerator(t *testing.T) {
-	t.Run("singleOut", func(subT *testing.T) {
-		name := "singleOut"
+func newTestCli(fs afero.Fs, preRunE func(*cli) func(*cobra.Command, []string) error, runE testRunFn) *cli {
+	c := &cli{
+		Command: &cobra.Command{
+			Use:                "gqlc",
+			DisableFlagParsing: true,
+			Args:               cobra.MinimumNArgs(1),
+		},
+		pluginPrefix: new(string),
+		fp: &fparser{
+			Scanner: new(scanner.Scanner),
+		},
+	}
+	c.PreRunE = preRunE(c)
+	c.RunE = runE(fs, &c.geners)
+	c.Flags().StringSliceP("import_path", "I", []string{"."}, ``)
 
-		testCli := newTestCli(noopPreRunE, noopRun)
-		testCli.RegisterGenerator(newMockGenerator(subT), fmt.Sprintf("%s_out", name), "Test generator")
-
-		err := parseArgs(testCli.Command, []string{fmt.Sprintf("--%s_out", name), "."})
-		if err != nil {
-			subT.Error(err)
-			return
-		}
-		f := testCli.Flags().Lookup(fmt.Sprintf("%s_out", name))
-		of := f.Value.(oFlag)
-		if *of.outDir == "." {
-			subT.Fail()
-			return
-		}
-	})
-
-	t.Run("singleOutWithOpts", func(subT *testing.T) {
-		name := "singleOneWithOpts"
-
-		testCli := newTestCli(noopPreRunE, noopRun)
-		testCli.RegisterGenerator(newMockGenerator(subT), fmt.Sprintf("%s_out", name), "Test Generator")
-
-		err := parseArgs(testCli.Command, []string{fmt.Sprintf("--%s_out=a,b=b,c=1.4,d=false:.", name)})
-		if err != nil {
-			subT.Error(err)
-			return
-		}
-
-		f := testCli.Flags().Lookup(fmt.Sprintf("%s_out", name))
-		of := f.Value.(oFlag)
-		if *of.outDir != "." {
-			subT.Fail()
-			return
-		}
-
-		if !of.opts["a"].(bool) {
-			subT.Fail()
-			return
-		}
-
-		if of.opts["b"].(string) != "b" {
-			subT.Fail()
-			return
-		}
-
-		if of.opts["c"].(float64) != 1.4 {
-			subT.Fail()
-			return
-		}
-
-		if of.opts["d"].(bool) {
-			subT.Fail()
-			return
-		}
-	})
-
-	t.Run("outAndOpt", func(subT *testing.T) {
-		subT.Run("justOptsOnOut", func(triT *testing.T) {
-			name := "justOptsOnOut"
-
-			testCli := newTestCli(noopPreRunE, noopRun)
-			testCli.RegisterGenerator(newMockGenerator(triT), fmt.Sprintf("%s_out", name), fmt.Sprintf("%s_opt", name), "Test Generator")
-
-			err := parseArgs(testCli.Command, []string{fmt.Sprintf("--%s_out=a,b=b,c=1.4,d=false:.", name)})
-			if err != nil {
-				subT.Error(err)
-				return
-			}
-
-			f := testCli.Flags().Lookup(fmt.Sprintf("%s_out", name))
-			of := f.Value.(oFlag)
-			if *of.outDir != "." {
-				subT.Fail()
-				return
-			}
-
-			if *of.outDir != "." {
-				subT.Fail()
-				return
-			}
-
-			if !of.opts["a"].(bool) {
-				subT.Fail()
-				return
-			}
-
-			if of.opts["b"].(string) != "b" {
-				subT.Fail()
-				return
-			}
-
-			if of.opts["c"].(float64) != 1.4 {
-				subT.Fail()
-				return
-			}
-
-			if of.opts["d"].(bool) {
-				subT.Fail()
-				return
-			}
-		})
-
-		subT.Run("optsOnOutAndOpts", func(triT *testing.T) {
-			name := "optsOnOutAndOpts"
-
-			testCli := newTestCli(noopPreRunE, noopRun)
-			testCli.RegisterGenerator(newMockGenerator(triT), fmt.Sprintf("%s_out", name), fmt.Sprintf("%s_opt", name), "Test Generator")
-
-			err := parseArgs(testCli.Command, []string{fmt.Sprintf("--%s_out=a,b=b,c=1.4,d=false:.", name), fmt.Sprintf("--%s_opt=e,f=f,g=2,h=false", name)})
-			if err != nil {
-				subT.Error(err)
-				return
-			}
-
-			f := testCli.Flags().Lookup(fmt.Sprintf("%s_out", name))
-			of := f.Value.(oFlag)
-			if *of.outDir != "." {
-				subT.Fail()
-				return
-			}
-
-			if *of.outDir != "." {
-				subT.Fail()
-				return
-			}
-
-			if !of.opts["a"].(bool) {
-				subT.Fail()
-				return
-			}
-
-			if of.opts["b"].(string) != "b" {
-				subT.Fail()
-				return
-			}
-
-			if of.opts["c"].(float64) != 1.4 {
-				subT.Fail()
-				return
-			}
-
-			if of.opts["d"].(bool) {
-				subT.Fail()
-				return
-			}
-
-			if !of.opts["e"].(bool) {
-				subT.Fail()
-				return
-			}
-
-			if of.opts["f"].(string) != "f" {
-				subT.Fail()
-				return
-			}
-
-			if of.opts["g"].(int64) != 2 {
-				subT.Fail()
-				return
-			}
-
-			if of.opts["h"].(bool) {
-				subT.Fail()
-				return
-			}
-		})
-	})
+	return c
 }
 
-func TestOutFlag_Set(t *testing.T) {
+func noopPreRunE(*cli) func(*cobra.Command, []string) error {
+	return func(*cobra.Command, []string) error {
+		return nil
+	}
+}
 
-	t.Run("justDir", func(subT *testing.T) {
-		f := &oFlag{opts: make(map[string]interface{}), outDir: new(string), isOut: true}
+func noopRun(afero.Fs, *[]*genFlag) func(*cobra.Command, []string) error {
+	return nil
+}
 
-		arg := "testDir"
-		err := f.Set(arg)
-		if err != nil {
-			subT.Errorf("unexpected error from flag parsing: %s:%s", arg, err)
-			return
-		}
+func parseArgs(cmd *cobra.Command, args []string) error { return cmd.Flags().Parse(args) }
 
-		if *f.outDir != arg {
-			subT.Fail()
-			return
-		}
+func TestCli_RegisterGenerator(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
-		subT.Run("absPath", func(triT *testing.T) {
-			f := &oFlag{opts: make(map[string]interface{}), outDir: new(string), isOut: true}
+	testCases := []struct {
+		Name   string
+		Args   []string
+		OutDir string
+		Opts   map[string]interface{}
+		Err    string
+	}{
+		{
+			Name:   "NoOptsWithOut",
+			Args:   []string{"--NoOptsWithOut_out", "."},
+			OutDir: wd,
+		},
+		{
+			Name:   "OptsOnOut",
+			Args:   []string{"--OptsOnOut_out=a,b=b,c=1.4,d=false:."},
+			OutDir: wd,
+			Opts:   map[string]interface{}{"a": true, "b": "b", "c": 1.4, "d": false},
+		},
+		{
+			Name:   "OptFlagAndOutFlagOpts",
+			Args:   []string{"--OptFlagAndOutFlagOpts_out=a,b=b,c=1.4,d=false:.", "--OptFlagAndOutFlagOpts_opt=e,f=f,g=2,h=false,i"},
+			OutDir: wd,
+			Opts:   map[string]interface{}{"a": true, "b": "b", "c": 1.4, "d": false, "e": true, "f": "f", "g": int64(2), "h": false, "i": true},
+		},
+	}
 
-			arg := "/testDir"
-			err := f.Set(arg)
-			if err != nil {
-				triT.Errorf("unexpected error from flag parsing: %s:%s", arg, err)
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(subT *testing.T) {
+			name := fmt.Sprintf("%s_out", testCase.Name)
+
+			testCli := newTestCli(nil, noopPreRunE, noopRun)
+			testCli.RegisterGenerator(newMockGenerator(subT), name, fmt.Sprintf("%s_opt", testCase.Name), "Test Generator")
+
+			err := parseArgs(testCli.Command, testCase.Args)
+			if err != nil && testCase.Err == "" {
+				subT.Errorf("unexpected error from arg parsing: %s:%s", testCase.Args, err)
+				return
+			}
+			if testCase.Err != "" {
+				if err == nil {
+					subT.Errorf("expected error: %s", testCase.Err)
+					return
+				}
+
+				if err.Error() != testCase.Err {
+					subT.Logf("mismatched errors: %s:%s", err, testCase.Err)
+					subT.Fail()
+				}
 				return
 			}
 
-			if *f.outDir != arg {
-				triT.Fail()
-			}
-		})
-
-		subT.Run("relPath", func(triT *testing.T) {
-			f := &oFlag{opts: make(map[string]interface{}), outDir: new(string), isOut: true}
-
-			arg := "testDir/a"
-			err := f.Set(arg)
-			if err != nil {
-				triT.Errorf("unexpected error from flag parsing: %s:%s", arg, err)
+			f := testCli.Flags().Lookup(name).Value.(*genFlag)
+			if testCase.OutDir != *f.outDir {
+				subT.Logf("mismatched output dirs: %s:%s", *f.outDir, testCase.OutDir)
+				subT.Fail()
 				return
 			}
 
-			if *f.outDir != arg {
-				triT.Fail()
+			if len(f.opts) != len(testCase.Opts) {
+				subT.Fail()
 			}
+
+			compare(subT, f.opts, testCase.Opts)
 		})
-	})
+	}
+}
 
-	t.Run("optsButNoDir", func(subT *testing.T) {
-		f := &oFlag{opts: make(map[string]interface{})}
+func TestCli_Run(t *testing.T) {
+	preRunE := func(c *cli) func(*cobra.Command, []string) error {
+		return chainPreRunEs(
+			parseFlags(c.pluginPrefix, &c.geners, c.fp),
+			validateArgs,
+			validatePluginTypes(testFs),
+			initGenDirs(testFs, c.geners),
+		)
+	}
 
-		arg := "testOpts:"
-		err := f.Set(arg)
-		if err != nil {
-			subT.Errorf("expected error from flag parsing: %s:%s", arg, err)
-			return
-		}
-	})
+	c := newTestCli(testFs, preRunE, root)
 
-	t.Run("malformedOpts", func(subT *testing.T) {
-		f := &oFlag{opts: make(map[string]interface{})}
+	testCases := []struct {
+		Name   string
+		Args   []string
+		expect func(g *MockGenerator)
+	}{
+		{
+			Name: "SingleWoImports",
+			Args: []string{"gqlc", "/home/graphql/imports/thr.gql"},
+			expect: func(g *MockGenerator) {
+				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			},
+		},
+		{
+			Name: "SingleWImports",
+			Args: []string{"gqlc", "-I", "/usr/imports", "-I", "/home/graphql/imports", "five.gql"},
+			expect: func(g *MockGenerator) {
+				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			},
+		},
+		{
+			Name: "MultiWoImports",
+			Args: []string{"gqlc", "-I", "/home", "-I", "/home/graphql/imports", "thr.gql", "four.gql"},
+			expect: func(g *MockGenerator) {
+				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			},
+		},
+		{
+			Name: "MultiWImports",
+			Args: []string{"gqlc", "-I", "/usr/imports", "-I", "/home", "-I=/home/graphql", "-I", "/home/graphql/imports", "one.gql", "five.gql"},
+			expect: func(g *MockGenerator) {
+				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			},
+		},
+	}
 
-		arg := "testOpts=:"
-		err := f.Set(arg)
-		if err == nil {
-			subT.Errorf("expected error from flag parsing: %s", arg)
-			return
-		}
-
-		if err.Error() != "gqlc: unexpected character in generator option, testOpts, value: :" {
-			subT.Error(err)
-		}
-	})
-
-	t.Run("boolOpt", func(subT *testing.T) {
-		f := &oFlag{opts: make(map[string]interface{})}
-
-		arg := "testBoolOpt:"
-		err := f.Set(arg)
-		if err != nil {
-			subT.Errorf("expected error from flag parsing: %s:%s", arg, err)
-			return
-		}
-		if !f.opts["testBoolOpt"].(bool) {
-			subT.Fail()
-		}
-
-		arg = "testBoolOpt=false:"
-		err = f.Set(arg)
-		if err != nil {
-			subT.Errorf("expected error from flag parsing: %s:%s", arg, err)
-			return
-		}
-		if f.opts["testBoolOpt"].(bool) {
-			subT.Fail()
-		}
-
-		arg = "testBoolOpt=true:"
-		err = f.Set(arg)
-		if err != nil {
-			subT.Errorf("expected error from flag parsing: %s:%s", arg, err)
-			return
-		}
-		if !f.opts["testBoolOpt"].(bool) {
-			subT.Fail()
-		}
-	})
-
-	t.Run("multiOpts", func(subT *testing.T) {
-
-		subT.Run("multiInt", func(triT *testing.T) {
-			f := &oFlag{opts: make(map[string]interface{})}
-
-			arg := "testInts=1,testInts=2,testInts=3:"
-			err := f.Set(arg)
-			if err != nil {
-				subT.Errorf("unexpected error from flag parsing: %s:%s", arg, err)
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(subT *testing.T) {
+			if err := c.Run(testCase.Args); err != nil {
+				subT.Error(err)
 				return
 			}
-
-			if len(f.opts["testInts"].([]int64)) != 3 {
-				triT.Fail()
-			}
 		})
+	}
+}
 
-		subT.Run("multiFloat", func(triT *testing.T) {
-			f := &oFlag{opts: make(map[string]interface{})}
+func compare(t *testing.T, out, ex map[string]interface{}) {
+	match := true
+	var missing []string
+	for k, outVal := range out {
+		exVal, exists := ex[k]
+		if !exists {
+			missing = append(missing, k)
+		}
 
-			arg := "testFloats=1.0,testFloats=2.0,testFloats=3.0:"
-			err := f.Set(arg)
-			if err != nil {
-				subT.Errorf("unexpected error from flag parsing: %s:%s", arg, err)
-				return
+		switch v := outVal.(type) {
+		case int64, float64, string, bool:
+			match = v == exVal
+		case []int64:
+			_, match = exVal.([]int64)
+			if !match {
+				break
 			}
 
-			if len(f.opts["testFloats"].([]float64)) != 3 {
-				triT.Fail()
-			}
-		})
-
-		subT.Run("multiString", func(triT *testing.T) {
-			f := &oFlag{opts: make(map[string]interface{})}
-
-			arg := `testStrings="1",testStrings="2",testStrings="3":`
-			err := f.Set(arg)
-			if err != nil {
-				subT.Errorf("unexpected error from flag parsing: %s:%s", arg, err)
-				return
+			exSlice := exVal.([]int64)
+			match = len(exSlice) == len(v)
+			if !match {
+				break
 			}
 
-			if len(f.opts["testStrings"].([]string)) != 3 {
-				triT.Fail()
+			for i := range exSlice {
+				if match = v[i] == exSlice[i]; !match {
+					break
+				}
 			}
-		})
-
-		subT.Run("multiIdent", func(triT *testing.T) {
-			f := &oFlag{opts: make(map[string]interface{})}
-
-			arg := "testIdents=one,testIdents=two,testIdents=three:"
-			err := f.Set(arg)
-			if err != nil {
-				subT.Errorf("unexpected error from flag parsing: %s:%s", arg, err)
-				return
+		case []float64:
+			_, match = exVal.([]float64)
+			if !match {
+				break
 			}
 
-			if len(f.opts["testIdents"].([]string)) != 3 {
-				triT.Fail()
+			exSlice := exVal.([]float64)
+			match = len(exSlice) == len(v)
+			if !match {
+				break
 			}
-		})
-	})
 
+			for i := range exSlice {
+				if match = v[i] == exSlice[i]; !match {
+					break
+				}
+			}
+		case []string:
+			_, match = exVal.([]string)
+			if !match {
+				break
+			}
+
+			exSlice := exVal.([]string)
+			match = len(exSlice) == len(v)
+			if !match {
+				break
+			}
+
+			for i := range exSlice {
+				if match = v[i] == exSlice[i]; !match {
+					break
+				}
+			}
+		case []bool:
+			_, match = exVal.([]bool)
+			if !match {
+				break
+			}
+
+			exSlice := exVal.([]bool)
+			match = len(exSlice) == len(v)
+			if !match {
+				break
+			}
+
+			for i := range exSlice {
+				if match = v[i] == exSlice[i]; !match {
+					break
+				}
+			}
+		default:
+			match = false
+		}
+
+		if !match {
+			t.Fail()
+			t.Logf("mismatched values for key, %s: %v:%v", k, outVal, exVal)
+		}
+
+		delete(ex, k)
+	}
+
+	for _, k := range missing {
+		t.Logf("key found in output and not in expected: %s", k)
+	}
+
+	for k := range ex {
+		t.Logf("expected key: %s", k)
+	}
 }

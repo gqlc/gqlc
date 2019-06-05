@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"text/scanner"
@@ -15,34 +14,33 @@ import (
 
 // ccli is an implementation of the compiler.CommandLine interface, which
 // simply extends a github.com/spf13/cobra.Command
+//
 type cli struct {
 	*cobra.Command
 
 	pluginPrefix *string
-	geners       map[string]compiler.Generator
-	opts         map[string]compiler.Generator
-	genOpts      map[compiler.Generator]*oFlag
+	geners       []*genFlag
+	fp           *fparser
 }
 
 // NewCLI returns a compiler.CommandLine implementation.
 func NewCLI() *cli {
 	c := &cli{
 		Command:      rootCmd,
-		geners:       make(map[string]compiler.Generator),
-		opts:         make(map[string]compiler.Generator),
-		genOpts:      make(map[compiler.Generator]*oFlag),
 		pluginPrefix: new(string),
+		fp: &fparser{
+			Scanner: new(scanner.Scanner),
+		},
 	}
 
 	fs := afero.NewOsFs()
 	c.PreRunE = chainPreRunEs(
-		parseFlags(c.pluginPrefix, c.geners, c.opts),
+		parseFlags(c.pluginPrefix, &c.geners, c.fp),
 		validateArgs,
-		accumulateGens(c.pluginPrefix, c.geners, c.opts, c.genOpts),
-		validatePluginTypes,
-		initGenDirs(fs, c.genOpts),
+		validatePluginTypes(fs),
+		initGenDirs(fs, c.geners),
 	)
-	c.RunE = runRoot(fs, c.genOpts)
+	c.RunE = root(fs, &c.geners)
 	return c
 }
 
@@ -62,16 +60,19 @@ func (c *cli) RegisterGenerator(g compiler.Generator, details ...string) {
 		panic("invalid generator flag details")
 	}
 
-	f := &oFlag{opts: make(map[string]interface{}), outDir: new(string)}
-	outFlag := *f
-	outFlag.isOut = true
-	c.Flags().Var(outFlag, name, help)
-	c.geners[name] = g
+	opts := make(map[string]interface{})
+
+	gf := &genFlag{
+		Generator: g,
+		outDir:    new(string),
+		opts:      opts,
+		geners:    &c.geners,
+		fp:        c.fp,
+	}
+	c.Flags().Var(gf, name, help)
 
 	if opt != "" {
-		optFlag := *f
-		c.Flags().Var(optFlag, opt, "Pass additional options to generator.")
-		c.opts[opt] = g
+		c.Flags().Var(&genOptFlag{opts: opts, fp: c.fp}, opt, "Pass additional options to generator.")
 	}
 }
 
@@ -80,70 +81,91 @@ func (c *cli) Run(args []string) error {
 	return c.Execute()
 }
 
-// oFlag represents a generator output/option flag
-type oFlag struct {
-	opts   map[string]interface{}
+// Flags
+
+// genFlag represents a Generator flag: *_out
+type genFlag struct {
+	compiler.Generator
 	outDir *string
-	isOut  bool
+	opts   map[string]interface{}
+
+	geners *[]*genFlag
+	fp     *fparser
 }
 
-func (oFlag) String() string { return "" }
+func (*genFlag) String() string { return "" }
 
-func (oFlag) Type() string { return "string" }
+func (*genFlag) Type() string { return "string" }
 
-func (f oFlag) Set(arg string) error {
-	p := fparser{
-		Scanner: &scanner.Scanner{
-			Error: func(sc *scanner.Scanner, msg string) {
-				// TODO: Handle errors
-			},
-		},
+func (f *genFlag) Set(arg string) (err error) {
+	*f.geners = append(*f.geners, f)
+	f.fp.Init(strings.NewReader(arg))
+
+	err = f.fp.parse(parseArg, f.outDir, f.opts)
+	if err != nil {
+		return err
 	}
-	p.Init(strings.NewReader(arg))
 
-	return p.parse(parseArg, f)
+	if *f.outDir != "." {
+		return
+	}
+
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	*f.outDir = wd
+	return
 }
 
-type stateFn func(fparser, oFlag) stateFn
+// genOptFlag represents a Generator option flag: *_opt
+type genOptFlag struct {
+	opts map[string]interface{}
+	fp   *fparser
+}
+
+func (*genOptFlag) String() string { return "" }
+
+func (*genOptFlag) Type() string { return "map[string]interface{}" }
+
+func (f *genOptFlag) Set(arg string) error {
+	f.fp.Init(strings.NewReader(arg))
+	return f.fp.parse(parseArg, nil, f.opts)
+}
+
+type stateFn func(*fparser, *string, map[string]interface{}) stateFn
 
 type fparser struct {
 	*scanner.Scanner
 }
 
-func (p fparser) errorf(format string, args ...interface{}) { panic(fmt.Errorf(format, args...)) }
+func (p *fparser) errorf(format string, args ...interface{}) { panic(fmt.Errorf(format, args...)) }
 
-func (p fparser) error(err error) { panic(err) }
+func (p *fparser) error(err error) { panic(err) }
 
-func (p fparser) recover(err *error) {
+func (p *fparser) recover(err *error) {
 	e := recover()
 	if e != nil {
-		if _, ok := e.(runtime.Error); ok {
-			panic(e)
-		}
 		*err = e.(error)
 	}
 }
 
-func (p fparser) parse(root stateFn, f oFlag) (err error) {
+func (p *fparser) parse(root stateFn, dir *string, opts map[string]interface{}) (err error) {
 	defer p.recover(&err)
 
 	for state := root; state != nil; {
-		state = state(p, f)
+		state = state(p, dir, opts)
 	}
 	return
 }
 
-func parseArg(p fparser, f oFlag) stateFn {
+func parseArg(p *fparser, dir *string, opts map[string]interface{}) stateFn {
 	switch t := p.Scan(); t {
 	case os.PathSeparator:
-		*f.outDir += string(os.PathSeparator)
-		return parseDir
+		*dir += string(os.PathSeparator)
+		return parseDir(p, dir)
 	case '.':
-		wd, err := os.Getwd()
-		if err != nil {
-			p.error(err)
-		}
-		*f.outDir = wd
+		*dir = "."
 		return nil
 	}
 
@@ -153,31 +175,33 @@ func parseArg(p fparser, f oFlag) stateFn {
 	case ':':
 		fallthrough
 	case ',':
-		f.opts[key] = true
+		opts[key] = true
 		return parseArg
 	case '=':
 		return parseValue(key)
 	case os.PathSeparator:
-		*f.outDir += key + string(os.PathSeparator)
-		return parseDir
+		*dir = *dir + key + string(os.PathSeparator)
+		return parseDir(p, dir)
 	case scanner.EOF:
-		if f.isOut {
-			*f.outDir = key
+		if dir != nil {
+			*dir = key
 			return nil
 		}
-		f.opts[key] = true
+		if key != "" {
+			opts[key] = true
+		}
 	}
 
 	return nil
 }
 
 func parseValue(key string) stateFn {
-	return func(p fparser, f oFlag) stateFn {
+	return func(p *fparser, dir *string, opts map[string]interface{}) stateFn {
 		var val interface{}
 		tt := p.Scan()
 		valStr := p.TokenText()
 
-		oldV, ok := f.opts[key]
+		oldV, ok := opts[key]
 		switch tt {
 		case scanner.Int:
 			valInt, err := strconv.ParseInt(valStr, 10, 64)
@@ -219,7 +243,18 @@ func parseValue(key string) stateFn {
 				if err != nil {
 					p.error(err)
 				}
-				val = valBool
+
+				if !ok {
+					val = valBool
+					break
+				}
+
+				oldS, isS := oldV.([]bool)
+				if !isS {
+					val = append(oldS, oldV.(bool), valBool)
+					break
+				}
+				val = append(oldS, valBool)
 				break
 			}
 
@@ -240,18 +275,18 @@ func parseValue(key string) stateFn {
 			p.errorf("gqlc: unexpected character in generator option, %s, value: %s", key, string(tt))
 		}
 
-		f.opts[key] = val
+		opts[key] = val
 		if t := p.Scan(); t == ':' {
-			return parseDir
+			return parseDir(p, dir)
 		}
 
 		return parseArg
 	}
 }
 
-func parseDir(p fparser, f oFlag) stateFn {
+func parseDir(p *fparser, dir *string) stateFn {
 	for t := p.Scan(); t != scanner.EOF; {
-		*f.outDir += p.TokenText()
+		*dir += p.TokenText()
 		t = p.Scan()
 	}
 	return nil
