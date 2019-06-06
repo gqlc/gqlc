@@ -89,7 +89,7 @@ This is all current work desired to be completed in order to release v1.
     - [x] generator options flag
     - [x] Plugin generator ([plugin](https://github.com/gqlc/gqlc/tree/master/cmd/plugin))
 - [x] Documentation generator ([doc](https://github.com/gqlc/doc))
-- [ ] Go generator ([golang](https://github.com/gqlc/golang))
+- [x] Go generator ([golang](https://github.com/gqlc/golang))
 - [x] Javascript generator ([js](https://github.com/gqlc/js))
 - [x] [compiler](https://github.com/gqlc/compiler)
     - [x] type checking
