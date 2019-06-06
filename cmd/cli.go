@@ -62,14 +62,13 @@ func (c *cli) RegisterGenerator(g compiler.Generator, details ...string) {
 
 	opts := make(map[string]interface{})
 
-	gf := &genFlag{
+	c.Flags().Var(&genFlag{
 		Generator: g,
 		outDir:    new(string),
 		opts:      opts,
 		geners:    &c.geners,
 		fp:        c.fp,
-	}
-	c.Flags().Var(gf, name, help)
+	}, name, help)
 
 	if opt != "" {
 		c.Flags().Var(&genOptFlag{opts: opts, fp: c.fp}, opt, "Pass additional options to generator.")
@@ -126,7 +125,7 @@ type genOptFlag struct {
 
 func (*genOptFlag) String() string { return "" }
 
-func (*genOptFlag) Type() string { return "map[string]interface{}" }
+func (*genOptFlag) Type() string { return "string" }
 
 func (f *genOptFlag) Set(arg string) error {
 	f.fp.Init(strings.NewReader(arg))

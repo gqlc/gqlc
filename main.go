@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/doc"
+	"github.com/gqlc/golang"
 	"github.com/gqlc/gqlc/cmd"
 	"github.com/gqlc/js"
 	"os"
@@ -16,13 +17,6 @@ func init() {
 	cli = cmd.NewCLI()
 	cli.AllowPlugins("gqlc-gen-")
 
-	// Register Dart generator
-	//	cli.RegisterGenerator(&dart.Generator{},
-	//		"dart_out",
-	//		"dart_opt",
-	//		"Generate Dart source.",
-	//	)
-
 	// Register Documentation generator
 	cli.RegisterGenerator(&doc.Generator{},
 		"doc_out",
@@ -31,11 +25,11 @@ func init() {
 	)
 
 	// Register Go generator
-	//	cli.RegisterGenerator(&golang.Generator{},
-	//		"go_out",
-	//		"go_opt",
-	//		"Generate Go source.",
-	//	)
+	cli.RegisterGenerator(&golang.Generator{},
+		"go_out",
+		"go_opt",
+		"Generate Go source.",
+	)
 
 	// Register Javascript generator
 	cli.RegisterGenerator(&js.Generator{},

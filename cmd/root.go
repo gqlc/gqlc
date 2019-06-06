@@ -55,9 +55,8 @@ type of flag can be either:
 An additional flag, *_opt, can be used to pass options to a generator. The
 argument given to this type of flag is the same format as the *_opt
 key=value pairs above.`,
-	Example:            "gqlc -I . --dart_out ./dartservice --doc_out ./docs --go_out ./goservice --js_out ./jsservice api.gql",
+	Example:            "gqlc -I . --doc_out ./docs --go_out ./goservice --js_out ./jsservice api.gql",
 	DisableFlagParsing: true,
-	Args:               cobra.MinimumNArgs(1), // Make sure at least one file is provided.
 }
 
 func init() {
@@ -96,6 +95,10 @@ func (ctx *genCtx) Open(name string) (io.WriteCloser, error) {
 
 func root(fs afero.Fs, geners *[]*genFlag) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) (err error) {
+		if len(cmd.Flags().Args()) == 0 || cmd.Flags().Lookup("help").Changed {
+			return cmd.Help()
+		}
+
 		importPaths, err := cmd.Flags().GetStringSlice("import_path")
 		if err != nil {
 			return

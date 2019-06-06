@@ -23,10 +23,6 @@ func chainPreRunEs(preRunEs ...func(*cobra.Command, []string) error) func(*cobra
 // parseFlags parses the flags given and handles plugin flags
 func parseFlags(prefix *string, geners *[]*genFlag, fp *fparser) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		if cmd.Name() == "help" {
-			return nil
-		}
-
 		// Parse flags and handle plugin flags
 		var name string
 		for _, a := range args {

@@ -206,6 +206,7 @@ func TestRoot(t *testing.T) {
 			cmd := &cobra.Command{
 				Args: cobra.MinimumNArgs(1),
 			}
+			cmd.InitDefaultHelpFlag()
 			cmd.Flags().StringSliceP("import_path", "I", nil, "")
 
 			err := cmd.Flags().Parse(testCase.Args)
