@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"text/scanner"
@@ -75,7 +76,28 @@ func (c *cli) RegisterGenerator(g compiler.Generator, details ...string) {
 	}
 }
 
-func (c *cli) Run(args []string) error {
+type panicErr struct {
+	Err        error
+	StackTrace []byte
+}
+
+func (e *panicErr) Error() string {
+	return fmt.Sprintf("lambda: recovered from unexpected panic: %s\n%s", e.Err, e.StackTrace)
+}
+
+func (c *cli) Run(args []string) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			rerr, ok := r.(error)
+			if ok {
+				err = &panicErr{Err: rerr, StackTrace: debug.Stack()}
+				return
+			}
+
+			err = &panicErr{Err: fmt.Errorf("%#v", r), StackTrace: debug.Stack()}
+		}
+	}()
+
 	c.SetArgs(args[1:])
 	return c.Execute()
 }

@@ -36,14 +36,10 @@ func newTestCli(fs afero.Fs, preRunE func(*cli) func(*cobra.Command, []string) e
 }
 
 func noopPreRunE(*cli) func(*cobra.Command, []string) error {
-	return func(*cobra.Command, []string) error {
-		return nil
-	}
+	return func(*cobra.Command, []string) error { return nil }
 }
 
-func noopRun(afero.Fs, *[]*genFlag) func(*cobra.Command, []string) error {
-	return nil
-}
+func noopRun(afero.Fs, *[]*genFlag) func(*cobra.Command, []string) error { return nil }
 
 func parseArgs(cmd *cobra.Command, args []string) error { return cmd.Flags().Parse(args) }
 
@@ -175,6 +171,27 @@ func TestCli_Run(t *testing.T) {
 				return
 			}
 		})
+	}
+}
+
+func TestCli_Run_Recover(t *testing.T) {
+	f := func() { panic("test") }
+
+	c := newTestCli(nil, noopPreRunE, func(afero.Fs, *[]*genFlag) func(*cobra.Command, []string) error {
+		return func(*cobra.Command, []string) error {
+			f() // the panic call can't go here cuz go vet can detect that the return won't be reached
+			return nil
+		}
+	})
+
+	err := c.Run([]string{"test", ""})
+	perr, ok := err.(*panicErr)
+	if !ok {
+		t.Error(err)
+		return
+	}
+	if perr.Err.Error() != `"test"` {
+		t.Fail()
 	}
 }
 
