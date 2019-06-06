@@ -39,9 +39,9 @@ gqlc -I . --doc_out ./docs
 ### Supported Languages
 The currently supported languages by gqlc for generation are:
 
-* [Documentation](https://commonmark.org)
-* [Go](https://golang.org)
-* [Javascript](https://javascript.com)
+* [Documentation](https://commonmark.org) ([example output](https://godoc.org/github.com/gqlc/doc#ex-Generator-Generate))
+* [Go](https://golang.org)                ([example output](https://godoc.org/github.com/gqlc/golang#ex-Generator-Generate))
+* [Javascript](https://javascript.com)    ([example output](https://godoc.org/github.com/gqlc/js#ex-Generator-Generate))
 
 *Note*: There will most likely be more to come. Check out the [Code Generators](#code-generators) section for more on this.
 
