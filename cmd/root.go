@@ -240,46 +240,11 @@ func parseInputFiles(fs afero.Fs, importPaths []string, args []string) (docs []*
 }
 
 func parseImports(dset *token.DocSet, fs afero.Fs, importPaths []string, docMap map[string]*ast.Document) error {
-	type iInfo struct {
-		Name string
-		Path string
-	}
 	q := list.New()
 	for _, doc := range docMap {
-		for _, direc := range doc.Directives {
-			if direc.Name != "import" {
-				continue
-			}
-
-			for _, arg := range direc.Args.Args {
-
-				compLit := arg.Value.(*ast.Arg_CompositeLit).CompositeLit
-				listLit := compLit.Value.(*ast.CompositeLit_ListLit).ListLit.List
-
-				var paths []*ast.BasicLit
-				switch v := listLit.(type) {
-				case *ast.ListLit_BasicList:
-					paths = append(paths, v.BasicList.Values...)
-				case *ast.ListLit_CompositeList:
-					cpaths := v.CompositeList.Values
-					paths = make([]*ast.BasicLit, len(cpaths))
-					for i, c := range cpaths {
-						paths[i] = c.Value.(*ast.CompositeLit_BasicLit).BasicLit
-					}
-				}
-
-				for _, p := range paths {
-					iPath := strings.Trim(p.Value, "\"")
-					iName := filepath.Base(iPath)
-					if _, exists := docMap[iName]; exists {
-						continue
-					}
-
-					q.PushBack(iInfo{Name: iName, Path: iPath})
-				}
-			}
-		}
+		getImports(doc, q, docMap)
 	}
+
 	for q.Len() > 0 {
 		e := q.Front()
 		q.Remove(e)
@@ -297,42 +262,51 @@ func parseImports(dset *token.DocSet, fs afero.Fs, importPaths []string, docMap 
 
 		docMap[i.Name] = d
 
-		for _, direc := range d.Directives {
-			if direc.Name != "import" {
-				continue
-			}
-
-			for _, arg := range direc.Args.Args {
-
-				compLit := arg.Value.(*ast.Arg_CompositeLit).CompositeLit
-				listLit := compLit.Value.(*ast.CompositeLit_ListLit).ListLit.List
-
-				var paths []*ast.BasicLit
-				switch v := listLit.(type) {
-				case *ast.ListLit_BasicList:
-					paths = append(paths, v.BasicList.Values...)
-				case *ast.ListLit_CompositeList:
-					cpaths := v.CompositeList.Values
-					paths = make([]*ast.BasicLit, len(cpaths))
-					for i, c := range cpaths {
-						paths[i] = c.Value.(*ast.CompositeLit_BasicLit).BasicLit
-					}
-				}
-
-				for _, p := range paths {
-					iPath := strings.Trim(p.Value, "\"")
-					iName := filepath.Base(iPath)
-					if _, exists := docMap[iName]; exists {
-						continue
-					}
-
-					q.PushBack(iInfo{Name: iName, Path: iPath})
-				}
-			}
-		}
+		getImports(d, q, docMap)
 	}
 
 	return nil
+}
+
+type iInfo struct {
+	Name string
+	Path string
+}
+
+func getImports(doc *ast.Document, q *list.List, docMap map[string]*ast.Document) {
+	for _, direc := range doc.Directives {
+		if direc.Name != "import" {
+			continue
+		}
+
+		for _, arg := range direc.Args.Args {
+
+			compLit := arg.Value.(*ast.Arg_CompositeLit).CompositeLit
+			listLit := compLit.Value.(*ast.CompositeLit_ListLit).ListLit.List
+
+			var paths []*ast.BasicLit
+			switch v := listLit.(type) {
+			case *ast.ListLit_BasicList:
+				paths = append(paths, v.BasicList.Values...)
+			case *ast.ListLit_CompositeList:
+				cpaths := v.CompositeList.Values
+				paths = make([]*ast.BasicLit, len(cpaths))
+				for i, c := range cpaths {
+					paths[i] = c.Value.(*ast.CompositeLit_BasicLit).BasicLit
+				}
+			}
+
+			for _, p := range paths {
+				iPath := strings.Trim(p.Value, "\"")
+				iName := filepath.Base(iPath)
+				if _, exists := docMap[iName]; exists {
+					continue
+				}
+
+				q.PushBack(iInfo{Name: iName, Path: iPath})
+			}
+		}
+	}
 }
 
 // openFile is just a helper for opening files
