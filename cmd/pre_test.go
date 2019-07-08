@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"os"
 	"testing"
 )
 
@@ -52,5 +54,30 @@ func TestParseFlags(t *testing.T) {
 				subT.Fail()
 			}
 		})
+	}
+}
+
+func TestValidatePluginTypes(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	f, err := fs.OpenFile("test.gql", os.O_CREATE, 755)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	_, err = f.Write([]byte(thrGql))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	cmd := &cobra.Command{}
+	cmd.Flags().StringSlice("types", []string{"test.gql"}, "")
+	cmd.Flags().StringSlice("import_path", []string{"."}, "")
+
+	err = validatePluginTypes(fs)(cmd, nil)
+	if err != nil {
+		t.Error(err)
+		return
 	}
 }

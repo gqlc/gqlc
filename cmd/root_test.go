@@ -189,14 +189,14 @@ func TestRoot(t *testing.T) {
 			Name: "MultiWoImports",
 			Args: []string{"-I", "/home", "-I", "/home/graphql/imports", "thr.gql", "four.gql"},
 			expect: func(g *MockGenerator) {
-				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
 			},
 		},
 		{
 			Name: "MultiWImports",
 			Args: []string{"-I", "/usr/imports", "-I", "/home", "-I=/home/graphql", "-I", "/home/graphql/imports", "one.gql", "five.gql"},
 			expect: func(g *MockGenerator) {
-				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
 			},
 		},
 	}
@@ -215,7 +215,16 @@ func TestRoot(t *testing.T) {
 				return
 			}
 
-			err = root(testFs, new([]*genFlag))(cmd, nil)
+			ctrl := gomock.NewController(subT)
+			g := NewMockGenerator(ctrl)
+			testCase.expect(g)
+
+			geners := []*genFlag{{
+				Generator: g,
+				outDir:    new(string),
+			}}
+
+			err = root(testFs, &geners)(cmd, nil)
 			if err != nil {
 				subT.Error(err)
 				return

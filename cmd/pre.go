@@ -87,7 +87,7 @@ func init() {
 // validatePluginTypes parses and validates any types given by the --types flag.
 func validatePluginTypes(fs afero.Fs) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		pluginTypes, _ := cmd.LocalFlags().GetStringSlice("types")
+		pluginTypes, _ := cmd.Flags().GetStringSlice("types")
 		if len(pluginTypes) == 0 {
 			return nil
 		}
