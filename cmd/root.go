@@ -12,35 +12,12 @@ import (
 	"github.com/gqlc/graphql/token"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 )
-
-// helper template funcs for rootCmd usage template
-var tmplFs = map[string]interface{}{
-	"in": func(set *pflag.FlagSet, key string) *pflag.FlagSet {
-		fs := new(pflag.FlagSet)
-		set.VisitAll(func(flag *pflag.Flag) {
-			if strings.Contains(flag.Name, key) {
-				fs.AddFlag(flag)
-			}
-		})
-		return fs
-	},
-	"ex": func(set *pflag.FlagSet, key string) *pflag.FlagSet {
-		fs := new(pflag.FlagSet)
-		set.VisitAll(func(flag *pflag.Flag) {
-			if !strings.Contains(flag.Name, key) {
-				fs.AddFlag(flag)
-			}
-		})
-		return fs
-	},
-}
 
 var rootCmd = &cobra.Command{
 	Use:   "gqlc",
@@ -60,28 +37,12 @@ key=value pairs above.`,
 }
 
 func init() {
-	cobra.AddTemplateFuncs(tmplFs)
-
 	rootCmd.Flags().StringSliceP("import_path", "I", []string{"."}, `Specify the directory in which to search for
 imports.  May be specified multiple times;
 directories will be searched in order.  If not
 given, the current working directory is used.`)
 	rootCmd.Flags().BoolP("verbose", "v", false, "Output logging")
-	rootCmd.SetUsageTemplate(`Usage:
-	gqlc flags files{{if .HasAvailableSubCommands}}
-
-Available Commands:{{range .Commands}}
-  {{rpad .Name .NamePadding}} {{.Short}}{{end}}{{end}}{{$flags := in .LocalFlags "_out"}}{{if gt (len $flags.FlagUsages) 0}}
-
-Generator Flags:
-{{$flags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{$flags = ex .LocalFlags "_out"}}{{if gt (len $flags.FlagUsages) 0}}
-
-General Flags:
-{{$flags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasExample}}
-
-Example:
-	{{.Example}}{{end}}
-`)
+	rootCmd.SetUsageTemplate(UsageTmpl)
 }
 
 type genCtx struct {
