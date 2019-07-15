@@ -14,7 +14,7 @@ import (
 var cli compiler.CommandLine
 
 func init() {
-	cli = cmd.NewCLI()
+	cli = cmd.NewCLI(cmd.ProdOptions())
 	cli.AllowPlugins("gqlc-gen-")
 
 	// Register Documentation generator

@@ -59,6 +59,11 @@ func TestGenFlag_Set(t *testing.T) {
 			Opts: map[string]interface{}{"testStrings": []string{`"1"`, `"2"`, `"3"`}},
 		},
 		{
+			Name: "MultiBool",
+			Arg:  "testBools=true,testBools=false,testBools=true",
+			Opts: map[string]interface{}{"testBools": []bool{true, false, true}},
+		},
+		{
 			Name: "MultiIdent",
 			Arg:  "testIdents=one,testIdents=two,testIdents=three:",
 			Opts: map[string]interface{}{"testIdents": []string{"one", "two", "three"}},

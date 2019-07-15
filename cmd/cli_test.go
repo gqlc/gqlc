@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"testing"
-	"text/scanner"
 )
 
 func newMockGenerator(t gomock.TestReporter) *MockGenerator {
@@ -17,19 +16,17 @@ func newMockGenerator(t gomock.TestReporter) *MockGenerator {
 type testRunFn func(afero.Fs, *[]*genFlag) func(*cobra.Command, []string) error
 
 func newTestCli(fs afero.Fs, preRunE func(*cli) func(*cobra.Command, []string) error, runE testRunFn) *cli {
-	c := &cli{
-		Command: &cobra.Command{
+	c := NewCLI(
+		WithCommand(&cobra.Command{
 			Use:                "gqlc",
 			DisableFlagParsing: true,
 			Args:               cobra.MinimumNArgs(1),
-		},
-		pluginPrefix: new(string),
-		fp: &fparser{
-			Scanner: new(scanner.Scanner),
-		},
-	}
-	c.PreRunE = preRunE(c)
-	c.RunE = runE(fs, &c.geners)
+		}),
+		WithPreRunE(preRunE),
+		WithRunE(func(cli *cli) func(*cobra.Command, []string) error {
+			return runE(fs, &cli.geners)
+		}),
+	)
 	c.Flags().StringSliceP("import_path", "I", []string{"."}, ``)
 
 	return c
