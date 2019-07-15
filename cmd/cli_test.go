@@ -171,6 +171,14 @@ func TestCli_Run(t *testing.T) {
 	}
 }
 
+func TestCli_Run_Production(t *testing.T) {
+	cli := NewCLI(ProdOptions())
+	err := cli.Run([]string{"gqlc", "./testdata/test.gql"})
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 func TestCli_Run_Recover(t *testing.T) {
 	f := func() { panic("test") }
 
