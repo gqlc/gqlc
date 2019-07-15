@@ -42,7 +42,7 @@ imports.  May be specified multiple times;
 directories will be searched in order.  If not
 given, the current working directory is used.`)
 	rootCmd.Flags().BoolP("verbose", "v", false, "Output logging")
-	rootCmd.SetUsageTemplate(UsageTmpl)
+	rootCmd.SetUsageTemplate(usageTmpl)
 }
 
 type genCtx struct {

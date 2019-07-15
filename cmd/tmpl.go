@@ -7,7 +7,7 @@ import (
 	"text/template"
 )
 
-const UsageTmpl = `Usage:
+const usageTmpl = `Usage:
 	gqlc flags files{{$flags := filter .LocalFlags "_opt" false}}{{$inflags := filter $flags "_out" true}}{{if gt (len $inflags.FlagUsages) 0}}
 
 Generator Flags:

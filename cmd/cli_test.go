@@ -193,7 +193,7 @@ func TestCli_Run_Recover(t *testing.T) {
 }
 
 func compare(t *testing.T, out, ex map[string]interface{}) {
-	match := true
+	var match bool
 	var missing []string
 	for k, outVal := range out {
 		exVal, exists := ex[k]
