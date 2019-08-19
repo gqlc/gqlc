@@ -102,12 +102,12 @@ func validatePluginTypes(fs afero.Fs) func(*cobra.Command, []string) error {
 			return err
 		}
 
-		docs, err = compiler.ReduceImports(docs)
+		docsIR, err := compiler.ReduceImports(docs)
 		if err != nil {
 			return err
 		}
 
-		errs := compiler.CheckTypes(docs, compiler.TypeCheckerFn(compiler.Validate))
+		errs := compiler.CheckTypes(docsIR, compiler.TypeCheckerFn(compiler.Validate))
 		if len(errs) > 0 {
 			// TODO: Compound errs
 			return nil

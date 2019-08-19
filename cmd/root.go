@@ -66,19 +66,27 @@ func root(fs afero.Fs, geners *[]*genFlag) func(*cobra.Command, []string) error 
 		}
 
 		// Parse files
-		docs, err := parseInputFiles(fs, importPaths, cmd.Flags().Args())
+		filenames := cmd.Flags().Args()
+		docMap := make(map[string]*ast.Document, len(filenames))
+		err = parseInputFiles2(fs, docMap, importPaths, filenames...)
 		if err != nil {
 			return
 		}
 
+		docs := make([]*ast.Document, 0, len(docMap))
+		for _, doc := range docMap {
+			docs = append(docs, doc)
+		}
+		resolveImportPaths(docs)
+
 		// First, Resolve imports (this must occur before type checking)
-		docs, err = compiler.ReduceImports(docs)
+		docsIR, err := compiler.ReduceImports(docs)
 		if err != nil {
 			return
 		}
 
 		// Then, Perform type checking
-		errs := compiler.CheckTypes(docs, compiler.TypeCheckerFn(compiler.Validate))
+		errs := compiler.CheckTypes(docsIR, compiler.TypeCheckerFn(compiler.Validate))
 		if len(errs) > 0 {
 			for _, err = range errs {
 				log.Println(err)
@@ -86,9 +94,25 @@ func root(fs afero.Fs, geners *[]*genFlag) func(*cobra.Command, []string) error 
 			return
 		}
 
-		// Remove Builtin types and any Generator registered types
-		for _, doc := range docs {
-			doc.Types = doc.Types[:len(doc.Types)-len(compiler.Types)]
+		// Merge type extensions with the original type definitions
+		for d, types := range docsIR {
+			docsIR[d] = compiler.MergeExtensions(types)
+		}
+
+		// Remove builtin types and any Generator registered types
+		builtins := compiler.ToIR(compiler.Types)
+		for name := range builtins {
+			for _, d := range docsIR {
+				delete(d, name)
+			}
+		}
+
+		// Convert types from IR to []*ast.TypeDecl
+		docs = docs[:0]
+		for doc, types := range docsIR {
+			doc.Types = compiler.FromIR(types)
+
+			docs = append(docs, doc)
 		}
 
 		// Run code generators
@@ -177,7 +201,7 @@ func parseInputFiles(fs afero.Fs, importPaths []string, args []string) (docs []*
 		}
 
 		name := filepath.Base(filename)
-		doc, err := parser.ParseDoc(dset, name, f, 0)
+		doc, err := parser.ParseDoc(dset, name, f, parser.ParseComments)
 		if err != nil {
 			return nil, err
 		}
@@ -200,6 +224,36 @@ func parseInputFiles(fs afero.Fs, importPaths []string, args []string) (docs []*
 	return
 }
 
+func parseInputFiles2(fs afero.Fs, docs map[string]*ast.Document, importPaths []string, filenames ...string) error {
+	dset := token.NewDocSet()
+
+	for _, filename := range filenames {
+		name := filepath.Base(filename)
+		if _, exists := docs[name]; exists {
+			continue
+		}
+
+		f, err := openFile(fs, importPaths, filename)
+		if err != nil {
+			return err
+		}
+
+		doc, err := parser.ParseDoc(dset, name, f, parser.ParseComments)
+		if err != nil {
+			return err
+		}
+
+		docs[name] = doc
+
+		imports := getImports2(doc)
+		err = parseInputFiles2(fs, docs, importPaths, imports...)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func parseImports(dset *token.DocSet, fs afero.Fs, importPaths []string, docMap map[string]*ast.Document) error {
 	q := list.New()
 	for _, doc := range docMap {
@@ -210,6 +264,10 @@ func parseImports(dset *token.DocSet, fs afero.Fs, importPaths []string, docMap 
 		e := q.Front()
 		q.Remove(e)
 		i := e.Value.(iInfo)
+
+		if _, exists := docMap[i.Name]; exists {
+			continue
+		}
 
 		f, err := openFile(fs, importPaths, i.Path)
 		if err != nil {
@@ -268,6 +326,38 @@ func getImports(doc *ast.Document, q *list.List, docMap map[string]*ast.Document
 			}
 		}
 	}
+}
+
+func getImports2(doc *ast.Document) (names []string) {
+	for _, direc := range doc.Directives {
+		if direc.Name != "import" {
+			continue
+		}
+
+		for _, arg := range direc.Args.Args {
+
+			compLit := arg.Value.(*ast.Arg_CompositeLit).CompositeLit
+			listLit := compLit.Value.(*ast.CompositeLit_ListLit).ListLit.List
+
+			var paths []*ast.BasicLit
+			switch v := listLit.(type) {
+			case *ast.ListLit_BasicList:
+				paths = append(paths, v.BasicList.Values...)
+			case *ast.ListLit_CompositeList:
+				cpaths := v.CompositeList.Values
+				paths = make([]*ast.BasicLit, len(cpaths))
+				for i, c := range cpaths {
+					paths[i] = c.Value.(*ast.CompositeLit_BasicLit).BasicLit
+				}
+			}
+
+			for _, p := range paths {
+				names = append(names, strings.Trim(p.Value, "\""))
+			}
+		}
+	}
+
+	return
 }
 
 // openFile is just a helper for opening files

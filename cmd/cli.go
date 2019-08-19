@@ -112,7 +112,7 @@ type panicErr struct {
 }
 
 func (e *panicErr) Error() string {
-	return fmt.Sprintf("lambda: recovered from unexpected panic: %s\n%s", e.Err, e.StackTrace)
+	return fmt.Sprintf("gqlc: recovered from unexpected panic: %s\n\n%s", e.Err, e.StackTrace)
 }
 
 func (c *cli) Run(args []string) (err error) {
