@@ -10,9 +10,10 @@ Current spec implementation: [Current Working Draft](https://graphql.github.io/g
 
 # Table of Contents
 
-- [Installing](#installing)
-- [Usage](#usage)
-    * [Support Languages](*supported-languages)
+- [Getting Started](#getting-started)
+  * [Installing](#installing)
+  * [Compiling Your First Schema](#compiling-your-first-schema)
+- [Support Languages](#supported-languages)
 - [Design](#design)
     * [IDL packages](#idl-pacakges)
     * [Code generation](#code-generation-and-cli)
@@ -22,21 +23,66 @@ Current spec implementation: [Current Working Draft](https://graphql.github.io/g
         - [Code Generators](#code-generators)
 - [WIP](#wip)
 
-## Installing
+## Getting Started
+This section gives a brief intro to using gqlc.
+
+### Installing
 You can either `git clone` this repo and build from source or download one of the prebuilt [releases](https://github.com/gqlc/gqlc/releases).
 
-## Usage
-To use `gqlc`, all that's needed is a GraphQL Document (only type system defs) and a directory to output generated code to.
+### Compiling Your First Schema
+To begin, lets use an abbreviated version of the schema used in the examples at [graphql.org](https://graphql.org/learn/schema/):
 
-Example:
-```text
-gqlc -I . --doc_out ./docs
-        \ --go_out ./goapi
-        \ --js_out ./jsapi
-        \ api.gql
+```graphql
+schema {
+  query: Query,
+  mutation: Mutation
+}
+
+type Query {
+  "hero returns a character in an episode"
+  hero(episode: Episode): Character
+}
+
+type Mutation {
+  """
+  addCharacter adds a new Character given their name and the episodes they appeared in.
+  """
+  addCharacter(name: String!, episodes: [Episode!]!): Character
+}
+
+enum Episode {
+  NEWHOPE
+  EMPIRE
+  JEDI
+}
+
+type Character {
+  name: String!
+  appearsIn: [Episode]!
+}
 ```
 
-### Supported Languages
+Now, that we have the schema for our GraphQL service it's time to start
+implementing it. Typically, when implementing a GraphQL service you're thinking
+in terms of the IDL, but not writing in it; instead, you're writing in whatever
+language you have chosen to implement your service in. This is where `gqlc`
+comes in handy, by providing you with a tool that can "compile", or translate,
+your IDL definitions into source code definitions. To accomplish this, simply
+type the following into your shell:
+
+```bash
+gqlc --js_out ./js_service
+   \ --go_out ./go_service
+   \ --doc_out ./docs
+   \ schema.gql
+```
+
+`gqlc` will then generate three directories:
+- *js_service*: The js generator generates Javascript types for the schema.
+- *go_service*: The go generator generates Go types for the schema.
+- *docs*: The doc generator generates Commonmark documentation.
+
+## Supported Languages
 The currently supported languages by gqlc for generation are:
 
 * [Documentation](https://commonmark.org) ([example](https://github.com/gqlc/doc#example))
@@ -63,8 +109,6 @@ to allow for extensibility and ease of maintainability. The source for internal 
 interfaces can be found here: [compiler](https://github.com/gqlc/compiler)
 
 ## Contributing
-
-### Getting Started
 
 Thank you for wanting to help keep this project awesome!
 
