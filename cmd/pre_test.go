@@ -57,6 +57,17 @@ func TestParseFlags(t *testing.T) {
 	}
 }
 
+func TestValidateArgs(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.Flags().Parse([]string{"test.txt"})
+
+	err := validateArgs(cmd, nil)
+	if err == nil {
+		t.Fail()
+		return
+	}
+}
+
 func TestValidatePluginTypes(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	f, err := fs.OpenFile("test.gql", os.O_CREATE, 755)
@@ -78,6 +89,37 @@ func TestValidatePluginTypes(t *testing.T) {
 	err = validatePluginTypes(fs)(cmd, nil)
 	if err != nil {
 		t.Error(err)
+		return
+	}
+}
+
+var (
+	aDir = "a"
+	bDir = "b"
+)
+
+func TestInitGenDirs(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	gens := []*genFlag{
+		{outDir: &aDir},
+		{outDir: &bDir},
+	}
+
+	err := initGenDirs(fs, gens)(nil, nil)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	b, err := afero.DirExists(fs, "a")
+	if !b || err != nil {
+		t.Fail()
+		return
+	}
+
+	b, err = afero.DirExists(fs, "b")
+	if !b || err != nil {
+		t.Fail()
 		return
 	}
 }
