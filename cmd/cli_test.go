@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/gqlc/gqlc/gen"
@@ -137,30 +138,38 @@ func TestCli_Run(t *testing.T) {
 	}
 }
 
-func TestCli_Run_Production(t *testing.T) {
-	cli := NewCLI()
-	err := cli.Run([]string{"gqlc", "./testdata/test.gql"})
-	if err != nil {
-		t.Error(err)
-	}
-}
-
-/*
 func TestCli_Run_Recover(t *testing.T) {
-	f := func() { panic("test") }
+	t.Run("FromError", func(subT *testing.T) {
+		f := func() { panic(errors.New("im an error")) }
 
-	c := newTestCli(nil, noopPreRunE, func(afero.Fs, *[]*genFlag) func(*cobra.Command, []string) error {
-		return func(*cobra.Command, []string) error {
-			f() // the panic call can't go here cuz go vet can detect that the return won't be reached
-			return nil
+		c := NewCLI(WithCommand(&cobra.Command{
+			RunE: func(*cobra.Command, []string) error {
+				f() // the panic call can't go here cuz go vet can detect that the return won't be reached
+				return nil
+			},
+		}))
+
+		err := c.Run([]string{"test", ""})
+		if _, ok := errors.Unwrap(err).(error); !ok {
+			t.Fail()
 		}
 	})
 
-	if err := c.Run([]string{"test", ""}); errors.Unwrap(err).Error() != `"test"` {
-		t.Fail()
-	}
+	t.Run("FromNonError", func(subT *testing.T) {
+		f := func() { panic("test") }
+
+		c := NewCLI(WithCommand(&cobra.Command{
+			RunE: func(*cobra.Command, []string) error {
+				f() // the panic call can't go here cuz go vet can detect that the return won't be reached
+				return nil
+			},
+		}))
+
+		if err := c.Run([]string{"test", ""}); errors.Unwrap(err).Error() != `"test"` {
+			t.Fail()
+		}
+	})
 }
-*/
 
 func compare(t *testing.T, out, ex map[string]interface{}) {
 	var match bool

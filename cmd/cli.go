@@ -39,9 +39,8 @@ type CommandLine struct {
 }
 
 // NewCLI returns a CommandLine implementation.
-func NewCLI(opts ...option) *CommandLine {
-	c := &CommandLine{
-		Command:      rootCmd,
+func NewCLI(opts ...option) (c *CommandLine) {
+	c = &CommandLine{
 		pluginPrefix: new(string),
 		fp: &fparser{
 			Scanner: new(scanner.Scanner),
@@ -56,13 +55,16 @@ func NewCLI(opts ...option) *CommandLine {
 		c.fs = afero.NewOsFs()
 	}
 
+	if c.Command != nil {
+		return
+	}
+	c.Command = rootCmd
 	c.PreRunE = chainPreRunEs(
 		parseFlags(c.pluginPrefix, &c.geners, c.fp),
 		validateArgs,
 		validatePluginTypes(c.fs),
 		initGenDirs(c.fs, c.geners),
 	)
-
 	c.RunE = func(cmd *cobra.Command, args []string) error {
 		if len(cmd.Flags().Args()) == 0 || cmd.Flags().Lookup("help").Changed {
 			return cmd.Help()
@@ -76,7 +78,7 @@ func NewCLI(opts ...option) *CommandLine {
 		return root(c.fs, &c.geners, importPaths, cmd.Flags().Args()...)
 	}
 
-	return c
+	return
 }
 
 func (c *CommandLine) AllowPlugins(prefix string) { *c.pluginPrefix = prefix }
