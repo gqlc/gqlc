@@ -6,7 +6,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/gqlc/graphql/ast"
 	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 	"strings"
@@ -168,6 +167,7 @@ func TestParseInputFiles(t *testing.T) {
 func TestRoot(t *testing.T) {
 	testCases := []struct {
 		Name   string
+		IPaths []string
 		Args   []string
 		expect func(g *MockGenerator)
 	}{
@@ -179,22 +179,25 @@ func TestRoot(t *testing.T) {
 			},
 		},
 		{
-			Name: "SingleWImports",
-			Args: []string{"-I", "/usr/imports", "-I", "/home/graphql/imports", "five.gql"},
+			Name:   "SingleWImports",
+			IPaths: []string{"/usr/imports", "/home/graphql/imports"},
+			Args:   []string{"five.gql"},
 			expect: func(g *MockGenerator) {
 				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
 		{
-			Name: "MultiWoImports",
-			Args: []string{"-I", "/home", "-I", "/home/graphql/imports", "thr.gql", "four.gql"},
+			Name:   "MultiWoImports",
+			IPaths: []string{"/home", "/home/graphql/imports"},
+			Args:   []string{"thr.gql", "four.gql"},
 			expect: func(g *MockGenerator) {
 				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
 			},
 		},
 		{
-			Name: "MultiWImports",
-			Args: []string{"-I", "/usr/imports", "-I", "/home", "-I=/home/graphql", "-I", "/home/graphql/imports", "one.gql", "five.gql"},
+			Name:   "MultiWImports",
+			IPaths: []string{"/usr/imports", "/home", "/home/graphql", "/home/graphql/imports"},
+			Args:   []string{"one.gql", "five.gql"},
 			expect: func(g *MockGenerator) {
 				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
 			},
@@ -203,18 +206,6 @@ func TestRoot(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(subT *testing.T) {
-			cmd := &cobra.Command{
-				Args: cobra.MinimumNArgs(1),
-			}
-			cmd.InitDefaultHelpFlag()
-			cmd.Flags().StringSliceP("import_path", "I", nil, "")
-
-			err := cmd.Flags().Parse(testCase.Args)
-			if err != nil {
-				subT.Error(err)
-				return
-			}
-
 			ctrl := gomock.NewController(subT)
 			g := NewMockGenerator(ctrl)
 			testCase.expect(g)
@@ -224,7 +215,7 @@ func TestRoot(t *testing.T) {
 				outDir:    new(string),
 			}}
 
-			err = root(testFs, &geners)(cmd, nil)
+			err := root(testFs, &geners, testCase.IPaths, testCase.Args...)
 			if err != nil {
 				subT.Error(err)
 				return

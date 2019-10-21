@@ -43,7 +43,18 @@ func ProdOptions() option {
 			validatePluginTypes(fs),
 			initGenDirs(fs, c.geners),
 		)
-		c.RunE = root(fs, &c.geners)
+		c.RunE = func(cmd *cobra.Command, args []string) error {
+			if len(cmd.Flags().Args()) == 0 || cmd.Flags().Lookup("help").Changed {
+				return cmd.Help()
+			}
+
+			importPaths, err := cmd.Flags().GetStringSlice("import_path")
+			if err != nil {
+				return err
+			}
+
+			return root(fs, &c.geners, importPaths, cmd.Flags().Args()...)
+		}
 	}
 }
 
@@ -106,25 +117,22 @@ func (c *cli) RegisterGenerator(g compiler.Generator, details ...string) {
 	}
 }
 
-type panicErr struct {
-	Err        error
-	StackTrace []byte
-}
-
-func (e *panicErr) Error() string {
-	return fmt.Sprintf("gqlc: recovered from unexpected panic: %s\n\n%s", e.Err, e.StackTrace)
+func wrapPanic(err error, stack []byte) error {
+	return fmt.Errorf("gqlc: recovered from unexpected panic: %w\n\n%s", err, stack)
 }
 
 func (c *cli) Run(args []string) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
+			stack := debug.Stack()
+
 			rerr, ok := r.(error)
 			if ok {
-				err = &panicErr{Err: rerr, StackTrace: debug.Stack()}
+				err = wrapPanic(rerr, stack)
 				return
 			}
 
-			err = &panicErr{Err: fmt.Errorf("%#v", r), StackTrace: debug.Stack()}
+			err = wrapPanic(fmt.Errorf("%#v", r), stack)
 		}
 	}()
 

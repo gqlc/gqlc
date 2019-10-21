@@ -54,91 +54,79 @@ func (ctx *genCtx) Open(name string) (io.WriteCloser, error) {
 	return ctx.fs.OpenFile(filepath.Join(ctx.dir, name), os.O_WRONLY|os.O_CREATE, 0755)
 }
 
-func root(fs afero.Fs, geners *[]*genFlag) func(*cobra.Command, []string) error {
-	return func(cmd *cobra.Command, _ []string) (err error) {
-		if len(cmd.Flags().Args()) == 0 || cmd.Flags().Lookup("help").Changed {
-			return cmd.Help()
-		}
+func root(fs afero.Fs, geners *[]*genFlag, iPaths []string, args ...string) (err error) {
+	// Parse files
+	docMap := make(map[string]*ast.Document, len(args))
+	err = parseInputFiles2(fs, docMap, iPaths, args...)
+	if err != nil {
+		return
+	}
 
-		importPaths, err := cmd.Flags().GetStringSlice("import_path")
-		if err != nil {
-			return
-		}
+	docs := make([]*ast.Document, 0, len(docMap))
+	for _, doc := range docMap {
+		docs = append(docs, doc)
+	}
+	resolveImportPaths(docs)
 
-		// Parse files
-		filenames := cmd.Flags().Args()
-		docMap := make(map[string]*ast.Document, len(filenames))
-		err = parseInputFiles2(fs, docMap, importPaths, filenames...)
-		if err != nil {
-			return
-		}
+	// First, Resolve imports (this must occur before type checking)
+	docsIR, err := compiler.ReduceImports(docs)
+	if err != nil {
+		return err
+	}
 
-		docs := make([]*ast.Document, 0, len(docMap))
-		for _, doc := range docMap {
-			docs = append(docs, doc)
-		}
-		resolveImportPaths(docs)
-
-		// First, Resolve imports (this must occur before type checking)
-		docsIR, err := compiler.ReduceImports(docs)
-		if err != nil {
-			return
-		}
-
-		// Then, Perform type checking
-		errs := compiler.CheckTypes(docsIR, compiler.TypeCheckerFn(compiler.Validate))
-		if len(errs) > 0 {
-			for _, err = range errs {
-				log.Println(err)
-			}
-			return
-		}
-
-		// Merge type extensions with the original type definitions
-		for d, types := range docsIR {
-			docsIR[d] = compiler.MergeExtensions(types)
-		}
-
-		// Remove builtin types and any Generator registered types
-		builtins := compiler.ToIR(compiler.Types)
-		for name := range builtins {
-			for _, d := range docsIR {
-				delete(d, name)
-			}
-		}
-
-		// Convert types from IR to []*ast.TypeDecl
-		docs = docs[:0]
-		for doc, types := range docsIR {
-			doc.Types = compiler.FromIR(types)
-
-			docs = append(docs, doc)
-		}
-
-		// Run code generators
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		var b bytes.Buffer
-		enc := json.NewEncoder(&b)
-		for _, gen := range *geners {
-			b.Reset()
-
-			err = enc.Encode(gen.opts)
-			if err != nil {
-				return
-			}
-
-			ctx = compiler.WithContext(ctx, &genCtx{dir: *gen.outDir, fs: fs})
-
-			for _, doc := range docs {
-				err = gen.Generate(ctx, doc, b.String())
-				if err != nil {
-					return
-				}
-			}
+	// Then, Perform type checking
+	errs := compiler.CheckTypes(docsIR, compiler.TypeCheckerFn(compiler.Validate))
+	if len(errs) > 0 {
+		for _, err = range errs {
+			log.Println(err)
 		}
 		return
 	}
+
+	// Merge type extensions with the original type definitions
+	for d, types := range docsIR {
+		docsIR[d] = compiler.MergeExtensions(types)
+	}
+
+	// Remove builtin types and any Generator registered types
+	builtins := compiler.ToIR(compiler.Types)
+	for name := range builtins {
+		for _, d := range docsIR {
+			delete(d, name)
+		}
+	}
+
+	// Convert types from IR to []*ast.TypeDecl
+	docs = docs[:0]
+	for doc, types := range docsIR {
+		doc.Types = compiler.FromIR(types)
+
+		docs = append(docs, doc)
+	}
+
+	// Run code generators
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var b bytes.Buffer
+	enc := json.NewEncoder(&b)
+	for _, gen := range *geners {
+		b.Reset()
+
+		err = enc.Encode(gen.opts)
+		if err != nil {
+			return
+		}
+
+		ctx = compiler.WithContext(ctx, &genCtx{dir: *gen.outDir, fs: fs})
+
+		for _, doc := range docs {
+			err = gen.Generate(ctx, doc, b.String())
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
 }
 
 // resolveImportPaths makes sure import paths and doc names are consistent.
