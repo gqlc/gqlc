@@ -1,9 +1,8 @@
 package cmd
 
-//go:generate mockgen -package=cmd -destination=./mock_test.go github.com/gqlc/compiler Generator
-
 import (
 	"github.com/golang/mock/gomock"
+	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/graphql/ast"
 	"github.com/spf13/afero"
 	"os"
@@ -169,12 +168,12 @@ func TestRoot(t *testing.T) {
 		Name   string
 		IPaths []string
 		Args   []string
-		expect func(g *MockGenerator)
+		expect func(g *gen.MockGenerator)
 	}{
 		{
 			Name: "SingleWoImports",
 			Args: []string{"/home/graphql/imports/thr.gql"},
-			expect: func(g *MockGenerator) {
+			expect: func(g *gen.MockGenerator) {
 				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
@@ -182,7 +181,7 @@ func TestRoot(t *testing.T) {
 			Name:   "SingleWImports",
 			IPaths: []string{"/usr/imports", "/home/graphql/imports"},
 			Args:   []string{"five.gql"},
-			expect: func(g *MockGenerator) {
+			expect: func(g *gen.MockGenerator) {
 				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
@@ -190,7 +189,7 @@ func TestRoot(t *testing.T) {
 			Name:   "MultiWoImports",
 			IPaths: []string{"/home", "/home/graphql/imports"},
 			Args:   []string{"thr.gql", "four.gql"},
-			expect: func(g *MockGenerator) {
+			expect: func(g *gen.MockGenerator) {
 				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
 			},
 		},
@@ -198,7 +197,7 @@ func TestRoot(t *testing.T) {
 			Name:   "MultiWImports",
 			IPaths: []string{"/usr/imports", "/home", "/home/graphql", "/home/graphql/imports"},
 			Args:   []string{"one.gql", "five.gql"},
-			expect: func(g *MockGenerator) {
+			expect: func(g *gen.MockGenerator) {
 				g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
 			},
 		},
@@ -206,8 +205,7 @@ func TestRoot(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(subT *testing.T) {
-			ctrl := gomock.NewController(subT)
-			g := NewMockGenerator(ctrl)
+			g := newMockGenerator(subT)
 			testCase.expect(g)
 
 			geners := []*genFlag{{
