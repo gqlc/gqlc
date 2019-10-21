@@ -1,6 +1,8 @@
 // Package gen contains and utils for working with generators.
 package gen
 
+//go:generate mockgen -write_package_comment=false -package=gen -destination=./mock.go github.com/gqlc/gqlc/gen Generator
+
 import (
 	"context"
 	"fmt"
