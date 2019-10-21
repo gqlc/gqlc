@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
 	"github.com/gqlc/graphql/token"
@@ -109,18 +110,18 @@ func root(fs afero.Fs, geners *[]*genFlag, iPaths []string, args ...string) (err
 	defer cancel()
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
-	for _, gen := range *geners {
+	for _, g := range *geners {
 		b.Reset()
 
-		err = enc.Encode(gen.opts)
+		err = enc.Encode(g.opts)
 		if err != nil {
 			return
 		}
 
-		ctx = compiler.WithContext(ctx, &genCtx{dir: *gen.outDir, fs: fs})
+		ctx = gen.WithContext(ctx, &genCtx{dir: *g.outDir, fs: fs})
 
 		for _, doc := range docs {
-			err = gen.Generate(ctx, doc, b.String())
+			err = g.Generate(ctx, doc, b.String())
 			if err != nil {
 				return
 			}

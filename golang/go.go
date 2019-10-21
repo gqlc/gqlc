@@ -6,7 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/graphql/ast"
 	"io"
 	"path/filepath"
@@ -48,7 +48,7 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 	g.Lock()
 	defer func() {
 		if err != nil {
-			err = compiler.GeneratorError{
+			err = gen.GeneratorError{
 				DocName: doc.Name,
 				GenName: "go",
 				Msg:     err.Error(),
@@ -161,7 +161,7 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 	}
 
 	// Extract generator context
-	gCtx := compiler.Context(ctx)
+	gCtx := gen.Context(ctx)
 
 	// Open file to write to
 	goFileName := doc.Name[:len(doc.Name)-len(filepath.Ext(doc.Name))]

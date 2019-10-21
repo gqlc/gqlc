@@ -6,8 +6,8 @@ import (
 	"context"
 	"errors"
 	"github.com/golang/protobuf/proto"
-	"github.com/gqlc/compiler"
-	"github.com/gqlc/compiler/plugin"
+	"github.com/gqlc/gqlc/gen"
+	"github.com/gqlc/gqlc/plugin/pb"
 	"github.com/gqlc/graphql/ast"
 	"os/exec"
 	"sync"
@@ -31,7 +31,7 @@ type Generator struct {
 func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string) (err error) {
 	defer func() {
 		if err != nil {
-			err = compiler.GeneratorError{
+			err = gen.GeneratorError{
 				GenName: g.Prefix + g.Name,
 				DocName: doc.Name,
 				Msg:     err.Error(),
@@ -50,7 +50,7 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 	}
 
 	// Marshall doc
-	b, perr := proto.Marshal(&plugin.Request{
+	b, perr := proto.Marshal(&pb.Request{
 		FileToGenerate: []string{doc.Name},
 		Parameter:      opts,
 		Documents:      []*ast.Document{doc},
@@ -76,7 +76,7 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 	}
 
 	// Unmarshall response
-	var resp plugin.Response
+	var resp pb.Response
 	err = proto.Unmarshal(out.Bytes(), &resp)
 	if err != nil {
 		return
@@ -88,7 +88,7 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 	}
 
 	// Write plugin files
-	gCtx := compiler.Context(ctx)
+	gCtx := gen.Context(ctx)
 	for _, f := range resp.File {
 		w, ferr := gCtx.Open(f.Name)
 		if ferr != nil {

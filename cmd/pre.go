@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/gqlc/compiler"
-	"github.com/gqlc/gqlc/cmd/plugin"
+	"github.com/gqlc/gqlc/plugin"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"os"

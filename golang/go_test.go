@@ -5,7 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
 	"github.com/gqlc/graphql/token"
@@ -586,19 +586,11 @@ func TestDirective(t *testing.T) {
 	})
 }
 
-type testCtx struct {
-	io.Writer
-}
-
-func (ctx testCtx) Open(filename string) (io.WriteCloser, error) { return ctx, nil }
-
-func (ctx testCtx) Close() error { return nil }
-
 func TestGenerator_Generate(t *testing.T) {
 	g := &Generator{}
 
 	var b bytes.Buffer
-	ctx := compiler.WithContext(context.Background(), testCtx{Writer: &b})
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
 	err := g.Generate(ctx, testDoc, `{"descriptions": true}`)
 	if err != nil {
 		t.Error(err)
@@ -618,7 +610,7 @@ func BenchmarkGenerator_Generate(b *testing.B) {
 	g := &Generator{}
 
 	var buf bytes.Buffer
-	ctx := compiler.WithContext(context.Background(), testCtx{Writer: &buf})
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &buf})
 
 	for i := 0; i < b.N; i++ {
 		buf.Reset()
@@ -650,7 +642,7 @@ type Query {
 	}
 
 	var b bytes.Buffer
-	ctx := compiler.WithContext(context.Background(), &testCtx{Writer: &b}) // Pass in an actual
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b}) // Pass in an actual
 	err = g.Generate(ctx, doc, `{"descriptions": true}`)
 	if err != nil {
 		log.Fatal(err)

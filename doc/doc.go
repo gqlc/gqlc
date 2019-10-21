@@ -7,7 +7,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/graphql/ast"
 	"gitlab.com/golang-commonmark/markdown"
 	"io"
@@ -208,7 +208,7 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 	g.Lock()
 	defer func() {
 		if err != nil {
-			err = compiler.GeneratorError{
+			err = gen.GeneratorError{
 				DocName: doc.Name,
 				GenName: "doc",
 				Msg:     err.Error(),
@@ -231,7 +231,7 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 	g.generateTypes(types, gOpts)
 
 	// Extract generator context
-	gCtx := compiler.Context(ctx)
+	gCtx := gen.Context(ctx)
 
 	// Open .md file
 	base := doc.Name[:len(doc.Name)-len(filepath.Ext(doc.Name))]

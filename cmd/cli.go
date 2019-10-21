@@ -3,7 +3,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/gen"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"runtime/debug"
@@ -88,7 +88,7 @@ func NewCLI(opts ...option) *cli {
 
 func (c *cli) AllowPlugins(prefix string) { *c.pluginPrefix = prefix }
 
-func (c *cli) RegisterGenerator(g compiler.Generator, details ...string) {
+func (c *cli) RegisterGenerator(g gen.Generator, details ...string) {
 	l := len(details)
 	var name, opt, help string
 	switch {

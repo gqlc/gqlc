@@ -5,7 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
 	"github.com/gqlc/graphql/token"
@@ -80,14 +80,6 @@ func TestMain(m *testing.M) {
 
 	os.Exit(m.Run())
 }
-
-type testCtx struct {
-	io.Writer
-}
-
-func (ctx testCtx) Open(filename string) (io.WriteCloser, error) { return ctx, nil }
-
-func (ctx testCtx) Close() error { return nil }
 
 func TestAddContent(t *testing.T) {
 	mask := schemaType | scalarType | objectType | interType | unionType | enumType | inputType | directiveType | extendType
@@ -676,9 +668,9 @@ func TestArgs(t *testing.T) {
 
 func TestGenerator_Generate(t *testing.T) {
 	var b bytes.Buffer
-	gen := new(Generator)
-	ctx := compiler.WithContext(context.Background(), testCtx{Writer: &b})
-	err := gen.Generate(ctx, testDoc, "")
+	g := new(Generator)
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
+	err := g.Generate(ctx, testDoc, "")
 	if err != nil {
 		t.Error(err)
 		return
@@ -697,7 +689,7 @@ func TestGenerator_Generate(t *testing.T) {
 func BenchmarkGenerator_Generate(b *testing.B) {
 	var buf bytes.Buffer
 	g := new(Generator)
-	ctx := compiler.WithContext(context.Background(), testCtx{Writer: &buf})
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &buf})
 
 	for i := 0; i < b.N; i++ {
 		buf.Reset()
@@ -728,7 +720,7 @@ type Query {
 	}
 
 	var b bytes.Buffer
-	ctx := compiler.WithContext(context.Background(), &testCtx{Writer: &b}) // Pass in an actual
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b}) // Pass in an actual
 	err = g.Generate(ctx, doc, `{"title": "Example Documentation"}`)
 	if err != nil {
 		return // Handle err
