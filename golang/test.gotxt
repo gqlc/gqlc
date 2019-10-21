@@ -1,0 +1,182 @@
+package main
+
+import "github.com/graphql-go/graphql"
+
+var Schema graphql.Schema
+
+var QueryType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Query",
+	Fields: graphql.Fields{
+		"version": &graphql.Field{
+			Type: VersionType,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) { return nil, nil },
+			Description: "version returns the current API version.",
+		},
+		"echo": &graphql.Field{
+			Type: EchoType,
+			Args: graphql.FieldConfigArgument{
+				"text": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) { return nil, nil },
+			Description: "echo echos a message.",
+		},
+		"search": &graphql.Field{
+			Type: ResultType,
+			Args: graphql.FieldConfigArgument{
+				"text": &graphql.ArgumentConfig{
+					Type: graphql.String,
+					Description: "text is a single text input to use for searching.",
+				},
+				"terms": &graphql.ArgumentConfig{
+					Type: graphql.NewList(graphql.String),
+					Description: "terms represent term based querying.",
+				},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) { return nil, nil },
+			Description: "search performs a search over some data set.",
+		},
+	},
+	Description: "Query represents valid queries.",
+})
+
+var VersionType = graphql.NewScalar(graphql.ScalarConfig{
+	Name: "Version",
+	Description: "Version represents an API version.",
+	Serialize: func(value interface{}) interface{} { return nil },
+})
+
+var EchoType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Echo",
+	Fields: graphql.Fields{
+		"msg": &graphql.Field{
+			Type: graphql.NewNonNull(graphql.String),
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) { return nil, nil },
+			Description: "msg contains the provided message.",
+		},
+	},
+	Description: "Echo represents an echo message.",
+})
+
+var NodeType = graphql.NewInterface(graphql.InterfaceConfig{
+	Name: "Node",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type: graphql.NewNonNull(graphql.ID),
+			Description: "id uniquely identifies the node.",
+		},
+	},
+	Description: "Node represents a node.",
+})
+
+var ConnectionType = graphql.NewInterface(graphql.InterfaceConfig{
+	Name: "Connection",
+	Fields: graphql.Fields{
+		"total": &graphql.Field{
+			Type: graphql.Int,
+			Description: "total returns the total number of edges.",
+		},
+		"edges": &graphql.Field{
+			Type: graphql.NewList(NodeType),
+			Description: "edges contains the current page of edges.",
+		},
+		"hasNextPage": &graphql.Field{
+			Type: graphql.Boolean,
+			Description: "hasNextPage tells if there exists more edges.",
+		},
+	},
+	Description: "Connection represents a set of edges, which are meant to be paginated.",
+})
+
+var ResultType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Result",
+	Interfaces: []*graphql.Interface{ ConnectionType },
+	Fields: graphql.Fields{
+		"total": &graphql.Field{
+			Type: graphql.Int,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) { return nil, nil },
+			Description: "total yields the total number of search results.",
+		},
+		"edges": &graphql.Field{
+			Type: graphql.NewList(NodeType),
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) { return nil, nil },
+			Description: "edges contains the search results.",
+		},
+		"hasNextPage": &graphql.Field{
+			Type: graphql.Boolean,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) { return nil, nil },
+			Description: "hasNextPage tells if there are more search results.",
+		},
+	},
+	Description: "Result represents a search result.",
+})
+
+var SearchResultType = graphql.NewUnion(graphql.UnionConfig{
+	Name: "SearchResult",
+	Types: []*graphql.Object{
+		EchoType,
+		ResultType,
+	},
+	ResolveType: func(p graphql.ResolveTypeParams) *graphql.Object { return nil },
+	Description: "SearchResult is a test union type",
+})
+
+var DirectionType = graphql.NewEnum(graphql.EnumConfig{
+	Name: "Direction",
+	Description: "Direction represents a cardinal direction.",
+	Values: graphql.EnumValueConfigMap{
+		"NORTH": &graphql.EnumValueConfig{
+			Value: "NORTH",
+			Description: "EnumValue description",
+		},
+		"EAST": &graphql.EnumValueConfig{
+			Value: "EAST",
+		},
+		"SOUTH": &graphql.EnumValueConfig{
+			Value: "SOUTH",
+		},
+		"WEST": &graphql.EnumValueConfig{
+			Value: "WEST",
+			Description: "EnumValue Description and Directives.",
+		},
+	},
+})
+
+var PointType = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name: "Point",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"x": &graphql.InputObjectFieldConfig{
+			Type: graphql.NewNonNull(graphql.Float),
+		},
+		"y": &graphql.InputObjectFieldConfig{
+			Type: graphql.NewNonNull(graphql.Float),
+		},
+	},
+	Description: "Point represents a 2-D geo point.",
+})
+
+var deprecateType = graphql.NewDirective(graphql.DirectiveConfig{
+	Name: "deprecate",
+	Description: "deprecate signifies a type deprecation from the api.",
+	Locations: []string{
+		"SCHEMA",
+		"FIELD",
+	},
+	Args: graphql.FieldConfigArgument{
+		"msg": &graphql.ArgumentConfig{
+			Type: graphql.String,
+			Description: "Arg description.",
+		},
+	},
+})
+
+func init() {
+	var err error
+	Schema, err = graphql.NewSchema(graphql.SchemaConfig{
+		Query: QueryType,
+	})
+	if err != nil {
+		panic(err)
+	}
+}

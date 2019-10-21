@@ -4,10 +4,10 @@ package main
 import (
 	"fmt"
 	"github.com/gqlc/compiler"
-	"github.com/gqlc/doc"
-	"github.com/gqlc/golang"
 	"github.com/gqlc/gqlc/cmd"
-	"github.com/gqlc/js"
+	"github.com/gqlc/gqlc/doc"
+	"github.com/gqlc/gqlc/golang"
+	"github.com/gqlc/gqlc/js"
 	"os"
 )
 

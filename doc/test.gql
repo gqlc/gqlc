@@ -1,0 +1,96 @@
+# Document Generator Options
+@doc(options: {
+    title: "Test Documentation",
+})
+
+"Test Schema"
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+"Query represents valid queries."
+type Query {
+    "version returns the current API version."
+    version: Version
+
+    "echo echos a message."
+    echo(text: String!): Echo
+
+    "search performs a search over some data set."
+    search(
+        "text is a single text input to use for searching."
+        text: String,
+
+        "terms represent term based querying."
+        terms: [String],
+    ): Result
+}
+
+"Version represents an API version."
+scalar Version @a(a: 1)
+
+"Echo represents an echo message."
+type Echo @a(a: 1) {
+    "msg contains the provided message."
+    msg: String!
+}
+
+"Node represents a node."
+interface Node @experimental {
+    "id uniquely identifies the node."
+    id: ID! @n(o: "p")
+}
+
+"Connection represents a set of edges, which are meant to be paginated."
+interface Connection {
+    "total returns the total number of edges."
+    total: Int
+
+    "edges contains the current page of edges."
+    edges: [Node]
+
+    "hasNextPage tells if there exists more edges."
+    hasNextPage: Boolean
+}
+
+"Result represents a search result."
+type Result implements Connection @a(a: "a") @b(b: 2, c: 1.4) {
+    "total yields the total number of search results."
+    total: Int
+
+    "edges contains the search results."
+    edges: [Node]
+
+    "hasNextPage tells if there are more search results."
+    hasNextPage: Boolean
+}
+
+"SearchResult is a test union type"
+union SearchResult @a @b() @c(a: "a", b: 2, c: 1.4) = Echo | Result
+
+"Direction represents a cardinal direction."
+enum Direction {
+    "EnumValue description"
+    NORTH
+    EAST @a
+    SOUTH @a @b()
+
+    "EnumValue Description and Directives."
+    WEST @a @b() @c(a: "a", b: 2, c: false)
+}
+
+"Point represents a 2-D geo point."
+input Point {
+    x: Float!
+    y: Float!
+}
+
+"deprecate signifies a type deprecation from the api."
+directive @deprecate(
+    "Arg description."
+    msg: String
+    ) on SCHEMA | FIELD
+
+"Mutation represents valid mutations."
+type Mutation {}
