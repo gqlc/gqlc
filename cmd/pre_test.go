@@ -8,11 +8,7 @@ import (
 )
 
 func TestParseFlags(t *testing.T) {
-	preRunE := func(c *cli) func(*cobra.Command, []string) error {
-		return parseFlags(c.pluginPrefix, &c.geners, c.fp)
-	}
-
-	testCli := newTestCli(nil, preRunE, noopRun)
+	testCli := NewCLI()
 	testGen := newMockGenerator(t)
 	testCli.RegisterGenerator(testGen, "a_out", "A test generator.")
 	testCli.RegisterGenerator(testGen, "b_out", "b_opt", "A second test generator")

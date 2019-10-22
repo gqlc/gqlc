@@ -3,65 +3,44 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/gen"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"runtime/debug"
 	"text/scanner"
 )
 
-type option func(*cli)
+type option func(*CommandLine)
 
 // WithCommand configures the underlying cobra.Command to be used.
 func WithCommand(cmd *cobra.Command) option {
-	return func(c *cli) {
+	return func(c *CommandLine) {
 		c.Command = cmd
 	}
 }
 
-// WithPreRunE configures any pre-ran functionality.
-func WithPreRunE(preRunE func(*cli) func(*cobra.Command, []string) error) option {
-	return func(c *cli) {
-		c.PreRunE = preRunE(c)
+// WithFS configures the underlying afero.FS used to read/write files.
+func WithFS(fs afero.Fs) option {
+	return func(c *CommandLine) {
+		c.fs = fs
 	}
 }
 
-// WithRunE configures the actual CLI functionality.
-func WithRunE(runE func(*cli) func(*cobra.Command, []string) error) option {
-	return func(c *cli) {
-		c.RunE = runE(c)
-	}
-}
-
-// ProdOptions configures a CLI for production usage.
-func ProdOptions() option {
-	return func(c *cli) {
-		fs := afero.NewOsFs()
-		c.PreRunE = chainPreRunEs(
-			parseFlags(c.pluginPrefix, &c.geners, c.fp),
-			validateArgs,
-			validatePluginTypes(fs),
-			initGenDirs(fs, c.geners),
-		)
-		c.RunE = root(fs, &c.geners)
-	}
-}
-
-// ccli is an implementation of the compiler.CommandLine interface, which
-// simply extends a github.com/spf13/cobra.Command
+// CommandLine which simply extends a github.com/spf13/cobra.Command
+// to include helper methods for registering code generators.
 //
-type cli struct {
+type CommandLine struct {
 	*cobra.Command
 
 	pluginPrefix *string
 	geners       []*genFlag
 	fp           *fparser
+	fs           afero.Fs
 }
 
-// NewCLI returns a compiler.CommandLine implementation.
-func NewCLI(opts ...option) *cli {
-	c := &cli{
-		Command:      rootCmd,
+// NewCLI returns a CommandLine implementation.
+func NewCLI(opts ...option) (c *CommandLine) {
+	c = &CommandLine{
 		pluginPrefix: new(string),
 		fp: &fparser{
 			Scanner: new(scanner.Scanner),
@@ -72,12 +51,39 @@ func NewCLI(opts ...option) *cli {
 		opt(c)
 	}
 
-	return c
+	if c.fs == nil {
+		c.fs = afero.NewOsFs()
+	}
+
+	if c.Command != nil {
+		return
+	}
+	c.Command = rootCmd
+	c.PreRunE = chainPreRunEs(
+		parseFlags(c.pluginPrefix, &c.geners, c.fp),
+		validateArgs,
+		validatePluginTypes(c.fs),
+		initGenDirs(c.fs, c.geners),
+	)
+	c.RunE = func(cmd *cobra.Command, args []string) error {
+		if len(cmd.Flags().Args()) == 0 || cmd.Flags().Lookup("help").Changed {
+			return cmd.Help()
+		}
+
+		importPaths, err := cmd.Flags().GetStringSlice("import_path")
+		if err != nil {
+			return err
+		}
+
+		return root(c.fs, &c.geners, importPaths, cmd.Flags().Args()...)
+	}
+
+	return
 }
 
-func (c *cli) AllowPlugins(prefix string) { *c.pluginPrefix = prefix }
+func (c *CommandLine) AllowPlugins(prefix string) { *c.pluginPrefix = prefix }
 
-func (c *cli) RegisterGenerator(g compiler.Generator, details ...string) {
+func (c *CommandLine) RegisterGenerator(g gen.Generator, details ...string) {
 	l := len(details)
 	var name, opt, help string
 	switch {
@@ -106,25 +112,22 @@ func (c *cli) RegisterGenerator(g compiler.Generator, details ...string) {
 	}
 }
 
-type panicErr struct {
-	Err        error
-	StackTrace []byte
+func wrapPanic(err error, stack []byte) error {
+	return fmt.Errorf("gqlc: recovered from unexpected panic: %w\n\n%s", err, stack)
 }
 
-func (e *panicErr) Error() string {
-	return fmt.Sprintf("gqlc: recovered from unexpected panic: %s\n\n%s", e.Err, e.StackTrace)
-}
-
-func (c *cli) Run(args []string) (err error) {
+func (c *CommandLine) Run(args []string) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
+			stack := debug.Stack()
+
 			rerr, ok := r.(error)
 			if ok {
-				err = &panicErr{Err: rerr, StackTrace: debug.Stack()}
+				err = wrapPanic(rerr, stack)
 				return
 			}
 
-			err = &panicErr{Err: fmt.Errorf("%#v", r), StackTrace: debug.Stack()}
+			err = wrapPanic(fmt.Errorf("%#v", r), stack)
 		}
 	}()
 

@@ -4,6 +4,24 @@ import "github.com/graphql-go/graphql"
 
 var Schema graphql.Schema
 
+var VersionType = graphql.NewScalar(graphql.ScalarConfig{
+	Name: "Version",
+	Description: "Version represents an API version.",
+	Serialize: func(value interface{}) interface{} { return nil },
+})
+
+var EchoType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Echo",
+	Fields: graphql.Fields{
+		"msg": &graphql.Field{
+			Type: graphql.NewNonNull(graphql.String),
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) { return nil, nil },
+			Description: "msg contains the provided message.",
+		},
+	},
+	Description: "Echo represents an echo message.",
+})
+
 var QueryType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Query",
 	Fields: graphql.Fields{
@@ -41,54 +59,6 @@ var QueryType = graphql.NewObject(graphql.ObjectConfig{
 	Description: "Query represents valid queries.",
 })
 
-var VersionType = graphql.NewScalar(graphql.ScalarConfig{
-	Name: "Version",
-	Description: "Version represents an API version.",
-	Serialize: func(value interface{}) interface{} { return nil },
-})
-
-var EchoType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "Echo",
-	Fields: graphql.Fields{
-		"msg": &graphql.Field{
-			Type: graphql.NewNonNull(graphql.String),
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) { return nil, nil },
-			Description: "msg contains the provided message.",
-		},
-	},
-	Description: "Echo represents an echo message.",
-})
-
-var NodeType = graphql.NewInterface(graphql.InterfaceConfig{
-	Name: "Node",
-	Fields: graphql.Fields{
-		"id": &graphql.Field{
-			Type: graphql.NewNonNull(graphql.ID),
-			Description: "id uniquely identifies the node.",
-		},
-	},
-	Description: "Node represents a node.",
-})
-
-var ConnectionType = graphql.NewInterface(graphql.InterfaceConfig{
-	Name: "Connection",
-	Fields: graphql.Fields{
-		"total": &graphql.Field{
-			Type: graphql.Int,
-			Description: "total returns the total number of edges.",
-		},
-		"edges": &graphql.Field{
-			Type: graphql.NewList(NodeType),
-			Description: "edges contains the current page of edges.",
-		},
-		"hasNextPage": &graphql.Field{
-			Type: graphql.Boolean,
-			Description: "hasNextPage tells if there exists more edges.",
-		},
-	},
-	Description: "Connection represents a set of edges, which are meant to be paginated.",
-})
-
 var ResultType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Result",
 	Interfaces: []*graphql.Interface{ ConnectionType },
@@ -110,6 +80,36 @@ var ResultType = graphql.NewObject(graphql.ObjectConfig{
 		},
 	},
 	Description: "Result represents a search result.",
+})
+
+var ConnectionType = graphql.NewInterface(graphql.InterfaceConfig{
+	Name: "Connection",
+	Fields: graphql.Fields{
+		"total": &graphql.Field{
+			Type: graphql.Int,
+			Description: "total returns the total number of edges.",
+		},
+		"edges": &graphql.Field{
+			Type: graphql.NewList(NodeType),
+			Description: "edges contains the current page of edges.",
+		},
+		"hasNextPage": &graphql.Field{
+			Type: graphql.Boolean,
+			Description: "hasNextPage tells if there exists more edges.",
+		},
+	},
+	Description: "Connection represents a set of edges, which are meant to be paginated.",
+})
+
+var NodeType = graphql.NewInterface(graphql.InterfaceConfig{
+	Name: "Node",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type: graphql.NewNonNull(graphql.ID),
+			Description: "id uniquely identifies the node.",
+		},
+	},
+	Description: "Node represents a node.",
 })
 
 var SearchResultType = graphql.NewUnion(graphql.UnionConfig{

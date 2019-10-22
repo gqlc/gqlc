@@ -5,7 +5,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/gen"
+	"github.com/gqlc/gqlc/sort"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
 	"github.com/gqlc/graphql/token"
@@ -35,6 +36,8 @@ func compareBytes(t *testing.T, ex, out []byte) {
 }
 
 var (
+	update = flag.Bool("update", false, "Update expected output file")
+
 	// Flags are used here to allow for the input/output files to be changed during dev
 	// One use case of changing the files is to examine how Generate scales through the benchmark
 	//
@@ -81,23 +84,37 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-type testCtx struct {
-	io.Writer
+func TestUpdate(t *testing.T) {
+	if !*update {
+		t.Skipf("not updating expected md output file: %s", *exDocName)
+		return
+	}
+	t.Logf("updating expected md output file: %s", *exDocName)
+
+	f, err := os.OpenFile(*exDocName, os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	g := new(Generator)
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: f})
+	err = g.Generate(ctx, testDoc, "")
+	if err != nil {
+		t.Error(err)
+		return
+	}
 }
 
-func (ctx testCtx) Open(filename string) (io.WriteCloser, error) { return ctx, nil }
-
-func (ctx testCtx) Close() error { return nil }
-
 func TestAddContent(t *testing.T) {
-	mask := schemaType | scalarType | objectType | interType | unionType | enumType | inputType | directiveType | extendType
+	mask := sort.SchemaType | sort.ScalarType | sort.ObjectType | sort.InterType | sort.UnionType | sort.EnumType | sort.InputType | sort.DirectiveType | sort.ExtendType
 
 	testCases := []struct {
 		Name string
 		C    []struct {
 			name  string
 			count int
-			typ   declType
+			typ   sort.DeclType
 		}
 		Total int
 	}{
@@ -106,11 +123,11 @@ func TestAddContent(t *testing.T) {
 			C: []struct {
 				name  string
 				count int
-				typ   declType
+				typ   sort.DeclType
 			}{
 				{
 					name: "Test",
-					typ:  scalarType,
+					typ:  sort.ScalarType,
 				},
 			},
 			Total: 2,
@@ -120,19 +137,19 @@ func TestAddContent(t *testing.T) {
 			C: []struct {
 				name  string
 				count int
-				typ   declType
+				typ   sort.DeclType
 			}{
 				{
 					name: "A",
-					typ:  scalarType,
+					typ:  sort.ScalarType,
 				},
 				{
 					name: "B",
-					typ:  scalarType,
+					typ:  sort.ScalarType,
 				},
 				{
 					name: "C",
-					typ:  scalarType,
+					typ:  sort.ScalarType,
 				},
 			},
 			Total: 4,
@@ -142,31 +159,31 @@ func TestAddContent(t *testing.T) {
 			C: []struct {
 				name  string
 				count int
-				typ   declType
+				typ   sort.DeclType
 			}{
 				{
 					name: "A",
-					typ:  scalarType,
+					typ:  sort.ScalarType,
 				},
 				{
 					name: "B",
-					typ:  scalarType,
+					typ:  sort.ScalarType,
 				},
 				{
 					name: "C",
-					typ:  scalarType,
+					typ:  sort.ScalarType,
 				},
 				{
 					name: "A",
-					typ:  objectType,
+					typ:  sort.ObjectType,
 				},
 				{
 					name: "B",
-					typ:  objectType,
+					typ:  sort.ObjectType,
 				},
 				{
 					name: "C",
-					typ:  objectType,
+					typ:  sort.ObjectType,
 				},
 			},
 			Total: 8,
@@ -194,7 +211,6 @@ func TestAddContent(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestToC(t *testing.T) {
@@ -676,9 +692,9 @@ func TestArgs(t *testing.T) {
 
 func TestGenerator_Generate(t *testing.T) {
 	var b bytes.Buffer
-	gen := new(Generator)
-	ctx := compiler.WithContext(context.Background(), testCtx{Writer: &b})
-	err := gen.Generate(ctx, testDoc, "")
+	g := new(Generator)
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
+	err := g.Generate(ctx, testDoc, "")
 	if err != nil {
 		t.Error(err)
 		return
@@ -697,7 +713,7 @@ func TestGenerator_Generate(t *testing.T) {
 func BenchmarkGenerator_Generate(b *testing.B) {
 	var buf bytes.Buffer
 	g := new(Generator)
-	ctx := compiler.WithContext(context.Background(), testCtx{Writer: &buf})
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &buf})
 
 	for i := 0; i < b.N; i++ {
 		buf.Reset()
@@ -728,7 +744,7 @@ type Query {
 	}
 
 	var b bytes.Buffer
-	ctx := compiler.WithContext(context.Background(), &testCtx{Writer: &b}) // Pass in an actual
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b}) // Pass in an actual
 	err = g.Generate(ctx, doc, `{"title": "Example Documentation"}`)
 	if err != nil {
 		return // Handle err

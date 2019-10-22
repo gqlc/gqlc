@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/gqlc/compiler"
-	"github.com/gqlc/compiler/plugin"
+	"github.com/gqlc/gqlc/gen"
+	"github.com/gqlc/gqlc/plugin/pb"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
 	"github.com/gqlc/graphql/token"
@@ -45,14 +45,6 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-type testCtx struct {
-	io.Writer
-}
-
-func (ctx testCtx) Open(filename string) (io.WriteCloser, error) { return ctx, nil }
-
-func (ctx testCtx) Close() error { return nil }
-
 func TestGenerator_Generate(t *testing.T) {
 	// Get helper cmd
 	cmd := helperCommand(t, "generate")
@@ -63,7 +55,7 @@ func TestGenerator_Generate(t *testing.T) {
 		Name: "test",
 		Cmd:  cmd,
 	}
-	ctx := compiler.WithContext(context.Background(), &testCtx{Writer: &b})
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
 	err := g.Generate(ctx, testDoc, `{hello: "world!"}`)
 	if err != nil {
 		t.Error(err)
@@ -91,7 +83,7 @@ func TestUnknownPlugin(t *testing.T) {
 		return
 	}
 
-	ce1, ce2 := err1.(compiler.GeneratorError), err2.(compiler.GeneratorError)
+	ce1, ce2 := err1.(gen.GeneratorError), err2.(gen.GeneratorError)
 	if ce1.Msg != ce2.Msg {
 		t.Fail()
 	}
@@ -107,14 +99,14 @@ func TestMalformedResponse(t *testing.T) {
 		Name: "test",
 		Cmd:  cmd,
 	}
-	ctx := compiler.WithContext(context.Background(), &testCtx{Writer: &b})
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
 	err := g.Generate(ctx, testDoc, "")
 	if err == nil {
 		t.Error(err)
 		return
 	}
 
-	cerr, ok := err.(compiler.GeneratorError)
+	cerr, ok := err.(gen.GeneratorError)
 	if !ok {
 		t.Fatal("unexpected err type")
 		return
@@ -135,14 +127,14 @@ func TestResponseError(t *testing.T) {
 		Name: "test",
 		Cmd:  cmd,
 	}
-	ctx := compiler.WithContext(context.Background(), &testCtx{Writer: &b})
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
 	err := g.Generate(ctx, testDoc, "")
 	if err == nil {
 		t.Error(err)
 		return
 	}
 
-	cerr, ok := err.(compiler.GeneratorError)
+	cerr, ok := err.(gen.GeneratorError)
 	if !ok {
 		t.Fatal("unexpected err type")
 		return
@@ -184,7 +176,7 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(0)
 		}
 
-		var req plugin.Request
+		var req pb.Request
 		err = proto.Unmarshal(b, &req)
 		if err != nil {
 			fmt.Fprintln(os.Stdout, err)
@@ -196,8 +188,8 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(0)
 		}
 
-		resp := &plugin.Response{
-			File: []*plugin.Response_File{
+		resp := &pb.Response{
+			File: []*pb.Response_File{
 				{
 					Name:    "test.txt",
 					Content: outDoc,
@@ -222,7 +214,7 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(0)
 		}
 
-		var req plugin.Request
+		var req pb.Request
 		err = proto.Unmarshal(b, &req)
 		if err != nil {
 			fmt.Fprintln(os.Stdout, err)
@@ -238,7 +230,7 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(0)
 		}
 
-		var req plugin.Request
+		var req pb.Request
 		err = proto.Unmarshal(b, &req)
 		if err != nil {
 			fmt.Fprintln(os.Stdout, err)
@@ -250,7 +242,7 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(0)
 		}
 
-		resp := &plugin.Response{
+		resp := &pb.Response{
 			Error: "testing error response",
 		}
 		b, err = proto.Marshal(resp)

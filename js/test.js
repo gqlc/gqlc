@@ -22,6 +22,24 @@ var Schema = new GraphQLSchema({
   query: Query
 });
 
+var VersionType = new GraphQLScalarType({
+  name: 'Version',
+  description: 'Version represents an API version.',
+  serialize(value) { /* TODO */ }
+});
+
+var EchoType = new GraphQLObjectType({
+  name: 'Echo',
+  fields: {
+    msg: {
+      type: new GraphQLNonNull(GraphQLString),
+      resolve() { /* TODO */ },
+      description: 'msg contains the provided message.'
+    }
+  },
+  description: 'Echo represents an echo message.'
+});
+
 var QueryType = new GraphQLObjectType({
   name: 'Query',
   fields: {
@@ -59,54 +77,6 @@ var QueryType = new GraphQLObjectType({
   description: 'Query represents valid queries.'
 });
 
-var VersionType = new GraphQLScalarType({
-  name: 'Version',
-  description: 'Version represents an API version.',
-  serialize(value) { /* TODO */ }
-});
-
-var EchoType = new GraphQLObjectType({
-  name: 'Echo',
-  fields: {
-    msg: {
-      type: new GraphQLNonNull(GraphQLString),
-      resolve() { /* TODO */ },
-      description: 'msg contains the provided message.'
-    }
-  },
-  description: 'Echo represents an echo message.'
-});
-
-var NodeType = new GraphQLInterfaceType({
-  name: 'Node',
-  fields: {
-    id: {
-      type: new GraphQLNonNull(GraphQLID),
-      description: 'id uniquely identifies the node.'
-    }
-  },
-  description: 'Node represents a node.'
-});
-
-var ConnectionType = new GraphQLInterfaceType({
-  name: 'Connection',
-  fields: {
-    total: {
-      type: GraphQLInt,
-      description: 'total returns the total number of edges.'
-    },
-    edges: {
-      type: new GraphQLList(Node),
-      description: 'edges contains the current page of edges.'
-    },
-    hasNextPage: {
-      type: GraphQLBoolean,
-      description: 'hasNextPage tells if there exists more edges.'
-    }
-  },
-  description: 'Connection represents a set of edges, which are meant to be paginated.'
-});
-
 var ResultType = new GraphQLObjectType({
   name: 'Result',
   interfaces: [ Connection ],
@@ -128,6 +98,36 @@ var ResultType = new GraphQLObjectType({
     }
   },
   description: 'Result represents a search result.'
+});
+
+var ConnectionType = new GraphQLInterfaceType({
+  name: 'Connection',
+  fields: {
+    total: {
+      type: GraphQLInt,
+      description: 'total returns the total number of edges.'
+    },
+    edges: {
+      type: new GraphQLList(Node),
+      description: 'edges contains the current page of edges.'
+    },
+    hasNextPage: {
+      type: GraphQLBoolean,
+      description: 'hasNextPage tells if there exists more edges.'
+    }
+  },
+  description: 'Connection represents a set of edges, which are meant to be paginated.'
+});
+
+var NodeType = new GraphQLInterfaceType({
+  name: 'Node',
+  fields: {
+    id: {
+      type: new GraphQLNonNull(GraphQLID),
+      description: 'id uniquely identifies the node.'
+    }
+  },
+  description: 'Node represents a node.'
 });
 
 var SearchResultType = new GraphQLUnionType({

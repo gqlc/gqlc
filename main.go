@@ -3,7 +3,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/gqlc/compiler"
 	"github.com/gqlc/gqlc/cmd"
 	"github.com/gqlc/gqlc/doc"
 	"github.com/gqlc/gqlc/golang"
@@ -11,10 +10,8 @@ import (
 	"os"
 )
 
-var cli compiler.CommandLine
-
-func init() {
-	cli = cmd.NewCLI(cmd.ProdOptions())
+func main() {
+	cli := cmd.NewCLI()
 	cli.AllowPlugins("gqlc-gen-")
 
 	// Register Documentation generator
@@ -37,9 +34,7 @@ func init() {
 		"js_opt",
 		"Generate Javascript source.",
 	)
-}
 
-func main() {
 	if err := cli.Run(os.Args); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

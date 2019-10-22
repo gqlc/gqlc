@@ -6,7 +6,15 @@
 "Test Schema"
 schema {
     query: Query
-    mutation: Mutation
+}
+
+"Version represents an API version."
+scalar Version @a(a: 1)
+
+"Echo represents an echo message."
+type Echo @a(a: 1) {
+    "msg contains the provided message."
+    msg: String!
 }
 
 "Query represents valid queries."
@@ -27,19 +35,16 @@ type Query {
     ): Result
 }
 
-"Version represents an API version."
-scalar Version @a(a: 1)
+"Result represents a search result."
+type Result implements Connection @a(a: "a") @b(b: 2, c: 1.4) {
+    "total yields the total number of search results."
+    total: Int
 
-"Echo represents an echo message."
-type Echo @a(a: 1) {
-    "msg contains the provided message."
-    msg: String!
-}
+    "edges contains the search results."
+    edges: [Node]
 
-"Node represents a node."
-interface Node @experimental {
-    "id uniquely identifies the node."
-    id: ID! @n(o: "p")
+    "hasNextPage tells if there are more search results."
+    hasNextPage: Boolean
 }
 
 "Connection represents a set of edges, which are meant to be paginated."
@@ -54,16 +59,10 @@ interface Connection {
     hasNextPage: Boolean
 }
 
-"Result represents a search result."
-type Result implements Connection @a(a: "a") @b(b: 2, c: 1.4) {
-    "total yields the total number of search results."
-    total: Int
-
-    "edges contains the search results."
-    edges: [Node]
-
-    "hasNextPage tells if there are more search results."
-    hasNextPage: Boolean
+"Node represents a node."
+interface Node @experimental {
+    "id uniquely identifies the node."
+    id: ID! @n(o: "p")
 }
 
 "SearchResult is a test union type"
@@ -91,6 +90,3 @@ directive @deprecate(
     "Arg description."
     msg: String
     ) on SCHEMA | FIELD
-
-"Mutation represents valid mutations."
-type Mutation {}

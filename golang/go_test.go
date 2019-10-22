@@ -5,7 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
 	"github.com/gqlc/graphql/token"
@@ -38,6 +38,8 @@ func compareBytes(t *testing.T, ex, out []byte) {
 }
 
 var (
+	update = flag.Bool("update", false, "Update expected output file")
+
 	// Flags are used here to allow for the input/output files to be changed during dev
 	// One use case of changing the files is to examine how Generate scales through the benchmark
 	//
@@ -82,6 +84,28 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(m.Run())
+}
+
+func TestUpdate(t *testing.T) {
+	if !*update {
+		t.Skipf("not updating expected go output file: %s", *exDocName)
+		return
+	}
+	t.Logf("updating expected go output file: %s", *exDocName)
+
+	f, err := os.OpenFile(*exDocName, os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	g := new(Generator)
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: f})
+	err = g.Generate(ctx, testDoc, `{"descriptions": true}`)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 }
 
 func TestScalar(t *testing.T) {
@@ -586,19 +610,11 @@ func TestDirective(t *testing.T) {
 	})
 }
 
-type testCtx struct {
-	io.Writer
-}
-
-func (ctx testCtx) Open(filename string) (io.WriteCloser, error) { return ctx, nil }
-
-func (ctx testCtx) Close() error { return nil }
-
 func TestGenerator_Generate(t *testing.T) {
 	g := &Generator{}
 
 	var b bytes.Buffer
-	ctx := compiler.WithContext(context.Background(), testCtx{Writer: &b})
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
 	err := g.Generate(ctx, testDoc, `{"descriptions": true}`)
 	if err != nil {
 		t.Error(err)
@@ -618,7 +634,7 @@ func BenchmarkGenerator_Generate(b *testing.B) {
 	g := &Generator{}
 
 	var buf bytes.Buffer
-	ctx := compiler.WithContext(context.Background(), testCtx{Writer: &buf})
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &buf})
 
 	for i := 0; i < b.N; i++ {
 		buf.Reset()
@@ -650,7 +666,7 @@ type Query {
 	}
 
 	var b bytes.Buffer
-	ctx := compiler.WithContext(context.Background(), &testCtx{Writer: &b}) // Pass in an actual
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b}) // Pass in an actual
 	err = g.Generate(ctx, doc, `{"descriptions": true}`)
 	if err != nil {
 		log.Fatal(err)

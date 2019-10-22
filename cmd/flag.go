@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/gen"
 	"os"
 	"strconv"
 	"strings"
@@ -11,7 +11,7 @@ import (
 
 // genFlag represents a Generator flag: *_out
 type genFlag struct {
-	compiler.Generator
+	gen.Generator
 	outDir *string
 	opts   map[string]interface{}
 

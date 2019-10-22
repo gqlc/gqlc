@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package gqlc.protobuf.compiler;
+option go_package = "github.com/gqlc/compiler/plugin;plugin";
+
+import "gqlc/protobuf/ast.proto";
+
+// An encoded PluginRequest is written to the plugin's stdin.
+message Request {
+    // The .gql/.graphql files to generate.
+    repeated string file_to_generate = 1;
+
+    // The generator parameter passed on the command-line encoded as JSON.
+    string parameter = 2;
+
+    // Documents are all the parsed documents to be generated.
+    repeated gqlc.protobuf.Document documents = 3;
+}
+
+// The plugin writes an encoded PluginResponse to stdout.
+message Response {
+    // Error message. If non-empty code generation failed. The plugin
+    // process should exit with status code zero even if it reports
+    // an error in this way.
+    //
+    string error = 1;
+
+    // Represents a single generated file.
+    message File {
+        // The file name, relative to the output directory. The name must not
+        // contain "." or ".." components and must be relative, not be absolute (so,
+        // the file cannot lie outside the output directory). "/" must be used as
+        // the path separator, not "\".
+        //
+        string name = 1;
+
+        // The file contents.
+        string content = 15;
+    }
+    repeated File file = 2;
+}
+
+// This service definition represents the expected behavior of a plugin.
+service Plugin {
+    rpc Generate(Request) returns (Response);
+}
