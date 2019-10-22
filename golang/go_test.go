@@ -101,7 +101,7 @@ func TestUpdate(t *testing.T) {
 
 	g := new(Generator)
 	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: f})
-	err = g.Generate(ctx, testDoc, "")
+	err = g.Generate(ctx, testDoc, `{"descriptions": true}`)
 	if err != nil {
 		t.Error(err)
 		return
