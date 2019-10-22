@@ -6,7 +6,7 @@ before:
     - mkdir -p ./include/gqlc/protobuf/compiler
     - wget -P ./include/gqlc/protobuf https://raw.githubusercontent.com/gqlc/graphql/master/ast.proto
     - wget -P ./include/gqlc/protobuf https://raw.githubusercontent.com/gqlc/graphql/master/token.proto
-    - wget -P ./include/gqlc/protobuf/compiler https://raw.githubusercontent.com/gqlc/compiler/master/plugin/plugin.proto
+    - wget -P ./include/gqlc/protobuf/plugin https://raw.githubusercontent.com/gqlc/gqlc/master/plugin/pb/plugin.proto
 builds:
   -
     binary: bin/gqlc
