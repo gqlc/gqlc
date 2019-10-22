@@ -6,7 +6,6 @@
 "Test Schema"
 schema {
     query: Query
-    mutation: Mutation
 }
 
 "Query represents valid queries."

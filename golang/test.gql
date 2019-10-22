@@ -1,4 +1,4 @@
-# Javascript Generator Options
+# Golang Generator Options
 @go(options: {
     package: "main",
 })
