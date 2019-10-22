@@ -12,8 +12,12 @@ github.com/golang/protobuf v1.3.2 h1:6nsPYzhq5kReh6QImI3k5qWzO4PEbvbIW2cwSfR/6xs
 github.com/golang/protobuf v1.3.2/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/gqlc/compiler v0.4.5 h1:zVZbGBt7p/tyyTqdII1bBQ+AV8p98SEypMVQRtPWHo0=
 github.com/gqlc/compiler v0.4.5/go.mod h1:TlFdn5OjtHtR32N9icm4ICxP9Tah9XbcfkXyyygwi0Q=
+github.com/gqlc/compiler v0.5.0 h1:Sm2NYgCNuQgreHmXK47xSY86wxIe/Ik5OouFdmtie3c=
+github.com/gqlc/compiler v0.5.0/go.mod h1:Mz9o3ViJdXvO+T3+ZELVGFGtEca0nlpCaIw9Xtid3jY=
 github.com/gqlc/graphql v0.4.0 h1:gr2EYeQp6Vq1auGYvbFTyTGEKMmixZ/hYWe96z2cYQc=
 github.com/gqlc/graphql v0.4.0/go.mod h1:8wgWpKsfG0qiucedwA/83Kv5cVXv0tUdu/TY70bJhiw=
+github.com/gqlc/graphql v0.4.1 h1:4BVULOhZ7VObn8XKuxVbEkzrROF4v7msK23d/g3J9eE=
+github.com/gqlc/graphql v0.4.1/go.mod h1:8wgWpKsfG0qiucedwA/83Kv5cVXv0tUdu/TY70bJhiw=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NHg9XEKhtSvM=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=

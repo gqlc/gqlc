@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"bytes"
-	"container/list"
 	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/gqlc/gen"
+	tsort "github.com/gqlc/gqlc/sort"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
 	"github.com/gqlc/graphql/token"
@@ -17,6 +17,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -58,7 +59,7 @@ func (ctx *genCtx) Open(name string) (io.WriteCloser, error) {
 func root(fs afero.Fs, geners *[]*genFlag, iPaths []string, args ...string) (err error) {
 	// Parse files
 	docMap := make(map[string]*ast.Document, len(args))
-	err = parseInputFiles2(fs, docMap, iPaths, args...)
+	err = parseInputFiles(fs, token.NewDocSet(), docMap, iPaths, args...)
 	if err != nil {
 		return
 	}
@@ -100,7 +101,9 @@ func root(fs afero.Fs, geners *[]*genFlag, iPaths []string, args ...string) (err
 	// Convert types from IR to []*ast.TypeDecl
 	docs = docs[:0]
 	for doc, types := range docsIR {
-		doc.Types = compiler.FromIR(types)
+		dtypes := tsort.TypeSlice(compiler.FromIR(types))
+		sort.Sort(dtypes)
+		doc.Types = dtypes
 
 		docs = append(docs, doc)
 	}
@@ -170,59 +173,22 @@ func resolveImportPaths(docs []*ast.Document) {
 }
 
 // parseInputFiles parses all input files from the command line args, as well as any imported files.
-func parseInputFiles(fs afero.Fs, importPaths []string, args []string) (docs []*ast.Document, err error) {
-	// After successful parsing, import path resolution must be
-	// done to prevent any issues when doing later optimizations e.g.
-	// type checking, import resolution, etc.
-	defer func() {
-		if err == nil {
-			resolveImportPaths(docs)
-		}
-	}()
-
-	// Parse files from args
-	docMap := make(map[string]*ast.Document, len(args))
-	dset := token.NewDocSet()
-	for _, filename := range args {
-		f, err := openFile(fs, importPaths, filename)
-		if err != nil {
-			return nil, err
-		}
-
-		name := filepath.Base(filename)
-		doc, err := parser.ParseDoc(dset, name, f, parser.ParseComments)
-		if err != nil {
-			return nil, err
-		}
-
-		docMap[name] = doc
-	}
-
-	// Parse imports
-	err = parseImports(dset, fs, importPaths, docMap)
-	if err != nil {
-		return
-	}
-
-	// Convert docMap to doc slice
-	docs = make([]*ast.Document, 0, len(docMap))
-	for _, doc := range docMap {
-		docs = append(docs, doc)
-	}
-
-	return
-}
-
-func parseInputFiles2(fs afero.Fs, docs map[string]*ast.Document, importPaths []string, filenames ...string) error {
-	dset := token.NewDocSet()
-
+func parseInputFiles(fs afero.Fs, dset *token.DocSet, docs map[string]*ast.Document, importPaths []string, filenames ...string) error {
 	for _, filename := range filenames {
 		name := filepath.Base(filename)
 		if _, exists := docs[name]; exists {
 			continue
 		}
 
-		f, err := openFile(fs, importPaths, filename)
+		fname, err := normFilePath(fs, importPaths, filename)
+		if err != nil {
+			return err
+		}
+		if fname == "" {
+			return fmt.Errorf("could not resolve file path: %s", filename)
+		}
+
+		f, err := fs.Open(fname)
 		if err != nil {
 			return err
 		}
@@ -233,91 +199,25 @@ func parseInputFiles2(fs afero.Fs, docs map[string]*ast.Document, importPaths []
 		}
 
 		docs[name] = doc
-
-		imports := getImports2(doc)
-		err = parseInputFiles2(fs, docs, importPaths, imports...)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func parseImports(dset *token.DocSet, fs afero.Fs, importPaths []string, docMap map[string]*ast.Document) error {
-	q := list.New()
-	for _, doc := range docMap {
-		getImports(doc, q, docMap)
 	}
 
-	for q.Len() > 0 {
-		e := q.Front()
-		q.Remove(e)
-		i := e.Value.(iInfo)
-
-		if _, exists := docMap[i.Name]; exists {
+	for _, doc := range docs {
+		imports := getImports(doc)
+		imports = filter(imports, docs, fs, importPaths)
+		if len(imports) == 0 {
 			continue
 		}
 
-		f, err := openFile(fs, importPaths, i.Path)
+		err := parseInputFiles(fs, dset, docs, importPaths, imports...)
 		if err != nil {
 			return err
 		}
-
-		d, err := parser.ParseDoc(dset, i.Name, f, 0)
-		if err != nil {
-			return err
-		}
-
-		docMap[i.Name] = d
-
-		getImports(d, q, docMap)
 	}
 
 	return nil
 }
 
-type iInfo struct {
-	Name string
-	Path string
-}
-
-func getImports(doc *ast.Document, q *list.List, docMap map[string]*ast.Document) {
-	for _, direc := range doc.Directives {
-		if direc.Name != "import" {
-			continue
-		}
-
-		for _, arg := range direc.Args.Args {
-
-			compLit := arg.Value.(*ast.Arg_CompositeLit).CompositeLit
-			listLit := compLit.Value.(*ast.CompositeLit_ListLit).ListLit.List
-
-			var paths []*ast.BasicLit
-			switch v := listLit.(type) {
-			case *ast.ListLit_BasicList:
-				paths = append(paths, v.BasicList.Values...)
-			case *ast.ListLit_CompositeList:
-				cpaths := v.CompositeList.Values
-				paths = make([]*ast.BasicLit, len(cpaths))
-				for i, c := range cpaths {
-					paths[i] = c.Value.(*ast.CompositeLit_BasicLit).BasicLit
-				}
-			}
-
-			for _, p := range paths {
-				iPath := strings.Trim(p.Value, "\"")
-				iName := filepath.Base(iPath)
-				if _, exists := docMap[iName]; exists {
-					continue
-				}
-
-				q.PushBack(iInfo{Name: iName, Path: iPath})
-			}
-		}
-	}
-}
-
-func getImports2(doc *ast.Document) (names []string) {
+func getImports(doc *ast.Document) (names []string) {
 	for _, direc := range doc.Directives {
 		if direc.Name != "import" {
 			continue
@@ -349,25 +249,36 @@ func getImports2(doc *ast.Document) (names []string) {
 	return
 }
 
-// openFile is just a helper for opening files
-func openFile(fs afero.Fs, importPaths []string, filename string) (f afero.File, err error) {
-	// Check if filename if Abs
-	var exists bool
-	if !filepath.IsAbs(filename) {
-		for _, iPath := range importPaths {
-			fname := filepath.Join(iPath, filename)
-			exists, err = afero.Exists(fs, fname)
-			if err != nil {
-				return
-			}
-
-			if exists {
-				filename = fname
-				break
-			}
-		}
+// normFilePath converts any path to absolute path
+func normFilePath(fs afero.Fs, iPaths []string, filename string) (string, error) {
+	if filepath.IsAbs(filename) {
+		return filename, nil
 	}
 
-	f, err = fs.Open(filename)
-	return
+	for _, iPath := range iPaths {
+		fname := filepath.Join(iPath, filename)
+		exists, err := afero.Exists(fs, fname)
+		if err != nil {
+			return "", err
+		}
+
+		if exists {
+			return fname, nil
+		}
+	}
+	return "", nil
+}
+
+// filter filters the strings in b from a
+func filter(a []string, b map[string]*ast.Document, fs afero.Fs, iPaths []string) []string {
+	n := 0
+	for _, x := range a {
+		name := filepath.Base(x)
+
+		if _, exists := b[name]; !exists {
+			a[n] = x
+			n++
+		}
+	}
+	return a[:n]
 }

@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gqlc/gqlc/gen"
+	"github.com/gqlc/gqlc/sort"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
 	"github.com/gqlc/graphql/token"
@@ -106,14 +107,14 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestAddContent(t *testing.T) {
-	mask := schemaType | scalarType | objectType | interType | unionType | enumType | inputType | directiveType | extendType
+	mask := sort.SchemaType | sort.ScalarType | sort.ObjectType | sort.InterType | sort.UnionType | sort.EnumType | sort.InputType | sort.DirectiveType | sort.ExtendType
 
 	testCases := []struct {
 		Name string
 		C    []struct {
 			name  string
 			count int
-			typ   declType
+			typ   sort.DeclType
 		}
 		Total int
 	}{
@@ -122,11 +123,11 @@ func TestAddContent(t *testing.T) {
 			C: []struct {
 				name  string
 				count int
-				typ   declType
+				typ   sort.DeclType
 			}{
 				{
 					name: "Test",
-					typ:  scalarType,
+					typ:  sort.ScalarType,
 				},
 			},
 			Total: 2,
@@ -136,19 +137,19 @@ func TestAddContent(t *testing.T) {
 			C: []struct {
 				name  string
 				count int
-				typ   declType
+				typ   sort.DeclType
 			}{
 				{
 					name: "A",
-					typ:  scalarType,
+					typ:  sort.ScalarType,
 				},
 				{
 					name: "B",
-					typ:  scalarType,
+					typ:  sort.ScalarType,
 				},
 				{
 					name: "C",
-					typ:  scalarType,
+					typ:  sort.ScalarType,
 				},
 			},
 			Total: 4,
@@ -158,31 +159,31 @@ func TestAddContent(t *testing.T) {
 			C: []struct {
 				name  string
 				count int
-				typ   declType
+				typ   sort.DeclType
 			}{
 				{
 					name: "A",
-					typ:  scalarType,
+					typ:  sort.ScalarType,
 				},
 				{
 					name: "B",
-					typ:  scalarType,
+					typ:  sort.ScalarType,
 				},
 				{
 					name: "C",
-					typ:  scalarType,
+					typ:  sort.ScalarType,
 				},
 				{
 					name: "A",
-					typ:  objectType,
+					typ:  sort.ObjectType,
 				},
 				{
 					name: "B",
-					typ:  objectType,
+					typ:  sort.ObjectType,
 				},
 				{
 					name: "C",
-					typ:  objectType,
+					typ:  sort.ObjectType,
 				},
 			},
 			Total: 8,
@@ -210,7 +211,6 @@ func TestAddContent(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestToC(t *testing.T) {

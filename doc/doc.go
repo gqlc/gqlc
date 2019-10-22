@@ -8,104 +8,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gqlc/gqlc/gen"
+	"github.com/gqlc/gqlc/sort"
 	"github.com/gqlc/graphql/ast"
 	"gitlab.com/golang-commonmark/markdown"
 	"io"
 	"path/filepath"
-	"sort"
 	"sync"
 )
-
-// this defines the order of types in the .md file
-type declType uint16
-
-const (
-	schemaType declType = 1 << iota
-	scalarType
-	objectType
-	interType
-	unionType
-	enumType
-	inputType
-	directiveType
-	extendType
-)
-
-type typeSlice []*ast.TypeDecl
-
-func (s typeSlice) Len() int { return len(s) }
-func (s typeSlice) Less(i, j int) bool {
-	it, jt := s[i], s[j]
-
-	var its, jts *ast.TypeSpec
-	itd, iok := it.Spec.(*ast.TypeDecl_TypeSpec)
-	jtd, jok := jt.Spec.(*ast.TypeDecl_TypeSpec)
-
-	if iok != jok { // TypeSpec < TypeExt
-		return !iok && jok
-	}
-
-	if !iok && !jok {
-		its, jts = it.Spec.(*ast.TypeDecl_TypeExtSpec).TypeExtSpec.Type, jt.Spec.(*ast.TypeDecl_TypeExtSpec).TypeExtSpec.Type
-	} else {
-		its, jts = itd.TypeSpec, jtd.TypeSpec
-	}
-
-	// Schema < Scalar < Object < Interface < Union < Enum < Input < Directive
-	var iType, jType declType
-	switch its.Type.(type) {
-	case *ast.TypeSpec_Schema:
-		iType = schemaType
-	case *ast.TypeSpec_Scalar:
-		iType = scalarType
-	case *ast.TypeSpec_Object:
-		iType = objectType
-	case *ast.TypeSpec_Interface:
-		iType = interType
-	case *ast.TypeSpec_Union:
-		iType = unionType
-	case *ast.TypeSpec_Enum:
-		iType = enumType
-	case *ast.TypeSpec_Input:
-		iType = inputType
-	case *ast.TypeSpec_Directive:
-		iType = directiveType
-	}
-	switch jts.Type.(type) {
-	case *ast.TypeSpec_Schema:
-		jType = schemaType
-	case *ast.TypeSpec_Scalar:
-		jType = scalarType
-	case *ast.TypeSpec_Object:
-		jType = objectType
-	case *ast.TypeSpec_Interface:
-		jType = interType
-	case *ast.TypeSpec_Union:
-		jType = unionType
-	case *ast.TypeSpec_Enum:
-		jType = enumType
-	case *ast.TypeSpec_Input:
-		jType = inputType
-	case *ast.TypeSpec_Directive:
-		jType = directiveType
-	}
-
-	if iType != jType {
-		return iType < jType
-	}
-
-	return its.Name.Name < jts.Name.Name
-}
-func (s typeSlice) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-
-func sortTypes(types []*ast.TypeDecl) []*ast.TypeDecl {
-	nTypes := make([]*ast.TypeDecl, len(types))
-	copy(nTypes, types)
-
-	sort.Sort(typeSlice(nTypes))
-
-	return nTypes
-}
 
 // Options contains the options for the Documentation generator.
 type Options struct {
@@ -130,41 +39,41 @@ const (
 	extend    = "extend"
 )
 
-func (o *Options) addContent(name string, count int, typ, mask declType) declType {
+func (o *Options) addContent(name string, count int, typ, mask sort.DeclType) sort.DeclType {
 	if mask&typ != 0 {
 		switch typ {
-		case schemaType:
-		case scalarType:
+		case sort.SchemaType:
+		case sort.ScalarType:
 			*o.toc = append(*o.toc, struct {
 				name  string
 				count int
 			}{name: scalar})
-		case objectType:
+		case sort.ObjectType:
 			*o.toc = append(*o.toc, struct {
 				name  string
 				count int
 			}{name: object})
-		case interType:
+		case sort.InterType:
 			*o.toc = append(*o.toc, struct {
 				name  string
 				count int
 			}{name: inter})
-		case unionType:
+		case sort.UnionType:
 			*o.toc = append(*o.toc, struct {
 				name  string
 				count int
 			}{name: union})
-		case enumType:
+		case sort.EnumType:
 			*o.toc = append(*o.toc, struct {
 				name  string
 				count int
 			}{name: enum})
-		case inputType:
+		case sort.InputType:
 			*o.toc = append(*o.toc, struct {
 				name  string
 				count int
 			}{name: input})
-		case directiveType:
+		case sort.DirectiveType:
 			*o.toc = append(*o.toc, struct {
 				name  string
 				count int
@@ -224,11 +133,8 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 		return oerr
 	}
 
-	// Sort types
-	types := sortTypes(doc.Types)
-
 	// Generate types
-	g.generateTypes(types, gOpts)
+	g.generateTypes(doc.Types, gOpts)
 
 	// Extract generator context
 	gCtx := gen.Context(ctx)
@@ -278,9 +184,9 @@ func noopGen(*ast.TypeSpec) {}
 
 func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 	var fieldsBuf bytes.Buffer
-	var typ declType
+	var typ sort.DeclType
 	var ts *ast.TypeSpec
-	mask := schemaType | scalarType | objectType | interType | unionType | enumType | inputType | directiveType | extendType
+	mask := sort.SchemaType | sort.ScalarType | sort.ObjectType | sort.InterType | sort.UnionType | sort.EnumType | sort.InputType | sort.DirectiveType | sort.ExtendType
 	tLen := len(types) - 1
 	for i, decl := range types {
 		d, ok := decl.Spec.(*ast.TypeDecl_TypeSpec)
@@ -288,14 +194,14 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 			ext := decl.Spec.(*ast.TypeDecl_TypeExtSpec)
 			ts = ext.TypeExtSpec.Type
 
-			if mask&extendType != 0 {
+			if mask&sort.ExtendType != 0 {
 				*opts.toc = append(*opts.toc, struct {
 					name  string
 					count int
 				}{name: extend})
 
-				mask = schemaType | scalarType | objectType | interType | unionType | enumType | inputType | directiveType | extendType
-				mask &= ^extendType
+				mask = sort.SchemaType | sort.ScalarType | sort.ObjectType | sort.InterType | sort.UnionType | sort.EnumType | sort.InputType | sort.DirectiveType | sort.ExtendType
+				mask &= ^sort.ExtendType
 
 				g.P("## Extensions")
 				g.P()
@@ -320,7 +226,7 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 		gen := noopGen
 		switch v := ts.Type.(type) {
 		case *ast.TypeSpec_Schema:
-			if mask&schemaType != 0 {
+			if mask&sort.SchemaType != 0 {
 				g.writeSectionHeader("Schema", mask)
 			}
 			if v.Schema.RootOps == nil {
@@ -333,25 +239,25 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 				g.generateFields(v.Schema.RootOps.List, &fieldsBuf)
 			}
 
-			typ = schemaType
+			typ = sort.SchemaType
 		case *ast.TypeSpec_Scalar:
-			if mask&scalarType != 0 {
+			if mask&sort.ScalarType != 0 {
 				g.writeSectionHeader("Scalar", mask)
 				g.WriteByte('\n')
 			}
 
-			typ = scalarType
+			typ = sort.ScalarType
 		case *ast.TypeSpec_Object:
-			if mask&objectType != 0 {
+			if mask&sort.ObjectType != 0 {
 				g.writeSectionHeader("Object", mask)
 				g.WriteByte('\n')
 			}
 
 			gen = g.generateObject
 
-			typ = objectType
+			typ = sort.ObjectType
 		case *ast.TypeSpec_Interface:
-			if mask&interType != 0 {
+			if mask&sort.InterType != 0 {
 				g.writeSectionHeader("Interface", mask)
 				g.WriteByte('\n')
 			}
@@ -365,9 +271,9 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 				g.generateFields(v.Interface.Fields.List, &fieldsBuf)
 			}
 
-			typ = interType
+			typ = sort.InterType
 		case *ast.TypeSpec_Union:
-			if mask&unionType != 0 {
+			if mask&sort.UnionType != 0 {
 				g.writeSectionHeader("Union", mask)
 				g.WriteByte('\n')
 			}
@@ -399,9 +305,9 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 				g.WriteByte('\n')
 			}
 
-			typ = unionType
+			typ = sort.UnionType
 		case *ast.TypeSpec_Enum:
-			if mask&enumType != 0 {
+			if mask&sort.EnumType != 0 {
 				g.writeSectionHeader("Enum", mask)
 				g.WriteByte('\n')
 			}
@@ -415,9 +321,9 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 				g.generateFields(v.Enum.Values.List, &fieldsBuf)
 			}
 
-			typ = enumType
+			typ = sort.EnumType
 		case *ast.TypeSpec_Input:
-			if mask&inputType != 0 {
+			if mask&sort.InputType != 0 {
 				g.writeSectionHeader("Input", mask)
 				g.WriteByte('\n')
 			}
@@ -431,9 +337,9 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 				g.generateArgs(v.Input.Fields.List, &fieldsBuf)
 			}
 
-			typ = inputType
+			typ = sort.InputType
 		case *ast.TypeSpec_Directive:
-			if mask&directiveType != 0 {
+			if mask&sort.DirectiveType != 0 {
 				g.writeSectionHeader("Directive", mask)
 				g.WriteByte('\n')
 			}
@@ -447,13 +353,13 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 				g.generateArgs(v.Directive.Args.List, &fieldsBuf)
 			}
 
-			typ = directiveType
+			typ = sort.DirectiveType
 		default:
 			panic("unknown type spec type")
 		}
 
 		mask = opts.addContent(name, count, typ, mask)
-		if typ != schemaType {
+		if typ != sort.SchemaType {
 			g.writeTypeHeader(name, count, mask)
 		}
 
@@ -637,16 +543,16 @@ func writeToC(w io.Writer, opts *Options) (int64, error) {
 	return b.WriteTo(w)
 }
 
-func (g *Generator) writeSectionHeader(section string, mask declType) {
+func (g *Generator) writeSectionHeader(section string, mask sort.DeclType) {
 	g.WriteByte('#')
 	g.WriteByte('#')
-	if mask&extendType == 0 {
+	if mask&sort.ExtendType == 0 {
 		g.WriteByte('#')
 	}
 	g.WriteByte(' ')
 	g.WriteString(section)
 
-	if mask&extendType == 0 {
+	if mask&sort.ExtendType == 0 {
 		g.WriteByte(' ')
 		g.WriteString("Extension")
 	}
@@ -656,17 +562,17 @@ func (g *Generator) writeSectionHeader(section string, mask declType) {
 	g.WriteByte('\n')
 }
 
-func (g *Generator) writeTypeHeader(name string, count int, mask declType) {
+func (g *Generator) writeTypeHeader(name string, count int, mask sort.DeclType) {
 	g.WriteByte('#')
 	g.WriteByte('#')
 	g.WriteByte('#')
-	if mask&extendType == 0 {
+	if mask&sort.ExtendType == 0 {
 		g.WriteByte('#')
 	}
 	g.WriteByte(' ')
 	g.WriteString(name)
 
-	if mask&extendType == 0 {
+	if mask&sort.ExtendType == 0 {
 		g.WriteByte(' ')
 		g.WriteString("Extension")
 	}

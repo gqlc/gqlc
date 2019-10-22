@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/gqlc/plugin"
+	"github.com/gqlc/graphql/ast"
+	"github.com/gqlc/graphql/token"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"os"
@@ -97,9 +99,15 @@ func validatePluginTypes(fs afero.Fs) func(*cobra.Command, []string) error {
 			return err
 		}
 
-		docs, err := parseInputFiles(fs, importPaths, pluginTypes)
+		docMap := make(map[string]*ast.Document, len(pluginTypes))
+		err = parseInputFiles(fs, token.NewDocSet(), docMap, importPaths, pluginTypes...)
 		if err != nil {
 			return err
+		}
+
+		docs := make([]*ast.Document, 0, len(docMap))
+		for _, doc := range docMap {
+			docs = append(docs, doc)
 		}
 
 		docsIR, err := compiler.ReduceImports(docs)

@@ -3,8 +3,8 @@ module github.com/gqlc/gqlc
 require (
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.2
-	github.com/gqlc/compiler v0.4.5
-	github.com/gqlc/graphql v0.4.0
+	github.com/gqlc/compiler v0.5.0
+	github.com/gqlc/graphql v0.4.1
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5

@@ -3,9 +3,11 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"github.com/gqlc/compiler"
 	"github.com/gqlc/gqlc/doc"
 	"github.com/gqlc/gqlc/golang"
 	"github.com/gqlc/gqlc/js"
+	"github.com/gqlc/graphql/ast"
 	"github.com/spf13/afero"
 	"io/ioutil"
 	"os"
@@ -15,6 +17,7 @@ import (
 type goldenSuite struct {
 	name           string
 	input, ex, out string
+	opts           string
 }
 
 var GOLDENS = []goldenSuite{
@@ -22,19 +25,133 @@ var GOLDENS = []goldenSuite{
 		name:  "doc",
 		input: "../doc/test.gql",
 		ex:    "../doc/test.md",
-		out:   "out/test.md",
+		out:   "/out/test.md",
 	},
 	{
 		name:  "go",
 		input: "../golang/test.gql",
 		ex:    "../golang/test.gotxt",
-		out:   "out/test.go",
+		out:   "/out/test.go",
+		opts:  "descriptions=true",
 	},
 	{
 		name:  "js",
 		input: "../js/test.gql",
 		ex:    "../js/test.js",
-		out:   "out/test.js",
+		out:   "/out/test.js",
+		opts:  "descriptions=true",
+	},
+}
+var testTypes = []*ast.TypeDecl{
+	{
+		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
+			Name: &ast.Ident{Name: "a"},
+			Type: &ast.TypeSpec_Directive{Directive: &ast.DirectiveType{
+				Locs: []*ast.DirectiveLocation{
+					{Loc: ast.DirectiveLocation_OBJECT},
+					{Loc: ast.DirectiveLocation_ENUM_VALUE},
+					{Loc: ast.DirectiveLocation_SCALAR},
+					{Loc: ast.DirectiveLocation_UNION},
+				},
+				Args: &ast.InputValueList{
+					List: []*ast.InputValue{
+						{
+							Name: &ast.Ident{Name: "a"},
+							Type: &ast.InputValue_Ident{
+								Ident: &ast.Ident{Name: "String"},
+							},
+						},
+					},
+				},
+			}},
+		}},
+	},
+	{
+		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
+			Name: &ast.Ident{Name: "b"},
+			Type: &ast.TypeSpec_Directive{Directive: &ast.DirectiveType{
+				Locs: []*ast.DirectiveLocation{
+					{Loc: ast.DirectiveLocation_OBJECT},
+					{Loc: ast.DirectiveLocation_ENUM_VALUE},
+					{Loc: ast.DirectiveLocation_UNION},
+				},
+				Args: &ast.InputValueList{
+					List: []*ast.InputValue{
+						{
+							Name: &ast.Ident{Name: "b"},
+							Type: &ast.InputValue_Ident{
+								Ident: &ast.Ident{Name: "Float"},
+							},
+						},
+						{
+							Name: &ast.Ident{Name: "c"},
+							Type: &ast.InputValue_Ident{
+								Ident: &ast.Ident{Name: "Float"},
+							},
+						},
+					},
+				},
+			}},
+		}},
+	},
+	{
+		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
+			Name: &ast.Ident{Name: "c"},
+			Type: &ast.TypeSpec_Directive{Directive: &ast.DirectiveType{
+				Locs: []*ast.DirectiveLocation{
+					{Loc: ast.DirectiveLocation_ENUM_VALUE},
+					{Loc: ast.DirectiveLocation_UNION},
+				},
+				Args: &ast.InputValueList{
+					List: []*ast.InputValue{
+						{
+							Name: &ast.Ident{Name: "a"},
+							Type: &ast.InputValue_Ident{
+								Ident: &ast.Ident{Name: "String"},
+							},
+						},
+						{
+							Name: &ast.Ident{Name: "b"},
+							Type: &ast.InputValue_Ident{
+								Ident: &ast.Ident{Name: "Int"},
+							},
+						},
+						{
+							Name: &ast.Ident{Name: "c"},
+							Type: &ast.InputValue_Ident{
+								Ident: &ast.Ident{Name: "String"},
+							},
+						},
+					},
+				},
+			}},
+		}},
+	},
+	{
+		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
+			Name: &ast.Ident{Name: "n"},
+			Type: &ast.TypeSpec_Directive{Directive: &ast.DirectiveType{
+				Locs: []*ast.DirectiveLocation{{Loc: ast.DirectiveLocation_FIELD_DEFINITION}},
+				Args: &ast.InputValueList{
+					List: []*ast.InputValue{
+						{
+							Name: &ast.Ident{Name: "o"},
+							Type: &ast.InputValue_Ident{
+								Ident: &ast.Ident{Name: "String"},
+							},
+						},
+					},
+				},
+			}},
+		}},
+	},
+	{
+		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
+			Name: &ast.Ident{Name: "experimental"},
+			Type: &ast.TypeSpec_Directive{Directive: &ast.DirectiveType{
+				Locs: []*ast.DirectiveLocation{{Loc: ast.DirectiveLocation_INTERFACE}},
+			}},
+		}},
 	},
 }
 
@@ -42,6 +159,8 @@ var GOLDENS = []goldenSuite{
 // as if someone was using gqlc in a terminal.
 //
 func TestE2E(t *testing.T) {
+	compiler.RegisterTypes(testTypes...)
+
 	fs := afero.NewMemMapFs()
 
 	err := initFs(fs, GOLDENS)
@@ -77,9 +196,14 @@ func TestE2E(t *testing.T) {
 	for _, gold := range GOLDENS {
 		args := []string{
 			"gqlc",
-			fmt.Sprintf("--%s_out", gold.name), fmt.Sprintf("out"),
-			gold.input[3:],
+			fmt.Sprintf("--%s_out", gold.name), fmt.Sprintf("/out"),
 		}
+
+		if len(gold.opts) > 0 {
+			args = append(args, fmt.Sprintf("--%s_opt", gold.name), gold.opts)
+		}
+
+		args = append(args, gold.input[2:])
 
 		if err = cli.Run(args); err != nil {
 			t.Error(err)
@@ -98,7 +222,7 @@ func TestE2E(t *testing.T) {
 			return
 		}
 
-    compareBytes(t, gold.name, ex, out)
+		compareBytes(t, gold.name, ex, out)
 	}
 }
 
@@ -147,6 +271,7 @@ func compareBytes(t *testing.T, name string, ex, out []byte) {
 		}
 
 		if ex[i] != b {
+			t.Log(string(out))
 			t.Fatalf("%s generator expected: %s, but got: %s, %d:%d", name, string(ex[i]), string(b), i, line)
 		}
 	}

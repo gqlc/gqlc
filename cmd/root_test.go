@@ -4,6 +4,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/graphql/ast"
+	"github.com/gqlc/graphql/token"
 	"github.com/spf13/afero"
 	"os"
 	"path/filepath"
@@ -114,20 +115,16 @@ func TestParseInputFiles(t *testing.T) {
 	// Run test cases
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(subT *testing.T) {
-			docs, err := parseInputFiles(testFs, testCase.ImportPaths, testCase.Args)
+			docMap := make(map[string]*ast.Document, len(testCase.Args))
+			err := parseInputFiles(testFs, token.NewDocSet(), docMap, testCase.ImportPaths, testCase.Args...)
 			if err != nil {
 				subT.Error(err)
 				return
 			}
 
-			if len(docs) != testCase.Len {
+			if len(docMap) != testCase.Len {
 				subT.Fail()
 				return
-			}
-
-			docMap := make(map[string]*ast.Document)
-			for _, doc := range docs {
-				docMap[doc.Name] = doc
 			}
 
 			for _, doc := range docMap {
