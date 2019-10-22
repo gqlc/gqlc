@@ -35,6 +35,8 @@ func compareBytes(t *testing.T, ex, out []byte) {
 }
 
 var (
+	update = flag.Bool("update", false, "Update expected output file")
+
 	// Flags are used here to allow for the input/output files to be changed during dev
 	// One use case of changing the files is to examine how Generate scales through the benchmark
 	//
@@ -79,6 +81,28 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(m.Run())
+}
+
+func TestUpdate(t *testing.T) {
+	if !*update {
+		t.Skipf("not updating expected md output file: %s", *exDocName)
+		return
+	}
+	t.Logf("updating expected md output file: %s", *exDocName)
+
+	f, err := os.OpenFile(*exDocName, os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	g := new(Generator)
+	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: f})
+	err = g.Generate(ctx, testDoc, "")
+	if err != nil {
+		t.Error(err)
+		return
+	}
 }
 
 func TestAddContent(t *testing.T) {

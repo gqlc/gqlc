@@ -7,7 +7,6 @@
 	* [Version](#Version)
 - [Objects](#Objects)
 	* [Echo](#Echo)
-	* [Mutation](#Mutation)
 	* [Query](#Query)
 	* [Result](#Result)
 - [Interfaces](#Interfaces)
@@ -47,9 +46,6 @@ Echo represents an echo message.
 - msg **(String!)**
 
 	msg contains the provided message.
-
-### Mutation
-Mutation represents valid mutations.
 
 ### Query
 Query represents valid queries.
@@ -165,6 +161,12 @@ Point represents a 2-D geo point.
 
 ### deprecate
 deprecate signifies a type deprecation from the api.
+
+*Args*:
+- msg **(String)**
+
+	Arg description.
+pe deprecation from the api.
 
 *Args*:
 - msg **(String)**

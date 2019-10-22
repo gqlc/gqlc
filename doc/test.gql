@@ -91,6 +91,3 @@ directive @deprecate(
     "Arg description."
     msg: String
     ) on SCHEMA | FIELD
-
-"Mutation represents valid mutations."
-type Mutation {}
