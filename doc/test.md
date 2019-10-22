@@ -26,7 +26,6 @@ Test Schema
 
 *Root Operations*:
 - query **([Query](#Query))**
-- mutation **([Mutation](#Mutation))**
 
 ## Scalars
 
@@ -163,6 +162,10 @@ Point represents a 2-D geo point.
 deprecate signifies a type deprecation from the api.
 
 *Args*:
+- msg **(String)**
+
+	Arg description.
+
 - msg **(String)**
 
 	Arg description.
