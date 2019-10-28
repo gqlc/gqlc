@@ -251,7 +251,49 @@ func (g *Generator) generateObject(name string, descr bool, doc *ast.DocGroup, t
 	g.P("Fields: graphql.Fields{")
 	g.In()
 
-	for _, f := range obj.Fields.List {
+	g.generateFields(obj.Fields, descr, true)
+
+	g.Out()
+
+	g.P("},")
+
+	if doc != nil && descr {
+		g.printDescr(doc)
+		g.WriteByte('\n')
+	}
+
+	g.Out()
+	g.P("})")
+}
+
+func (g *Generator) generateInterface(name string, descr bool, doc *ast.DocGroup, ts *ast.TypeSpec) {
+	inter := ts.Type.(*ast.TypeSpec_Interface).Interface
+
+	g.P("NewInterface(graphql.InterfaceConfig{")
+	g.In()
+
+	g.P("Name: \"", name, "\",")
+
+	g.P("Fields: graphql.Fields{")
+	g.In()
+
+	g.generateFields(inter.Fields, descr, false)
+
+	g.Out()
+
+	g.P("},")
+
+	if doc != nil && descr {
+		g.printDescr(doc)
+		g.WriteByte('\n')
+	}
+
+	g.Out()
+	g.P("})")
+}
+
+func (g *Generator) generateFields(fields *ast.FieldList, descr, resolve bool) {
+	for _, f := range fields.List {
 		g.P('"', f.Name.Name, '"', ": &graphql.Field{")
 		g.In()
 
@@ -316,7 +358,6 @@ func (g *Generator) generateObject(name string, descr bool, doc *ast.DocGroup, t
 				}
 
 				g.Out()
-
 				g.P("},")
 			}
 
@@ -324,12 +365,14 @@ func (g *Generator) generateObject(name string, descr bool, doc *ast.DocGroup, t
 			g.P("},")
 		}
 
-		resolver := getResolver(f.Directives)
-		if resolver == "" {
-			resolver = "func(p graphql.ResolveParams) (interface{}, error) { return nil, nil }"
-		}
+		if resolve {
+			resolver := getResolver(f.Directives)
+			if resolver == "" {
+				resolver = "func(p graphql.ResolveParams) (interface{}, error) { return nil, nil }"
+			}
 
-		g.P("Resolve: ", resolver, ",")
+			g.P("Resolve: ", resolver, ",")
+		}
 
 		if f.Doc != nil && descr {
 			g.printDescr(f.Doc)
@@ -339,126 +382,6 @@ func (g *Generator) generateObject(name string, descr bool, doc *ast.DocGroup, t
 		g.Out()
 		g.P("},")
 	}
-
-	g.Out()
-
-	g.P("},")
-
-	if doc != nil && descr {
-		g.printDescr(doc)
-		g.WriteByte('\n')
-	}
-
-	g.Out()
-	g.P("})")
-}
-
-func (g *Generator) generateInterface(name string, descr bool, doc *ast.DocGroup, ts *ast.TypeSpec) {
-	inter := ts.Type.(*ast.TypeSpec_Interface).Interface
-
-	g.P("NewInterface(graphql.InterfaceConfig{")
-	g.In()
-
-	g.P("Name: \"", name, "\",")
-
-	g.P("Fields: graphql.Fields{")
-	g.In()
-
-	for _, f := range inter.Fields.List {
-		g.P('"', f.Name.Name, "\": &graphql.Field{")
-		g.In()
-
-		g.Write(g.indent)
-		g.WriteString("Type: ")
-
-		var fieldType interface{}
-		switch v := f.Type.(type) {
-		case *ast.Field_Ident:
-			fieldType = v.Ident
-		case *ast.Field_List:
-			fieldType = v.List
-		case *ast.Field_NonNull:
-			fieldType = v.NonNull
-		}
-		g.printType(fieldType)
-		g.WriteByte(',')
-		g.WriteByte('\n')
-
-		if f.Args != nil {
-			g.P("Args: graphql.FieldConfigArgument{")
-			g.In()
-
-			for _, a := range f.Args.List {
-				g.P('"', a.Name.Name, '"', ": &graphql.ArgumentConfig{")
-				g.In()
-				g.Write(g.indent)
-				g.WriteString("Type: ")
-
-				var argType interface{}
-				switch v := a.Type.(type) {
-				case *ast.InputValue_Ident:
-					argType = v.Ident
-				case *ast.InputValue_List:
-					argType = v.List
-				case *ast.InputValue_NonNull:
-					argType = v.NonNull
-				}
-				g.printType(argType)
-
-				if a.Default != nil {
-					g.WriteByte('\n')
-
-					g.Write(g.indent)
-					g.WriteString("DefaultValue: ")
-
-					var defType interface{}
-					switch v := a.Default.(type) {
-					case *ast.InputValue_BasicLit:
-						defType = v.BasicLit
-					case *ast.InputValue_CompositeLit:
-						defType = v.CompositeLit
-					}
-					g.printVal(defType)
-					g.WriteByte(',')
-					g.WriteByte('\n')
-				}
-
-				if a.Doc != nil && descr {
-					g.printDescr(a.Doc)
-					g.WriteByte('\n')
-				}
-
-				g.Out()
-
-				g.P("},")
-			}
-
-			g.Out()
-
-			g.P("},")
-		}
-
-		if f.Doc != nil && descr {
-			g.printDescr(f.Doc)
-			g.WriteByte('\n')
-		}
-
-		g.Out()
-
-		g.P("},")
-	}
-
-	g.Out()
-
-	g.P("},")
-
-	if doc != nil && descr {
-		g.printDescr(doc)
-		g.WriteByte('\n')
-	}
-
-	g.Out()
-	g.P("})")
 }
 
 func (g *Generator) generateUnion(name string, descr bool, doc *ast.DocGroup, ts *ast.TypeSpec) {
