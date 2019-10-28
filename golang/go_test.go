@@ -18,25 +18,6 @@ import (
 	"testing"
 )
 
-// compareBytes is a helper for comparing expected output to generated output
-func compareBytes(t *testing.T, ex, out []byte) {
-	if bytes.EqualFold(out, ex) {
-		return
-	}
-	fmt.Println(string(out))
-
-	line := 1
-	for i, b := range out {
-		if b == '\n' {
-			line++
-		}
-
-		if ex[i] != b {
-			t.Fatalf("expected: %s, but got: %s, %d:%d", string(ex[i]), string(b), i, line)
-		}
-	}
-}
-
 var (
 	update = flag.Bool("update", false, "Update expected output file")
 
@@ -123,7 +104,7 @@ func TestScalar(t *testing.T) {
 })
 `)
 
-	compareBytes(t, ex, g.Bytes())
+	gen.CompareBytes(t, ex, g.Bytes())
 }
 
 func TestObject(t *testing.T) {
@@ -195,7 +176,7 @@ func TestObject(t *testing.T) {
 })
 `)
 
-		compareBytes(subT, ex, g.Bytes())
+		gen.CompareBytes(subT, ex, g.Bytes())
 	})
 
 	t.Run("WithInterfaces", func(subT *testing.T) {
@@ -250,7 +231,7 @@ func TestObject(t *testing.T) {
 })
 `)
 
-		compareBytes(subT, ex, g.Bytes())
+		gen.CompareBytes(subT, ex, g.Bytes())
 	})
 
 	t.Run("WithCustomResolver", func(subT *testing.T) {
@@ -291,7 +272,7 @@ func TestObject(t *testing.T) {
 })
 `)
 
-		compareBytes(subT, ex, g.Bytes())
+		gen.CompareBytes(subT, ex, g.Bytes())
 	})
 }
 
@@ -337,7 +318,7 @@ func TestInterface(t *testing.T) {
 })
 `)
 
-	compareBytes(t, ex, g.Bytes())
+	gen.CompareBytes(t, ex, g.Bytes())
 }
 
 func TestUnion(t *testing.T) {
@@ -361,7 +342,7 @@ func TestUnion(t *testing.T) {
 })
 `)
 
-	compareBytes(t, ex, g.Bytes())
+	gen.CompareBytes(t, ex, g.Bytes())
 }
 
 func TestEnum(t *testing.T) {
@@ -397,7 +378,7 @@ func TestEnum(t *testing.T) {
 })
 `)
 
-	compareBytes(t, ex, g.Bytes())
+	gen.CompareBytes(t, ex, g.Bytes())
 }
 
 func TestInput(t *testing.T) {
@@ -447,7 +428,7 @@ func TestInput(t *testing.T) {
 })
 `)
 
-		compareBytes(subT, ex, g.Bytes())
+		gen.CompareBytes(subT, ex, g.Bytes())
 	})
 
 	t.Run("WithDefaults", func(subT *testing.T) {
@@ -520,7 +501,7 @@ func TestInput(t *testing.T) {
 })
 `)
 
-		compareBytes(subT, ex, g.Bytes())
+		gen.CompareBytes(subT, ex, g.Bytes())
 	})
 }
 
@@ -554,7 +535,7 @@ func TestDirective(t *testing.T) {
 })
 `)
 
-		compareBytes(subT, ex, g.Bytes())
+		gen.CompareBytes(subT, ex, g.Bytes())
 	})
 
 	t.Run("WithArgs", func(subT *testing.T) {
@@ -625,7 +606,7 @@ func TestDirective(t *testing.T) {
 })
 `)
 
-		compareBytes(subT, ex, g.Bytes())
+		gen.CompareBytes(subT, ex, g.Bytes())
 	})
 }
 
@@ -646,7 +627,7 @@ func TestGenerator_Generate(t *testing.T) {
 		return
 	}
 
-	compareBytes(t, ex, b.Bytes())
+	gen.CompareBytes(t, ex, b.Bytes())
 }
 
 func BenchmarkGenerator_Generate(b *testing.B) {

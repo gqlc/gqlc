@@ -18,23 +18,6 @@ import (
 	"testing"
 )
 
-func compareBytes(t *testing.T, ex, out []byte) {
-	if bytes.EqualFold(out, ex) {
-		return
-	}
-
-	line := 1
-	for i, b := range out {
-		if b == '\n' {
-			line++
-		}
-
-		if ex[i] != b {
-			t.Fatalf("expected: %s, but got: %s, %d:%d", string(ex[i]), string(b), i, line)
-		}
-	}
-}
-
 var (
 	update = flag.Bool("update", false, "Update expected output file")
 
@@ -477,7 +460,7 @@ func TestToC(t *testing.T) {
 
 			var b bytes.Buffer
 			writeToC(&b, opts)
-			compareBytes(subT, testCase.Ex, b.Bytes())
+			gen.CompareBytes(subT, testCase.Ex, b.Bytes())
 		})
 	}
 }
@@ -623,7 +606,7 @@ func TestFields(t *testing.T) {
 
 			g.generateFields(testCase.Fields, &testBuf)
 
-			compareBytes(subT, testCase.Ex, g.Bytes())
+			gen.CompareBytes(subT, testCase.Ex, g.Bytes())
 		})
 	}
 }
@@ -685,7 +668,7 @@ func TestArgs(t *testing.T) {
 
 			g.generateArgs(testCase.Args, &testBuf)
 
-			compareBytes(subT, testCase.Ex, g.Bytes())
+			gen.CompareBytes(subT, testCase.Ex, g.Bytes())
 		})
 	}
 }
@@ -707,7 +690,7 @@ func TestGenerator_Generate(t *testing.T) {
 		return
 	}
 
-	compareBytes(t, ex, b.Bytes())
+	gen.CompareBytes(t, ex, b.Bytes())
 }
 
 func BenchmarkGenerator_Generate(b *testing.B) {
