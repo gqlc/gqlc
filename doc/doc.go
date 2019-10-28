@@ -10,7 +10,7 @@ import (
 	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/gqlc/sort"
 	"github.com/gqlc/graphql/ast"
-	"gitlab.com/golang-commonmark/markdown"
+	"gitlab.com/zaba505/markdown"
 	"io"
 	"path/filepath"
 	"sync"
@@ -36,7 +36,6 @@ const (
 	enum      = "enum"
 	input     = "input"
 	directive = "directive"
-	extend    = "extend"
 )
 
 func (o *Options) addContent(name string, count int, typ, mask sort.DeclType) sort.DeclType {
@@ -186,29 +185,14 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 	var fieldsBuf bytes.Buffer
 	var typ sort.DeclType
 	var ts *ast.TypeSpec
-	mask := sort.SchemaType | sort.ScalarType | sort.ObjectType | sort.InterType | sort.UnionType | sort.EnumType | sort.InputType | sort.DirectiveType | sort.ExtendType
+	mask := sort.SchemaType | sort.ScalarType | sort.ObjectType | sort.InterType | sort.UnionType | sort.EnumType | sort.InputType | sort.DirectiveType
 	tLen := len(types) - 1
 	for i, decl := range types {
 		d, ok := decl.Spec.(*ast.TypeDecl_TypeSpec)
 		if !ok {
-			ext := decl.Spec.(*ast.TypeDecl_TypeExtSpec)
-			ts = ext.TypeExtSpec.Type
-
-			if mask&sort.ExtendType != 0 {
-				*opts.toc = append(*opts.toc, struct {
-					name  string
-					count int
-				}{name: extend})
-
-				mask = sort.SchemaType | sort.ScalarType | sort.ObjectType | sort.InterType | sort.UnionType | sort.EnumType | sort.InputType | sort.DirectiveType | sort.ExtendType
-				mask &= ^sort.ExtendType
-
-				g.P("## Extensions")
-				g.P()
-			}
-		} else {
-			ts = d.TypeSpec
+			panic("only expected type spec and not type ext specs.")
 		}
+		ts = d.TypeSpec
 
 		// Add to Table of Contents
 		var count int
@@ -389,7 +373,6 @@ var (
 	enumName, enumLink           = []byte("Enum"), []byte("s](#Enum")
 	inputName, inputLink         = []byte("Input"), []byte("s](#Input")
 	directiveName, directiveLink = []byte("Directive"), []byte("s](#Directive")
-	extendName, extendLink       = []byte("Extension"), []byte("s](#Extension")
 )
 
 // writeToC writes the Title and Table of Contents to the given io.Writer.
@@ -413,7 +396,6 @@ func writeToC(w io.Writer, opts *Options) (int64, error) {
 	b.WriteByte('\n')
 
 	name, link := make([]byte, 0, 20), make([]byte, 0, 23) // Assume longest would be a 5 character CJK unicode name => 4byte * 5char = 20
-	var exts bool
 	listTok := []byte{'-', '*'}
 	indent := make([]byte, 0, 2)
 	for _, s := range *opts.toc {
@@ -483,14 +465,6 @@ func writeToC(w io.Writer, opts *Options) (int64, error) {
 			link = append(link, directiveLink...)
 			shouldIndent = true
 			addS = true
-		case extend:
-			if len(indent) > 0 {
-				indent = indent[:len(indent)-1]
-			}
-			name = append(name, extendName...)
-			link = append(link, extendLink...)
-			shouldIndent = true
-			addS = true
 		default:
 			name = append(name, s.name...)
 			link = append(link, ']', '(', '#')
@@ -503,10 +477,6 @@ func writeToC(w io.Writer, opts *Options) (int64, error) {
 		b.WriteByte('[')
 
 		b.Write(name)
-		if exts {
-			b.WriteByte(' ')
-			b.WriteString("Extension")
-		}
 
 		if s.count > 0 {
 			b.WriteByte(' ')
@@ -515,10 +485,6 @@ func writeToC(w io.Writer, opts *Options) (int64, error) {
 
 		b.Write(link)
 
-		if exts {
-			b.WriteByte('-')
-			b.WriteString("Extension")
-		}
 		if addS {
 			b.WriteByte('s')
 		}
@@ -533,10 +499,6 @@ func writeToC(w io.Writer, opts *Options) (int64, error) {
 		if shouldIndent {
 			indent = append(indent, '\t')
 		}
-		if s.name == extend {
-			exts = true
-			indent = append(indent, '\t')
-		}
 	}
 	b.WriteByte('\n')
 
@@ -546,16 +508,10 @@ func writeToC(w io.Writer, opts *Options) (int64, error) {
 func (g *Generator) writeSectionHeader(section string, mask sort.DeclType) {
 	g.WriteByte('#')
 	g.WriteByte('#')
-	if mask&sort.ExtendType == 0 {
-		g.WriteByte('#')
-	}
+
 	g.WriteByte(' ')
 	g.WriteString(section)
 
-	if mask&sort.ExtendType == 0 {
-		g.WriteByte(' ')
-		g.WriteString("Extension")
-	}
 	if section != "Schema" {
 		g.WriteByte('s')
 	}
@@ -566,16 +522,9 @@ func (g *Generator) writeTypeHeader(name string, count int, mask sort.DeclType) 
 	g.WriteByte('#')
 	g.WriteByte('#')
 	g.WriteByte('#')
-	if mask&sort.ExtendType == 0 {
-		g.WriteByte('#')
-	}
+
 	g.WriteByte(' ')
 	g.WriteString(name)
-
-	if mask&sort.ExtendType == 0 {
-		g.WriteByte(' ')
-		g.WriteString("Extension")
-	}
 
 	if count > 0 {
 		g.WriteByte(' ')
