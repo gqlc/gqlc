@@ -403,103 +403,7 @@ func (g *Generator) generateObject(imports *uint16, name string, descr bool, doc
 	g.P("fields: {")
 	g.In()
 
-	fLen := len(obj.Fields.List)
-	for i, f := range obj.Fields.List {
-		g.P(f.Name.Name, ": {")
-		g.In()
-
-		g.Write(g.indent)
-		g.WriteString("type: ")
-
-		var fieldType interface{}
-		switch v := f.Type.(type) {
-		case *ast.Field_Ident:
-			fieldType = v.Ident
-		case *ast.Field_List:
-			fieldType = v.List
-		case *ast.Field_NonNull:
-			fieldType = v.NonNull
-		}
-		g.printType(imports, fieldType)
-		g.WriteByte(',')
-		g.WriteByte('\n')
-
-		if f.Args != nil {
-			g.P("args: {")
-			g.In()
-
-			aLen := len(f.Args.List) - 1
-			for ai, a := range f.Args.List {
-				g.P(a.Name.Name, ": {")
-				g.In()
-				g.Write(g.indent)
-				g.WriteString("type: ")
-
-				var argType interface{}
-				switch v := a.Type.(type) {
-				case *ast.InputValue_Ident:
-					argType = v.Ident
-				case *ast.InputValue_List:
-					argType = v.List
-				case *ast.InputValue_NonNull:
-					argType = v.NonNull
-				}
-				g.printType(imports, argType)
-
-				if a.Default != nil {
-					g.WriteByte(',')
-					g.WriteByte('\n')
-
-					g.Write(g.indent)
-					g.WriteString("defaultValue: ")
-
-					var defType interface{}
-					switch v := a.Default.(type) {
-					case *ast.InputValue_BasicLit:
-						defType = v.BasicLit
-					case *ast.InputValue_CompositeLit:
-						defType = v.CompositeLit
-					}
-					g.printVal(defType)
-				}
-
-				if descr {
-					g.printDescr(a.Doc)
-				}
-
-				g.WriteByte('\n')
-
-				g.Out()
-
-				g.Write(g.indent)
-				g.WriteByte('}')
-				if ai != aLen {
-					g.WriteByte(',')
-				}
-				g.WriteByte('\n')
-			}
-
-			g.Out()
-			g.P("},")
-		}
-
-		g.Write(g.indent)
-		g.WriteString("resolve() { /* TODO */ }")
-
-		if descr {
-			g.printDescr(f.Doc)
-		}
-
-		g.WriteByte('\n')
-
-		g.Out()
-		g.Write(g.indent)
-		g.WriteByte('}')
-		if i != fLen-1 {
-			g.WriteByte(',')
-		}
-		g.WriteByte('\n')
-	}
+	g.generateFields(obj.Fields, imports, descr, true)
 
 	g.Out()
 
@@ -527,8 +431,26 @@ func (g *Generator) generateInterface(imports *uint16, name string, descr bool, 
 	g.P("fields: {")
 	g.In()
 
-	fLen := len(inter.Fields.List)
-	for i, f := range inter.Fields.List {
+	g.generateFields(inter.Fields, imports, descr, false)
+
+	g.Out()
+
+	g.Write(g.indent)
+	g.WriteByte('}')
+
+	if doc != nil && descr {
+		g.printDescr(doc)
+	}
+
+	g.WriteByte('\n')
+
+	g.Out()
+	g.P("});")
+}
+
+func (g *Generator) generateFields(fields *ast.FieldList, imports *uint16, descr, resolve bool) {
+	fLen := len(fields.List)
+	for i, f := range fields.List {
 		g.P(f.Name.Name, ": {")
 		g.In()
 
@@ -547,6 +469,9 @@ func (g *Generator) generateInterface(imports *uint16, name string, descr bool, 
 		g.printType(imports, fieldType)
 
 		if f.Args != nil {
+			g.WriteByte(',')
+			g.WriteByte('\n')
+
 			g.P("args: {")
 			g.In()
 
@@ -587,7 +512,6 @@ func (g *Generator) generateInterface(imports *uint16, name string, descr bool, 
 
 				if descr {
 					g.printDescr(a.Doc)
-
 				}
 
 				g.WriteByte('\n')
@@ -608,15 +532,21 @@ func (g *Generator) generateInterface(imports *uint16, name string, descr bool, 
 			g.WriteByte('}')
 		}
 
+		if resolve {
+			g.WriteByte(',')
+			g.WriteByte('\n')
+
+			g.Write(g.indent)
+			g.WriteString("resolve() { /* TODO */ }")
+		}
+
 		if descr {
 			g.printDescr(f.Doc)
-
 		}
 
 		g.WriteByte('\n')
 
 		g.Out()
-
 		g.Write(g.indent)
 		g.WriteByte('}')
 		if i != fLen-1 {
@@ -624,20 +554,6 @@ func (g *Generator) generateInterface(imports *uint16, name string, descr bool, 
 		}
 		g.WriteByte('\n')
 	}
-
-	g.Out()
-
-	g.Write(g.indent)
-	g.WriteByte('}')
-
-	if doc != nil && descr {
-		g.printDescr(doc)
-	}
-
-	g.WriteByte('\n')
-
-	g.Out()
-	g.P("});")
 }
 
 func (g *Generator) generateUnion(imports *uint16, name string, descr bool, doc *ast.DocGroup, ts *ast.TypeSpec) {

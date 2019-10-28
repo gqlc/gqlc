@@ -273,6 +273,15 @@ func TestObject(t *testing.T) {
 							Name: &ast.Ident{Name: "list"},
 							Type: &ast.Field_List{List: &ast.List{Type: &ast.List_Ident{Ident: &ast.Ident{Name: "Test"}}}},
 						},
+						{
+							Name: &ast.Ident{Name: "withDefaultVal"},
+							Type: &ast.Field_Ident{Ident: &ast.Ident{Name: "String"}},
+							Args: &ast.InputValueList{List: []*ast.InputValue{{
+								Name:    &ast.Ident{Name: "str"},
+								Type:    &ast.InputValue_Ident{Ident: &ast.Ident{Name: "String"}},
+								Default: &ast.InputValue_BasicLit{BasicLit: &ast.BasicLit{Value: `"hello"`}},
+							}}},
+						},
 					},
 				},
 			},
@@ -293,6 +302,16 @@ func TestObject(t *testing.T) {
     },
     list: {
       type: new GraphQLList(Test),
+      resolve() { /* TODO */ }
+    },
+    withDefaultVal: {
+      type: GraphQLString,
+      args: {
+        str: {
+          type: GraphQLString,
+          defaultValue: "hello"
+        }
+      },
       resolve() { /* TODO */ }
     }
   }
