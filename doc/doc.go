@@ -4,7 +4,6 @@ package doc
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/gqlc/gqlc/gen"
@@ -167,7 +166,6 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 		ts = d.TypeSpec
 
 		// Add to Table of Contents
-		var count int
 		name := schema
 		if ts.Name != nil {
 			name = ts.Name.Name
@@ -311,7 +309,7 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 
 		mask = opts.addContent(name, typ, mask)
 		if typ != sort.SchemaType {
-			g.writeTypeHeader(name, count, mask)
+			g.writeTypeHeader(name, mask)
 		}
 
 		if len(ts.Directives) > 0 {
@@ -476,18 +474,13 @@ func (g *Generator) writeSectionHeader(section string, mask sort.DeclType) {
 	g.WriteByte('\n')
 }
 
-func (g *Generator) writeTypeHeader(name string, count int, mask sort.DeclType) {
+func (g *Generator) writeTypeHeader(name string, mask sort.DeclType) {
 	g.WriteByte('#')
 	g.WriteByte('#')
 	g.WriteByte('#')
 
 	g.WriteByte(' ')
 	g.WriteString(name)
-
-	if count > 0 {
-		g.WriteByte(' ')
-		binary.Write(g, binary.LittleEndian, count)
-	}
 
 	g.WriteByte('\n')
 }
