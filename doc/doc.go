@@ -21,10 +21,7 @@ type Options struct {
 	Title string `json:"title"`
 	HTML  bool   `json:"html"`
 
-	toc *[]struct {
-		name  string
-		count int // count keeps track of multiple type exts
-	}
+	toc *[]string
 }
 
 const (
@@ -38,55 +35,30 @@ const (
 	directive = "directive"
 )
 
-func (o *Options) addContent(name string, count int, typ, mask sort.DeclType) sort.DeclType {
+func (o *Options) addContent(name string, typ, mask sort.DeclType) sort.DeclType {
 	if mask&typ != 0 {
 		switch typ {
 		case sort.SchemaType:
 		case sort.ScalarType:
-			*o.toc = append(*o.toc, struct {
-				name  string
-				count int
-			}{name: scalar})
+			*o.toc = append(*o.toc, scalar)
 		case sort.ObjectType:
-			*o.toc = append(*o.toc, struct {
-				name  string
-				count int
-			}{name: object})
+			*o.toc = append(*o.toc, object)
 		case sort.InterType:
-			*o.toc = append(*o.toc, struct {
-				name  string
-				count int
-			}{name: inter})
+			*o.toc = append(*o.toc, inter)
 		case sort.UnionType:
-			*o.toc = append(*o.toc, struct {
-				name  string
-				count int
-			}{name: union})
+			*o.toc = append(*o.toc, union)
 		case sort.EnumType:
-			*o.toc = append(*o.toc, struct {
-				name  string
-				count int
-			}{name: enum})
+			*o.toc = append(*o.toc, enum)
 		case sort.InputType:
-			*o.toc = append(*o.toc, struct {
-				name  string
-				count int
-			}{name: input})
+			*o.toc = append(*o.toc, input)
 		case sort.DirectiveType:
-			*o.toc = append(*o.toc, struct {
-				name  string
-				count int
-			}{name: directive})
+			*o.toc = append(*o.toc, directive)
 		}
 
 		mask &= ^typ
 	}
 
-	v := struct {
-		name  string
-		count int
-	}{name: name, count: count}
-	*o.toc = append(*o.toc, v)
+	*o.toc = append(*o.toc, name)
 
 	return mask
 }
@@ -199,11 +171,6 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 		name := schema
 		if ts.Name != nil {
 			name = ts.Name.Name
-		}
-		if len(*opts.toc) > 0 {
-			if prev := (*opts.toc)[len(*opts.toc)-1]; prev.name == name {
-				count = prev.count + 1
-			}
 		}
 
 		// Generate type
@@ -342,7 +309,7 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 			panic("unknown type spec type")
 		}
 
-		mask = opts.addContent(name, count, typ, mask)
+		mask = opts.addContent(name, typ, mask)
 		if typ != sort.SchemaType {
 			g.writeTypeHeader(name, count, mask)
 		}
@@ -402,7 +369,7 @@ func writeToC(w io.Writer, opts *Options) (int64, error) {
 		name, link = name[:0], link[:0]
 
 		var shouldIndent, addS bool
-		switch s.name {
+		switch s {
 		case schema:
 			name = append(name, schemaName...)
 			link = append(link, schemaLink...)
@@ -466,7 +433,7 @@ func writeToC(w io.Writer, opts *Options) (int64, error) {
 			shouldIndent = true
 			addS = true
 		default:
-			name = append(name, s.name...)
+			name = append(name, s...)
 			link = append(link, ']', '(', '#')
 			link = append(link, name...)
 		}
@@ -478,19 +445,10 @@ func writeToC(w io.Writer, opts *Options) (int64, error) {
 
 		b.Write(name)
 
-		if s.count > 0 {
-			b.WriteByte(' ')
-			binary.Write(&b, binary.LittleEndian, s.count)
-		}
-
 		b.Write(link)
 
 		if addS {
 			b.WriteByte('s')
-		}
-		if s.count > 0 {
-			b.WriteByte('-')
-			binary.Write(&b, binary.LittleEndian, s.count)
 		}
 
 		b.WriteByte(')')
@@ -884,10 +842,7 @@ func (g *Generator) Out() {
 // Precedence: CLI over Doc over Default
 //
 func getOptions(doc *ast.Document, opts string) (gOpts *Options, err error) {
-	toc := make([]struct {
-		name  string
-		count int
-	}, 0, len(doc.Types)+9)
+	toc := make([]string, 0, len(doc.Types)+9)
 	gOpts = &Options{
 		Title: `Documentation`,
 		toc:   &toc,
