@@ -145,6 +145,71 @@ func TestResponseError(t *testing.T) {
 	}
 }
 
+type testCtx struct {
+	opener func(filename string) (io.WriteCloser, error)
+	w      io.WriteCloser
+}
+
+func (ctx *testCtx) Open(filename string) (io.WriteCloser, error) {
+	if ctx.opener != nil {
+		return ctx.opener(filename)
+	}
+	return ctx.w, nil
+}
+
+type testErrWriter struct {
+	err error
+}
+
+func (wc *testErrWriter) Write(b []byte) (int, error) { return 0, wc.err }
+func (wc *testErrWriter) Close() error                { return wc.err }
+
+func TestContextErrors(t *testing.T) {
+	t.Run("ErrOnCtxOpen", func(subT *testing.T) {
+		// Get helper cmd
+		cmd := helperCommand(subT, "generate")
+
+		// Create generate and run generate
+		g := &Generator{
+			Name: "test",
+			Cmd:  cmd,
+		}
+		ctx := gen.WithContext(context.Background(), &testCtx{opener: func(string) (io.WriteCloser, error) { return nil, fmt.Errorf("test error") }})
+		err := g.Generate(ctx, testDoc, `{hello: "world!"}`)
+		if err == nil {
+			subT.Errorf("expected error")
+			return
+		}
+
+		if err.Error() != "compiler: generator error occurred in test:test test error" {
+			subT.Error(err)
+			return
+		}
+	})
+
+	t.Run("ErrOnCtxWrite", func(subT *testing.T) {
+		// Get helper cmd
+		cmd := helperCommand(subT, "generate")
+
+		// Create generate and run generate
+		g := &Generator{
+			Name: "test",
+			Cmd:  cmd,
+		}
+		ctx := gen.WithContext(context.Background(), &testCtx{w: &testErrWriter{err: io.EOF}})
+		err := g.Generate(ctx, testDoc, `{hello: "world!"}`)
+		if err == nil {
+			subT.Errorf("expected error")
+			return
+		}
+
+		if err.Error() != "compiler: generator error occurred in test:test EOF" {
+			subT.Error(err)
+			return
+		}
+	})
+}
+
 // TestHelperProcess isn't a real test. It's used as a helper process
 // for TestParameterRun.
 //
