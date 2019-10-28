@@ -2,13 +2,15 @@ package gen
 
 import "io"
 
-// TestCtx
+// TestCtx is a noop closer, which wraps an io.Writer
+// and only meant to be used for tests.
+//
 type TestCtx struct {
 	io.Writer
 }
 
-// Open
+// Open returns the underlying io.Writer.
 func (ctx TestCtx) Open(filename string) (io.WriteCloser, error) { return ctx, nil }
 
-// Close
+// Close always returns nil.
 func (ctx TestCtx) Close() error { return nil }

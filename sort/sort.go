@@ -7,6 +7,7 @@ import (
 // DeclType defines the order of types in the .md file
 type DeclType uint16
 
+// Top-Level type declarations in GraphQL IDL.
 const (
 	SchemaType DeclType = 1 << iota
 	ScalarType
@@ -19,6 +20,7 @@ const (
 	ExtendType
 )
 
+// TypeSlice represents a list of GraphQL type declarations
 type TypeSlice []*ast.TypeDecl
 
 func (s TypeSlice) Len() int { return len(s) }

@@ -81,8 +81,12 @@ func NewCLI(opts ...option) (c *CommandLine) {
 	return
 }
 
+// AllowPlugins sets the plugin prefix to be used
+// when looking up plugin executables.
+//
 func (c *CommandLine) AllowPlugins(prefix string) { *c.pluginPrefix = prefix }
 
+// RegisterGenerator registers a generator with the compiler.
 func (c *CommandLine) RegisterGenerator(g gen.Generator, details ...string) {
 	l := len(details)
 	var name, opt, help string
@@ -116,6 +120,7 @@ func wrapPanic(err error, stack []byte) error {
 	return fmt.Errorf("gqlc: recovered from unexpected panic: %w\n\n%s", err, stack)
 }
 
+// Run executes the compiler
 func (c *CommandLine) Run(args []string) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
