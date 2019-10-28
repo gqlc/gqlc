@@ -10,7 +10,7 @@ import (
 	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/gqlc/sort"
 	"github.com/gqlc/graphql/ast"
-	"gitlab.com/golang-commonmark/markdown"
+	"gitlab.com/zaba505/markdown"
 	"io"
 	"path/filepath"
 	"sync"
