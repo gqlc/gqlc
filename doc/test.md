@@ -165,14 +165,29 @@ deprecate signifies a type deprecation from the api.
 - msg **(String)**
 
 	Arg description.
+nputs
 
-- msg **(String)**
+### Point
+Point represents a 2-D geo point.
 
-	Arg description.
-pe deprecation from the api.
+*Fields*:
+- x **(Float!)**
+- y **(Float!)**
+
+## Directives
+
+### deprecate
+deprecate signifies a type deprecation from the api.
 
 *Args*:
 - msg **(String)**
 
 	Arg description.
+
+## Extensions
+
+### Scalar Extensions
+
+#### Version Extension
+*Directives*: @b(b: 2)
 
