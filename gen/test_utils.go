@@ -21,6 +21,8 @@ func (ctx TestCtx) Close() error { return nil }
 
 // CompareBytes is a testing utility for comparing generator outputs.
 func CompareBytes(t *testing.T, ex, out []byte) {
+	t.Helper()
+
 	if bytes.EqualFold(out, ex) {
 		return
 	}
