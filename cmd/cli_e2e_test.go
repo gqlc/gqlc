@@ -42,6 +42,7 @@ var GOLDENS = []goldenSuite{
 		opts:  "descriptions=true",
 	},
 }
+
 var testTypes = []*ast.TypeDecl{
 	{
 		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
