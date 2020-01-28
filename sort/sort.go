@@ -1,3 +1,4 @@
+// Package sort provides sorting utilities for sorting type declarations.
 package sort
 
 import (

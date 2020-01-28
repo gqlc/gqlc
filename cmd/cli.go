@@ -1,4 +1,4 @@
-// Package cmd provides a compiler.CommandLine implementation.
+// Package cmd implements the command line interface for gqlc.
 package cmd
 
 import (
