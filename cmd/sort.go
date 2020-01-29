@@ -1,31 +1,41 @@
-// Package sort provides sorting utilities for sorting type declarations.
-package sort
+// sort.go sorts type decls by type and name
+
+package cmd
 
 import (
 	"github.com/gqlc/graphql/ast"
+	"sort"
 )
 
-// DeclType defines the order of types in the .md file
-type DeclType uint16
+// sortTypeDecls sorts type declarations both lexigraphically and by type.
+func sortTypeDecls(decls []*ast.TypeDecl) []*ast.TypeDecl {
+	dtypes := typeSlice(decls)
+	sort.Sort(dtypes)
+
+	return dtypes
+}
+
+// declType defines the order of types in the .md file
+type declType uint16
 
 // Top-Level type declarations in GraphQL IDL.
 const (
-	SchemaType DeclType = 1 << iota
-	ScalarType
-	ObjectType
-	InterType
-	UnionType
-	EnumType
-	InputType
-	DirectiveType
-	ExtendType
+	schemaType declType = 1 << iota
+	scalarType
+	objectType
+	interType
+	unionType
+	enumType
+	inputType
+	directiveType
+	extendType
 )
 
-// TypeSlice represents a list of GraphQL type declarations
-type TypeSlice []*ast.TypeDecl
+// typeSlice represents a list of GraphQL type declarations
+type typeSlice []*ast.TypeDecl
 
-func (s TypeSlice) Len() int { return len(s) }
-func (s TypeSlice) Less(i, j int) bool {
+func (s typeSlice) Len() int { return len(s) }
+func (s typeSlice) Less(i, j int) bool {
 	it, jt := s[i], s[j]
 
 	var its, jts *ast.TypeSpec
@@ -43,42 +53,42 @@ func (s TypeSlice) Less(i, j int) bool {
 	}
 
 	// Schema < Scalar < Object < Interface < Union < Enum < Input < Directive
-	var iType, jType DeclType
+	var iType, jType declType
 	switch its.Type.(type) {
 	case *ast.TypeSpec_Schema:
-		iType = SchemaType
+		iType = schemaType
 	case *ast.TypeSpec_Scalar:
-		iType = ScalarType
+		iType = scalarType
 	case *ast.TypeSpec_Object:
-		iType = ObjectType
+		iType = objectType
 	case *ast.TypeSpec_Interface:
-		iType = InterType
+		iType = interType
 	case *ast.TypeSpec_Union:
-		iType = UnionType
+		iType = unionType
 	case *ast.TypeSpec_Enum:
-		iType = EnumType
+		iType = enumType
 	case *ast.TypeSpec_Input:
-		iType = InputType
+		iType = inputType
 	case *ast.TypeSpec_Directive:
-		iType = DirectiveType
+		iType = directiveType
 	}
 	switch jts.Type.(type) {
 	case *ast.TypeSpec_Schema:
-		jType = SchemaType
+		jType = schemaType
 	case *ast.TypeSpec_Scalar:
-		jType = ScalarType
+		jType = scalarType
 	case *ast.TypeSpec_Object:
-		jType = ObjectType
+		jType = objectType
 	case *ast.TypeSpec_Interface:
-		jType = InterType
+		jType = interType
 	case *ast.TypeSpec_Union:
-		jType = UnionType
+		jType = unionType
 	case *ast.TypeSpec_Enum:
-		jType = EnumType
+		jType = enumType
 	case *ast.TypeSpec_Input:
-		jType = InputType
+		jType = inputType
 	case *ast.TypeSpec_Directive:
-		jType = DirectiveType
+		jType = directiveType
 	}
 
 	if iType != jType {
@@ -87,4 +97,4 @@ func (s TypeSlice) Less(i, j int) bool {
 
 	return its.Name.Name < jts.Name.Name
 }
-func (s TypeSlice) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s typeSlice) Swap(i, j int) { s[i], s[j] = s[j], s[i] }

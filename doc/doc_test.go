@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gqlc/gqlc/gen"
-	"github.com/gqlc/gqlc/sort"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
 	"github.com/gqlc/graphql/token"
@@ -120,13 +119,13 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestAddContent(t *testing.T) {
-	mask := sort.SchemaType | sort.ScalarType | sort.ObjectType | sort.InterType | sort.UnionType | sort.EnumType | sort.InputType | sort.DirectiveType | sort.ExtendType
+	mask := schemaType | scalarType | objectType | interType | unionType | enumType | inputType | directiveType | extendType
 
 	testCases := []struct {
 		Name string
 		C    []struct {
 			name string
-			typ  sort.DeclType
+			typ  declType
 		}
 		Total int
 	}{
@@ -134,11 +133,11 @@ func TestAddContent(t *testing.T) {
 			Name: "SingleType",
 			C: []struct {
 				name string
-				typ  sort.DeclType
+				typ  declType
 			}{
 				{
 					name: "Test",
-					typ:  sort.ScalarType,
+					typ:  scalarType,
 				},
 			},
 			Total: 2,
@@ -147,19 +146,19 @@ func TestAddContent(t *testing.T) {
 			Name: "MultiSameType",
 			C: []struct {
 				name string
-				typ  sort.DeclType
+				typ  declType
 			}{
 				{
 					name: "A",
-					typ:  sort.ScalarType,
+					typ:  scalarType,
 				},
 				{
 					name: "B",
-					typ:  sort.ScalarType,
+					typ:  scalarType,
 				},
 				{
 					name: "C",
-					typ:  sort.ScalarType,
+					typ:  scalarType,
 				},
 			},
 			Total: 4,
@@ -168,31 +167,31 @@ func TestAddContent(t *testing.T) {
 			Name: "ManyTypes",
 			C: []struct {
 				name string
-				typ  sort.DeclType
+				typ  declType
 			}{
 				{
 					name: "A",
-					typ:  sort.ScalarType,
+					typ:  scalarType,
 				},
 				{
 					name: "B",
-					typ:  sort.ScalarType,
+					typ:  scalarType,
 				},
 				{
 					name: "C",
-					typ:  sort.ScalarType,
+					typ:  scalarType,
 				},
 				{
 					name: "A",
-					typ:  sort.ObjectType,
+					typ:  objectType,
 				},
 				{
 					name: "B",
-					typ:  sort.ObjectType,
+					typ:  objectType,
 				},
 				{
 					name: "C",
-					typ:  sort.ObjectType,
+					typ:  objectType,
 				},
 			},
 			Total: 8,

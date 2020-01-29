@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/gqlc/gen"
-	tsort "github.com/gqlc/gqlc/sort"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
 	"github.com/gqlc/graphql/token"
@@ -17,7 +16,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
@@ -101,9 +99,7 @@ func root(fs afero.Fs, geners *[]*genFlag, iPaths []string, args ...string) (err
 	// Convert types from IR to []*ast.TypeDecl
 	docs = docs[:0]
 	for doc, types := range docsIR {
-		dtypes := tsort.TypeSlice(compiler.FromIR(types))
-		sort.Sort(dtypes)
-		doc.Types = dtypes
+		doc.Types = sortTypeDecls(compiler.FromIR(types))
 
 		docs = append(docs, doc)
 	}
