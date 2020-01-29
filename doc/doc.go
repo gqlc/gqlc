@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gqlc/gqlc/gen"
-	"github.com/gqlc/gqlc/sort"
 	"github.com/gqlc/graphql/ast"
 	"gitlab.com/zaba505/markdown"
 	"io"
@@ -34,23 +33,37 @@ const (
 	directive = "directive"
 )
 
-func (o *Options) addContent(name string, typ, mask sort.DeclType) sort.DeclType {
+type declType uint16
+
+const (
+	schemaType declType = 1 << iota
+	scalarType
+	objectType
+	interType
+	unionType
+	enumType
+	inputType
+	directiveType
+	extendType
+)
+
+func (o *Options) addContent(name string, typ, mask declType) declType {
 	if mask&typ != 0 {
 		switch typ {
-		case sort.SchemaType:
-		case sort.ScalarType:
+		case schemaType:
+		case scalarType:
 			*o.toc = append(*o.toc, scalar)
-		case sort.ObjectType:
+		case objectType:
 			*o.toc = append(*o.toc, object)
-		case sort.InterType:
+		case interType:
 			*o.toc = append(*o.toc, inter)
-		case sort.UnionType:
+		case unionType:
 			*o.toc = append(*o.toc, union)
-		case sort.EnumType:
+		case enumType:
 			*o.toc = append(*o.toc, enum)
-		case sort.InputType:
+		case inputType:
 			*o.toc = append(*o.toc, input)
-		case sort.DirectiveType:
+		case directiveType:
 			*o.toc = append(*o.toc, directive)
 		}
 
@@ -154,9 +167,9 @@ func noopGen(*ast.TypeSpec) {}
 
 func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 	var fieldsBuf bytes.Buffer
-	var typ sort.DeclType
+	var typ declType
 	var ts *ast.TypeSpec
-	mask := sort.SchemaType | sort.ScalarType | sort.ObjectType | sort.InterType | sort.UnionType | sort.EnumType | sort.InputType | sort.DirectiveType
+	mask := schemaType | scalarType | objectType | interType | unionType | enumType | inputType | directiveType
 	tLen := len(types) - 1
 	for i, decl := range types {
 		d, ok := decl.Spec.(*ast.TypeDecl_TypeSpec)
@@ -175,8 +188,8 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 		gen := noopGen
 		switch v := ts.Type.(type) {
 		case *ast.TypeSpec_Schema:
-			if mask&sort.SchemaType != 0 {
-				g.writeSectionHeader("Schema", mask)
+			if mask&schemaType != 0 {
+				g.writeSectionHeader("Schema")
 			}
 			if v.Schema.RootOps == nil {
 				break
@@ -188,26 +201,26 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 				g.generateFields(v.Schema.RootOps.List, &fieldsBuf)
 			}
 
-			typ = sort.SchemaType
+			typ = schemaType
 		case *ast.TypeSpec_Scalar:
-			if mask&sort.ScalarType != 0 {
-				g.writeSectionHeader("Scalar", mask)
+			if mask&scalarType != 0 {
+				g.writeSectionHeader("Scalar")
 				g.WriteByte('\n')
 			}
 
-			typ = sort.ScalarType
+			typ = scalarType
 		case *ast.TypeSpec_Object:
-			if mask&sort.ObjectType != 0 {
-				g.writeSectionHeader("Object", mask)
+			if mask&objectType != 0 {
+				g.writeSectionHeader("Object")
 				g.WriteByte('\n')
 			}
 
 			gen = g.generateObject
 
-			typ = sort.ObjectType
+			typ = objectType
 		case *ast.TypeSpec_Interface:
-			if mask&sort.InterType != 0 {
-				g.writeSectionHeader("Interface", mask)
+			if mask&interType != 0 {
+				g.writeSectionHeader("Interface")
 				g.WriteByte('\n')
 			}
 			if v.Interface.Fields == nil {
@@ -220,10 +233,10 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 				g.generateFields(v.Interface.Fields.List, &fieldsBuf)
 			}
 
-			typ = sort.InterType
+			typ = interType
 		case *ast.TypeSpec_Union:
-			if mask&sort.UnionType != 0 {
-				g.writeSectionHeader("Union", mask)
+			if mask&unionType != 0 {
+				g.writeSectionHeader("Union")
 				g.WriteByte('\n')
 			}
 			if len(v.Union.Members) == 0 {
@@ -254,10 +267,10 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 				g.WriteByte('\n')
 			}
 
-			typ = sort.UnionType
+			typ = unionType
 		case *ast.TypeSpec_Enum:
-			if mask&sort.EnumType != 0 {
-				g.writeSectionHeader("Enum", mask)
+			if mask&enumType != 0 {
+				g.writeSectionHeader("Enum")
 				g.WriteByte('\n')
 			}
 			if v.Enum.Values == nil {
@@ -270,10 +283,10 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 				g.generateFields(v.Enum.Values.List, &fieldsBuf)
 			}
 
-			typ = sort.EnumType
+			typ = enumType
 		case *ast.TypeSpec_Input:
-			if mask&sort.InputType != 0 {
-				g.writeSectionHeader("Input", mask)
+			if mask&inputType != 0 {
+				g.writeSectionHeader("Input")
 				g.WriteByte('\n')
 			}
 			if v.Input.Fields == nil {
@@ -286,10 +299,10 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 				g.generateArgs(v.Input.Fields.List, &fieldsBuf)
 			}
 
-			typ = sort.InputType
+			typ = inputType
 		case *ast.TypeSpec_Directive:
-			if mask&sort.DirectiveType != 0 {
-				g.writeSectionHeader("Directive", mask)
+			if mask&directiveType != 0 {
+				g.writeSectionHeader("Directive")
 				g.WriteByte('\n')
 			}
 			if v.Directive.Args == nil {
@@ -302,14 +315,14 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 				g.generateArgs(v.Directive.Args.List, &fieldsBuf)
 			}
 
-			typ = sort.DirectiveType
+			typ = directiveType
 		default:
 			panic("unknown type spec type")
 		}
 
 		mask = opts.addContent(name, typ, mask)
-		if typ != sort.SchemaType {
-			g.writeTypeHeader(name, mask)
+		if typ != schemaType {
+			g.writeTypeHeader(name)
 		}
 
 		if len(ts.Directives) > 0 {
@@ -461,7 +474,7 @@ func writeToC(w io.Writer, opts *Options) (int64, error) {
 	return b.WriteTo(w)
 }
 
-func (g *Generator) writeSectionHeader(section string, mask sort.DeclType) {
+func (g *Generator) writeSectionHeader(section string) {
 	g.WriteByte('#')
 	g.WriteByte('#')
 
@@ -474,7 +487,7 @@ func (g *Generator) writeSectionHeader(section string, mask sort.DeclType) {
 	g.WriteByte('\n')
 }
 
-func (g *Generator) writeTypeHeader(name string, mask sort.DeclType) {
+func (g *Generator) writeTypeHeader(name string) {
 	g.WriteByte('#')
 	g.WriteByte('#')
 	g.WriteByte('#')
