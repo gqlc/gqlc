@@ -12,7 +12,10 @@ var gqlcTypes = []*ast.TypeDecl{
 		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
 			Name: &ast.Ident{Name: "resolver"},
 			Type: &ast.TypeSpec_Directive{Directive: &ast.DirectiveType{
-				Locs: []*ast.DirectiveLocation{{Loc: ast.DirectiveLocation_FIELD_DEFINITION}},
+				Locs: []*ast.DirectiveLocation{
+					{Loc: ast.DirectiveLocation_FIELD_DEFINITION},
+					{Loc: ast.DirectiveLocation_UNION},
+				},
 				Args: &ast.InputValueList{
 					List: []*ast.InputValue{
 						{
