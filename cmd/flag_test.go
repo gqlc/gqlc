@@ -1,11 +1,19 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"text/scanner"
 )
 
 func TestGenFlag_Set(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Errorf("unexpected error when getting wd: %s", err)
+		return
+	}
+
 	testCases := []struct {
 		Name   string
 		Arg    string
@@ -22,6 +30,11 @@ func TestGenFlag_Set(t *testing.T) {
 			Name:   "RelPathDir",
 			Arg:    "testdir/a",
 			OutDir: "testdir/a",
+		},
+		{
+			Name:   "RelPathDir-2",
+			Arg:    "../testdir/a",
+			OutDir: filepath.Join(wd, "../testdir/a"),
 		},
 		{
 			Name: "NoDir",
@@ -97,6 +110,7 @@ func TestGenFlag_Set(t *testing.T) {
 			}
 
 			if testCase.OutDir != *f.outDir {
+				subT.Logf("mismatched outdirs: %s:%s", testCase.OutDir, *f.outDir)
 				subT.Fail()
 				return
 			}
