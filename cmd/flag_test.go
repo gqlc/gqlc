@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"text/scanner"
 )
 
-func TestGenFlag_Set(t *testing.T) {
+func TestGenOptFlag(t *testing.T) {
 	testCases := []struct {
 		Name   string
 		Arg    string
@@ -13,16 +15,6 @@ func TestGenFlag_Set(t *testing.T) {
 		Opts   map[string]interface{}
 		Err    string
 	}{
-		{
-			Name:   "AbsPathDir",
-			Arg:    "/testdir",
-			OutDir: "/testdir",
-		},
-		{
-			Name:   "RelPathDir",
-			Arg:    "testdir/a",
-			OutDir: "testdir/a",
-		},
 		{
 			Name: "NoDir",
 			Arg:  "testOpt:",
@@ -96,16 +88,82 @@ func TestGenFlag_Set(t *testing.T) {
 				return
 			}
 
-			if testCase.OutDir != *f.outDir {
-				subT.Fail()
-				return
-			}
-
 			if len(f.opts) != len(testCase.Opts) {
 				subT.Fail()
 			}
 
 			compare(subT, f.opts, testCase.Opts)
+		})
+	}
+}
+
+func TestGenOutFlag(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Errorf("unexpected error when getting wd: %s", err)
+		return
+	}
+
+	testCases := []struct {
+		Name   string
+		Arg    string
+		OutDir string
+		Opts   map[string]interface{}
+		Err    string
+	}{
+		{
+			Name:   "AbsPathDir",
+			Arg:    "/testdir",
+			OutDir: "/testdir",
+		},
+		{
+			Name:   "RelPathDir",
+			Arg:    "testdir/a",
+			OutDir: filepath.Join(wd, "testdir/a"),
+		},
+		{
+			Name:   "RelPathDir-2",
+			Arg:    "./testdir/a",
+			OutDir: filepath.Join(wd, "./testdir/a"),
+		},
+		{
+			Name:   "RelPathDir-3",
+			Arg:    "../testdir/a",
+			OutDir: filepath.Join(wd, "../testdir/a"),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(subT *testing.T) {
+			f := &genFlag{
+				opts:   make(map[string]interface{}),
+				outDir: new(string),
+				geners: new([]*genFlag),
+				fp:     &fparser{Scanner: new(scanner.Scanner)},
+			}
+
+			err := f.Set(testCase.Arg)
+			if err != nil && testCase.Err == "" {
+				subT.Errorf("unexpected error from flag parsing: %s:%s", testCase.Arg, err)
+				return
+			}
+			if testCase.Err != "" {
+				if err == nil {
+					subT.Errorf("expected error: %s", testCase.Err)
+					return
+				}
+
+				if err.Error() != testCase.Err {
+					subT.Fail()
+				}
+				return
+			}
+
+			if testCase.OutDir != *f.outDir {
+				subT.Logf("mismatched outdirs: %s:%s", testCase.OutDir, *f.outDir)
+				subT.Fail()
+				return
+			}
 		})
 	}
 }

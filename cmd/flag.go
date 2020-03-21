@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gqlc/gqlc/gen"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"text/scanner"
@@ -32,7 +33,7 @@ func (f *genFlag) Set(arg string) (err error) {
 		return err
 	}
 
-	if *f.outDir != "." {
+	if filepath.IsAbs(*f.outDir) {
 		return
 	}
 
@@ -40,7 +41,7 @@ func (f *genFlag) Set(arg string) (err error) {
 	if err != nil {
 		return err
 	}
-	*f.outDir = wd
+	*f.outDir = filepath.Join(wd, *f.outDir)
 	return
 }
 
@@ -91,6 +92,12 @@ func parseArg(p *fparser, dir *string, opts map[string]interface{}) stateFn {
 		*dir += string(os.PathSeparator)
 		return parseDir(p, dir)
 	case '.':
+		t = p.Peek()
+		if t == '.' || t == '/' {
+			*dir += p.TokenText()
+			return parseDir(p, dir)
+		}
+
 		*dir = "."
 		return nil
 	}
