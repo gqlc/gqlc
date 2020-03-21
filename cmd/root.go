@@ -51,7 +51,12 @@ type genCtx struct {
 }
 
 func (ctx *genCtx) Open(name string) (io.WriteCloser, error) {
-	return ctx.fs.OpenFile(filepath.Join(ctx.dir, name), os.O_WRONLY|os.O_CREATE, 0755)
+	f, err := ctx.fs.OpenFile(filepath.Join(ctx.dir, name), os.O_WRONLY|os.O_CREATE, 0755)
+	if err != nil {
+		return nil, err
+	}
+
+	return f, f.Truncate(0)
 }
 
 func root(fs afero.Fs, geners *[]*genFlag, iPaths []string, args ...string) (err error) {
