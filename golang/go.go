@@ -445,7 +445,11 @@ func (g *Generator) generateEnum(name string, descr bool, doc *ast.DocGroup, ts 
 		g.P('"', v.Name.Name, '"', ": &graphql.EnumValueConfig{")
 		g.In()
 
-		g.P("Value: \"", v.Name.Name, "\",")
+		val := getValue(v.Directives)
+		if val == "" {
+			val = v.Name.Name
+		}
+		g.P("Value: \"", val, "\",")
 
 		if v.Doc != nil && descr {
 			g.printDescr(v.Doc)
@@ -834,6 +838,17 @@ func getOptions(doc *ast.Document, opts string) (gOpts *Options, err error) {
 func getResolver(dirs []*ast.DirectiveLit) string {
 	for _, d := range dirs {
 		if d.Name != "resolver" {
+			continue
+		}
+
+		return strings.Trim(d.Args.Args[0].Value.(*ast.Arg_BasicLit).BasicLit.Value, "\"")
+	}
+	return ""
+}
+
+func getValue(dirs []*ast.DirectiveLit) string {
+	for _, d := range dirs {
+		if d.Name != "as" {
 			continue
 		}
 
