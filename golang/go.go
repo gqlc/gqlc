@@ -67,12 +67,6 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 	// Generate package and imports
 	g.writeHeader(g, []byte(gOpts.Package))
 
-	// Generate schema
-	if doc.Schema != nil {
-		g.P("var Schema graphql.Schema")
-		g.P()
-	}
-
 	// Generate types
 	totalTypes := len(doc.Types) - 1
 	for i, d := range doc.Types {
@@ -117,47 +111,6 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 		if i != totalTypes {
 			g.P()
 		}
-	}
-
-	if doc.Schema != nil {
-		g.P()
-		g.P("func init() {")
-		g.In()
-
-		g.P("var err error")
-		g.P("Schema, err = graphql.NewSchema(graphql.SchemaConfig{")
-		g.In()
-
-		rootOps := doc.Schema.Spec.(*ast.TypeDecl_TypeSpec).TypeSpec.Type.(*ast.TypeSpec_Schema).Schema.RootOps.List
-		for _, op := range rootOps {
-			g.Write(g.indent)
-			switch op.Name.Name {
-			case "query":
-				g.WriteString("Query: ")
-			case "mutation":
-				g.WriteString("Mutation: ")
-			case "subscription":
-				g.WriteString("Subscription: ")
-			}
-			g.WriteString(op.Type.(*ast.Field_Ident).Ident.Name)
-			g.Write(typeSuffix)
-			g.WriteByte(',')
-			g.WriteByte('\n')
-		}
-
-		g.Out()
-		g.P("})")
-
-		g.P("if err != nil {")
-		g.In()
-
-		g.P("panic(err)")
-
-		g.Out()
-		g.P("}")
-
-		g.Out()
-		g.P("}")
 	}
 
 	// Extract generator context

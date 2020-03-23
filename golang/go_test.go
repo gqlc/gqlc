@@ -679,8 +679,6 @@ type Query {
 	//
 	// import "github.com/graphql-go/graphql"
 	//
-	// var Schema graphql.Schema
-	//
 	// var QueryType = graphql.NewObject(graphql.ObjectConfig{
 	// 	Name: "Query",
 	//	Fields: graphql.Fields{
@@ -692,13 +690,4 @@ type Query {
 	//	Description: "Query represents the queries this example provides.",
 	// })
 	//
-	// func init() {
-	//	var err error
-	//	Schema, err = graphql.NewSchema(graphql.SchemaConfig{
-	//		Query: QueryType,
-	//	})
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	// }
 }

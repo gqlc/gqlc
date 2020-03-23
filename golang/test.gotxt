@@ -2,8 +2,6 @@ package main
 
 import "github.com/graphql-go/graphql"
 
-var Schema graphql.Schema
-
 var VersionType = graphql.NewScalar(graphql.ScalarConfig{
 	Name: "Version",
 	Description: "Version represents an API version.",
@@ -170,13 +168,3 @@ var deprecateType = graphql.NewDirective(graphql.DirectiveConfig{
 		},
 	},
 })
-
-func init() {
-	var err error
-	Schema, err = graphql.NewSchema(graphql.SchemaConfig{
-		Query: QueryType,
-	})
-	if err != nil {
-		panic(err)
-	}
-}
