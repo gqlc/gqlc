@@ -5,10 +5,12 @@ package cmd
 import (
 	"github.com/gqlc/gqlc/types"
 	"github.com/gqlc/graphql/ast"
+	"github.com/gqlc/graphql/token"
 )
 
 var gqlcTypes = []*ast.TypeDecl{
 	{
+		Tok: token.Token_DIRECTIVE,
 		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
 			Name: &ast.Ident{Name: "resolver"},
 			Type: &ast.TypeSpec_Directive{Directive: &ast.DirectiveType{
@@ -30,6 +32,7 @@ var gqlcTypes = []*ast.TypeDecl{
 		}},
 	},
 	{
+		Tok: token.Token_DIRECTIVE,
 		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
 			Name: &ast.Ident{Name: "as"},
 			Type: &ast.TypeSpec_Directive{Directive: &ast.DirectiveType{

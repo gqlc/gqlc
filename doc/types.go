@@ -8,6 +8,7 @@ import (
 
 var docTypes = []*ast.TypeDecl{
 	{
+		Tok: token.Token_DIRECTIVE,
 		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
 			Name: &ast.Ident{Name: "doc"},
 			Type: &ast.TypeSpec_Directive{Directive: &ast.DirectiveType{
@@ -26,6 +27,7 @@ var docTypes = []*ast.TypeDecl{
 		}},
 	},
 	{
+		Tok: token.Token_INPUT,
 		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
 			Name: &ast.Ident{Name: "DocOptions"},
 			Type: &ast.TypeSpec_Input{Input: &ast.InputType{

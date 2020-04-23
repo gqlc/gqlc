@@ -10,6 +10,7 @@ import (
 
 var jsTypes = []*ast.TypeDecl{
 	{
+		Tok: token.Token_DIRECTIVE,
 		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
 			Name: &ast.Ident{Name: "js"},
 			Type: &ast.TypeSpec_Directive{Directive: &ast.DirectiveType{
@@ -28,6 +29,7 @@ var jsTypes = []*ast.TypeDecl{
 		}},
 	},
 	{
+		Tok: token.Token_INPUT,
 		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
 			Name: &ast.Ident{Name: "JsOptions"},
 			Type: &ast.TypeSpec_Input{Input: &ast.InputType{
@@ -73,6 +75,7 @@ var jsTypes = []*ast.TypeDecl{
 		}},
 	},
 	{
+		Tok: token.Token_ENUM,
 		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
 			Name: &ast.Ident{Name: "Module"},
 			Type: &ast.TypeSpec_Enum{Enum: &ast.EnumType{
