@@ -1,12 +1,12 @@
 package golang
 
 import (
-	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/types"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/token"
 )
 
-var types = []*ast.TypeDecl{
+var goTypes = []*ast.TypeDecl{
 	{
 		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
 			Name: &ast.Ident{Name: "go"},
@@ -63,5 +63,5 @@ var types = []*ast.TypeDecl{
 }
 
 func init() {
-	compiler.RegisterTypes(types...)
+	types.Register(goTypes...)
 }

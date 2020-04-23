@@ -3,7 +3,7 @@
 package cmd
 
 import (
-	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/types"
 	"github.com/gqlc/graphql/ast"
 )
 
@@ -52,5 +52,5 @@ var gqlcTypes = []*ast.TypeDecl{
 }
 
 func init() {
-	compiler.RegisterTypes(gqlcTypes...)
+	types.Register(gqlcTypes...)
 }

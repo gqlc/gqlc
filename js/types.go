@@ -3,12 +3,12 @@
 package js
 
 import (
-	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/types"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/token"
 )
 
-var types = []*ast.TypeDecl{
+var jsTypes = []*ast.TypeDecl{
 	{
 		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
 			Name: &ast.Ident{Name: "js"},
@@ -92,5 +92,5 @@ var types = []*ast.TypeDecl{
 }
 
 func init() {
-	compiler.RegisterTypes(types...)
+	types.Register(jsTypes...)
 }
