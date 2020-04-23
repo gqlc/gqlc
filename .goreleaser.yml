@@ -22,7 +22,7 @@ builds:
       - arm
       - arm64
     ldflags:
-      - -X github.com/gqlc/gqlc/cmd.version=v{{.Version}}
+      - -s -w -X github.com/gqlc/gqlc/cmd.version=v{{.Version}}
 archives:
   -
     name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
