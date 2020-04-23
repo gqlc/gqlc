@@ -88,20 +88,7 @@ func NewCLI(opts ...option) (c *CommandLine) {
 func (c *CommandLine) AllowPlugins(prefix string) { *c.pluginPrefix = prefix }
 
 // RegisterGenerator registers a generator with the compiler.
-func (c *CommandLine) RegisterGenerator(g gen.Generator, details ...string) {
-	l := len(details)
-	var name, opt, help string
-	switch {
-	case l == 2:
-		name, help = details[0], details[1]
-	case l > 3:
-		fallthrough
-	case l == 3:
-		name, opt, help = details[0], details[1], details[2]
-	default:
-		panic("invalid generator flag details")
-	}
-
+func (c *CommandLine) RegisterGenerator(g gen.Generator, name, opt, help string) {
 	opts := make(map[string]interface{})
 
 	c.Flags().Var(&genFlag{
