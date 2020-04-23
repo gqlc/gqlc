@@ -3,11 +3,12 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/golang/mock/gomock"
 	"github.com/gqlc/gqlc/gen"
 	"github.com/spf13/cobra"
-	"os"
-	"testing"
 )
 
 func newMockGenerator(t gomock.TestReporter) *gen.MockGenerator {

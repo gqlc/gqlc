@@ -3,15 +3,16 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"testing"
+
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/gqlc/doc"
 	"github.com/gqlc/gqlc/golang"
 	"github.com/gqlc/gqlc/js"
 	"github.com/gqlc/graphql/ast"
 	"github.com/spf13/afero"
-	"io/ioutil"
-	"os"
-	"testing"
 )
 
 type goldenSuite struct {

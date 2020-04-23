@@ -5,6 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/graphql/ast"
@@ -12,11 +18,6 @@ import (
 	"github.com/gqlc/graphql/token"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"io"
-	"log"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 var rootCmd = &cobra.Command{

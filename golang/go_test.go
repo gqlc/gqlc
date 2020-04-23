@@ -5,10 +5,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/gqlc/gqlc/gen"
-	"github.com/gqlc/graphql/ast"
-	"github.com/gqlc/graphql/parser"
-	"github.com/gqlc/graphql/token"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,6 +12,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/gqlc/gqlc/gen"
+	"github.com/gqlc/graphql/ast"
+	"github.com/gqlc/graphql/parser"
+	"github.com/gqlc/graphql/token"
 )
 
 var (

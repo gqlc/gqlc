@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/spf13/pflag"
 	"testing"
+
+	"github.com/spf13/pflag"
 )
 
 func TestFilterFlags(t *testing.T) {

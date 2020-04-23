@@ -2,15 +2,16 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/gqlc/plugin"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/token"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 func chainPreRunEs(preRunEs ...func(*cobra.Command, []string) error) func(*cobra.Command, []string) error {

@@ -6,13 +6,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gqlc/gqlc/gen"
-	"github.com/gqlc/graphql/ast"
 	"io"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/gqlc/gqlc/gen"
+	"github.com/gqlc/graphql/ast"
 )
 
 // Options contains the options for the Go generator.

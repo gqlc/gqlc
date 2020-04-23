@@ -5,9 +5,10 @@ package gen
 
 import (
 	context "context"
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	ast "github.com/gqlc/graphql/ast"
-	reflect "reflect"
 )
 
 // MockGenerator is a mock of Generator interface

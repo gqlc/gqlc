@@ -6,14 +6,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gqlc/gqlc/gen"
-	"github.com/gqlc/graphql/ast"
-	"github.com/gqlc/graphql/token"
 	"io"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/gqlc/gqlc/gen"
+	"github.com/gqlc/graphql/ast"
+	"github.com/gqlc/graphql/token"
 )
 
 const (

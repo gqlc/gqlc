@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"bytes"
+	"testing"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/gqlc/graphql/ast"
-	"testing"
 )
 
 func TestSortTypeDecls(t *testing.T) {

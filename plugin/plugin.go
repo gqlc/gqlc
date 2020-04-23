@@ -5,12 +5,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"os/exec"
+	"sync"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/gqlc/plugin/pb"
 	"github.com/gqlc/graphql/ast"
-	"os/exec"
-	"sync"
 )
 
 // Generator executes an external plugin as a generator.

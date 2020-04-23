@@ -1,15 +1,16 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
 	"github.com/golang/mock/gomock"
 	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/token"
 	"github.com/spf13/afero"
-	"os"
-	"path/filepath"
-	"strings"
-	"testing"
 )
 
 var (

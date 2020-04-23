@@ -3,8 +3,9 @@
 package cmd
 
 import (
-	"github.com/gqlc/graphql/ast"
 	"sort"
+
+	"github.com/gqlc/graphql/ast"
 )
 
 // sortTypeDecls sorts type declarations both lexigraphically and by type.

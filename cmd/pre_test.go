@@ -1,10 +1,11 @@
 package cmd
 
 import (
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 	"os"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
 )
 
 func TestParseFlags(t *testing.T) {

@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/gqlc/gqlc/gen"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"text/scanner"
+
+	"github.com/gqlc/gqlc/gen"
 )
 
 // genFlag represents a Generator flag: *_out

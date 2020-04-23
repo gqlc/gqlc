@@ -7,13 +7,14 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"io"
+	"path/filepath"
+	"sync"
+
 	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/gqlc/types"
 	"github.com/gqlc/graphql/ast"
 	"gitlab.com/zaba505/markdown"
-	"io"
-	"path/filepath"
-	"sync"
 )
 
 // Options contains the options for the Documentation generator.

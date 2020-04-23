@@ -3,11 +3,12 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/gqlc/gqlc/cmd"
 	"github.com/gqlc/gqlc/doc"
 	"github.com/gqlc/gqlc/golang"
 	"github.com/gqlc/gqlc/js"
-	"os"
 )
 
 func main() {

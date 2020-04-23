@@ -4,18 +4,19 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	"github.com/gqlc/gqlc/gen"
-	"github.com/gqlc/gqlc/plugin/pb"
-	"github.com/gqlc/graphql/ast"
-	"github.com/gqlc/graphql/parser"
-	"github.com/gqlc/graphql/token"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/gqlc/gqlc/gen"
+	"github.com/gqlc/gqlc/plugin/pb"
+	"github.com/gqlc/graphql/ast"
+	"github.com/gqlc/graphql/parser"
+	"github.com/gqlc/graphql/token"
 )
 
 func helperCommand(t *testing.T, s ...string) (cmd *exec.Cmd) {

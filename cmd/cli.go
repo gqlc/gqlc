@@ -3,11 +3,12 @@ package cmd
 
 import (
 	"fmt"
+	"runtime/debug"
+	"text/scanner"
+
 	"github.com/gqlc/gqlc/gen"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"runtime/debug"
-	"text/scanner"
 )
 
 type option func(*CommandLine)

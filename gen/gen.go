@@ -6,8 +6,9 @@ package gen
 import (
 	"context"
 	"fmt"
-	"github.com/gqlc/graphql/ast"
 	"io"
+
+	"github.com/gqlc/graphql/ast"
 )
 
 // Generator provides a simple API for creating a code generator for
