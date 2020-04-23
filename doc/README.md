@@ -1,8 +1,3 @@
-[![GoDoc](https://godoc.org/github.com/gqlc/doc?status.svg)](https://godoc.org/github.com/gqlc/doc)
-[![Go Report Card](https://goreportcard.com/badge/github.com/gqlc/doc)](https://goreportcard.com/report/github.com/gqlc/doc)
-[![Build Status](https://travis-ci.org/gqlc/doc.svg?branch=master)](https://travis-ci.org/gqlc/doc)
-[![codecov](https://codecov.io/gh/gqlc/doc/branch/master/graph/badge.svg)](https://codecov.io/gh/gqlc/doc)
-
 # Documentation Generator
 
 The documentation generator handles generating [CommonMark](https://commonmark.org) documentation for
