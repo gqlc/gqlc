@@ -14,7 +14,7 @@ var version = "dev"
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Display the version of gqlc",
+	Short: "Print the version",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("gqlc %s\n", version)
 	},
