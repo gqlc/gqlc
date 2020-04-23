@@ -8,7 +8,11 @@ import (
 )
 
 const usageTmpl = `Usage:
-	gqlc flags files{{$flags := filter .LocalFlags "_opt" false}}{{$inflags := filter $flags "_out" true}}{{if gt (len $inflags.FlagUsages) 0}}
+  gqlc [flags] files
+  gqlc [command]{{if .HasAvailableSubCommands}}
+
+Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{$flags := filter .LocalFlags "_opt" false}}{{$inflags := filter $flags "_out" true}}{{if gt (len $inflags.FlagUsages) 0}}
 
 Generator Flags:
 {{$inflags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{$exflags := filter $flags "_out" false}}{{if gt (len $exflags.FlagUsages) 0}}
