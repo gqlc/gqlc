@@ -35,6 +35,8 @@ key=value pairs above.`,
 	Example:            "gqlc -I . --doc_out ./docs --go_out ./goservice --js_out ./jsservice api.gql",
 	DisableFlagParsing: true,
 	Args:               cobra.MinimumNArgs(1),
+	SilenceUsage:       true,
+	SilenceErrors:      true,
 }
 
 func init() {
