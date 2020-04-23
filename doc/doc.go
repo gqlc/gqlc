@@ -6,7 +6,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/gqlc/gqlc/gen"
+	"github.com/gqlc/gqlc/types"
 	"github.com/gqlc/graphql/ast"
 	"gitlab.com/zaba505/markdown"
 	"io"
@@ -325,10 +327,11 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 			g.writeTypeHeader(name)
 		}
 
-		if len(ts.Directives) > 0 {
+		dirs := filterDirectives(ts.Directives)
+		if len(dirs) > 0 {
 			g.Write(g.indent)
 			g.WriteString("*Directives*: ")
-			g.writeDirectives(ts.Directives)
+			g.writeDirectives(dirs)
 			g.WriteByte('\n')
 		}
 
@@ -340,6 +343,23 @@ func (g *Generator) generateTypes(types []*ast.TypeDecl, opts *Options) {
 			g.WriteByte('\n')
 		}
 	}
+}
+
+func filterDirectives(dirs []*ast.DirectiveLit) (fdirs []*ast.DirectiveLit) {
+	if len(dirs) == 0 {
+		return
+	}
+	fdirs = make([]*ast.DirectiveLit, 0, len(dirs))
+
+	for _, d := range dirs {
+		if types.IsGqlcDirective(d.Name) {
+			continue
+		}
+
+		fdirs = append(fdirs, d)
+	}
+
+	return
 }
 
 var (
@@ -609,11 +629,12 @@ func (g *Generator) generateFields(fields []*ast.Field, b *bytes.Buffer) {
 
 		g.In()
 
-		if len(f.Directives) > 0 {
+		dirs := filterDirectives(f.Directives)
+		if len(dirs) > 0 {
 			g.WriteByte('\n')
 			g.Write(g.indent)
 			g.WriteString("*Directives*: ")
-			g.writeDirectives(f.Directives)
+			g.writeDirectives(dirs)
 		}
 
 		// Write descr
@@ -669,11 +690,12 @@ func (g *Generator) generateArgs(args []*ast.InputValue, b *bytes.Buffer) {
 
 		g.In()
 
-		if len(f.Directives) > 0 {
+		dirs := filterDirectives(f.Directives)
+		if len(dirs) > 0 {
 			g.WriteByte('\n')
 			g.Write(g.indent)
 			g.WriteString("*Directives*: ")
-			g.writeDirectives(f.Directives)
+			g.writeDirectives(dirs)
 		}
 
 		// Write descr

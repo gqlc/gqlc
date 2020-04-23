@@ -1,13 +1,14 @@
 package doc
 
 import (
-	"github.com/gqlc/compiler"
+	"github.com/gqlc/gqlc/types"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/token"
 )
 
-var types = []*ast.TypeDecl{
+var docTypes = []*ast.TypeDecl{
 	{
+		Tok: token.Token_DIRECTIVE,
 		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
 			Name: &ast.Ident{Name: "doc"},
 			Type: &ast.TypeSpec_Directive{Directive: &ast.DirectiveType{
@@ -26,6 +27,7 @@ var types = []*ast.TypeDecl{
 		}},
 	},
 	{
+		Tok: token.Token_INPUT,
 		Spec: &ast.TypeDecl_TypeSpec{TypeSpec: &ast.TypeSpec{
 			Name: &ast.Ident{Name: "DocOptions"},
 			Type: &ast.TypeSpec_Input{Input: &ast.InputType{
@@ -63,5 +65,5 @@ var types = []*ast.TypeDecl{
 }
 
 func init() {
-	compiler.RegisterTypes(types...)
+	types.Register(docTypes...)
 }
