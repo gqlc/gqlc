@@ -914,7 +914,7 @@ func (g *Generator) printVal(val interface{}) {
 	switch v := val.(type) {
 	case *ast.BasicLit:
 		s := v.Value
-		if v.Kind == token.Token_STRING {
+		if v.Kind == token.Token_STRING || v.Kind == token.Token_IDENT {
 			s = strings.Trim(s, "\"")
 			g.WriteByte('\'')
 			g.WriteString(s)

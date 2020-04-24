@@ -259,9 +259,24 @@ func TestObject(t *testing.T) {
 							Name: &ast.Ident{Name: "withDefaultVal"},
 							Type: &ast.Field_Ident{Ident: &ast.Ident{Name: "String"}},
 							Args: &ast.InputValueList{List: []*ast.InputValue{{
-								Name:    &ast.Ident{Name: "str"},
-								Type:    &ast.InputValue_Ident{Ident: &ast.Ident{Name: "String"}},
-								Default: &ast.InputValue_BasicLit{BasicLit: &ast.BasicLit{Value: `"hello"`}},
+								Name: &ast.Ident{Name: "str"},
+								Type: &ast.InputValue_Ident{Ident: &ast.Ident{Name: "String"}},
+								Default: &ast.InputValue_BasicLit{BasicLit: &ast.BasicLit{
+									Kind:  token.Token_STRING,
+									Value: `"hello"`,
+								}},
+							}}},
+						},
+						{
+							Name: &ast.Ident{Name: "withEnumDefaultVal"},
+							Type: &ast.Field_Ident{Ident: &ast.Ident{Name: "String"}},
+							Args: &ast.InputValueList{List: []*ast.InputValue{{
+								Name: &ast.Ident{Name: "val"},
+								Type: &ast.InputValue_Ident{Ident: &ast.Ident{Name: "TestEnum"}},
+								Default: &ast.InputValue_BasicLit{BasicLit: &ast.BasicLit{
+									Kind:  token.Token_IDENT,
+									Value: `A_ENUM_VALUE`,
+								}},
 							}}},
 						},
 					},
@@ -291,7 +306,17 @@ func TestObject(t *testing.T) {
       args: {
         str: {
           type: GraphQLString,
-          defaultValue: "hello"
+          defaultValue: 'hello'
+        }
+      },
+      resolve() { /* TODO */ }
+    },
+    withEnumDefaultVal: {
+      type: GraphQLString,
+      args: {
+        val: {
+          type: TestEnum,
+          defaultValue: 'A_ENUM_VALUE'
         }
       },
       resolve() { /* TODO */ }

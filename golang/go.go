@@ -13,6 +13,7 @@ import (
 
 	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/graphql/ast"
+	"github.com/gqlc/graphql/token"
 )
 
 // Options contains the options for the Go generator.
@@ -647,7 +648,14 @@ func (g *Generator) printType(typ interface{}) {
 func (g *Generator) printVal(val interface{}) {
 	switch v := val.(type) {
 	case *ast.BasicLit:
+		isEnum := v.Kind == token.Token_IDENT
+		if isEnum {
+			g.WriteRune('"')
+		}
 		g.WriteString(v.Value)
+		if isEnum {
+			g.WriteRune('"')
+		}
 	case *ast.ListLit:
 		g.WriteString("[]interface{}{")
 
