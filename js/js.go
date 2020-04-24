@@ -4,7 +4,6 @@ package js
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -43,13 +42,13 @@ const (
 // Options contains the options for the JavaScript generator.
 type Options struct {
 	// Either "COMMONJS" of "ES6"
-	Module string `json:"module"`
+	Module string
 
 	// Add @flow comment
-	UseFlow bool `json:"useFlow"`
+	UseFlow bool
 
 	// Copy descriptions to Javascript
-	Descriptions bool `json:"descriptions"`
+	Descriptions bool
 
 	imports [][]byte
 	declStr []byte
@@ -139,7 +138,7 @@ func (g *Generator) Reset() {
 }
 
 // Generate generates Javascript code for the given document.
-func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string) (err error) {
+func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[string]interface{}) (err error) {
 	g.Lock()
 	defer func() {
 		if err != nil {
@@ -1013,7 +1012,7 @@ func (g *Generator) Out() {
 // getOptions returns a generator options struct given all generator option metadata from the Doc and CLI.
 // Precedence: CLI over Doc over Default
 //
-func getOptions(doc *ast.Document, opts string) (gOpts *Options, err error) {
+func getOptions(doc *ast.Document, opts map[string]interface{}) (gOpts *Options, err error) {
 	gOpts = &Options{
 		Module:  "COMMONJS",
 		declStr: commonJSDecl,
@@ -1052,11 +1051,17 @@ func getOptions(doc *ast.Document, opts string) (gOpts *Options, err error) {
 	}
 
 	// Unmarshal cli options
-	if len(opts) > 0 {
-		err = json.Unmarshal([]byte(opts), gOpts)
-		if err != nil {
-			return
-		}
+	if opts == nil {
+		return
+	}
+	if m, ok := opts["module"]; ok {
+		gOpts.Module, _ = m.(string)
+	}
+	if d, ok := opts["descriptions"]; ok {
+		gOpts.Descriptions, _ = d.(bool)
+	}
+	if u, ok := opts["useFlow"]; ok {
+		gOpts.UseFlow, _ = u.(bool)
 	}
 
 	if gOpts.Module == "ES6" {
