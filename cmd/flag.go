@@ -13,52 +13,44 @@ import (
 
 // genFlag represents a Generator flag: *_out
 type genFlag struct {
-	gen.Generator
-	outDir *string
-	opts   map[string]interface{}
-
-	geners *[]*genFlag
-	fp     *fparser
-}
-
-func (*genFlag) String() string { return "" }
-
-func (*genFlag) Type() string { return "string" }
-
-func (f *genFlag) Set(arg string) (err error) {
-	*f.geners = append(*f.geners, f)
-	f.fp.Init(strings.NewReader(arg))
-
-	err = f.fp.parse(parseArg, f.outDir, f.opts)
-	if err != nil {
-		return err
-	}
-
-	if filepath.IsAbs(*f.outDir) {
-		return
-	}
-
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	*f.outDir = filepath.Join(wd, *f.outDir)
-	return
-}
-
-// genOptFlag represents a Generator option flag: *_opt
-type genOptFlag struct {
+	g    gen.Generator
 	opts map[string]interface{}
-	fp   *fparser
+
+	geners *[]generator
+	fp     *fparser
+
+	isOpt bool
 }
 
-func (*genOptFlag) String() string { return "" }
+func (genFlag) String() string { return "" }
 
-func (*genOptFlag) Type() string { return "string" }
+func (genFlag) Type() string { return "string" }
 
-func (f *genOptFlag) Set(arg string) error {
+func (f genFlag) Set(arg string) (err error) {
+	if f.isOpt {
+		f.fp.Init(strings.NewReader(arg))
+		return f.fp.parse(parseArg, nil, f.opts)
+	}
+	outDir := new(string)
+
 	f.fp.Init(strings.NewReader(arg))
-	return f.fp.parse(parseArg, nil, f.opts)
+
+	err = f.fp.parse(parseArg, outDir, f.opts)
+	if err != nil {
+		return err
+	}
+
+	if !filepath.IsAbs(*outDir) {
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		*outDir = filepath.Join(wd, *outDir)
+	}
+
+	*f.geners = append(*f.geners, generator{Generator: f.g, opts: f.opts, outDir: *outDir})
+	return
 }
 
 type stateFn func(*fparser, *string, map[string]interface{}) stateFn
