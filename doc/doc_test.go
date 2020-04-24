@@ -93,7 +93,7 @@ func TestUpdate(t *testing.T) {
 
 		g := new(Generator)
 		ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: f})
-		err = g.Generate(ctx, testDoc, "")
+		err = g.Generate(ctx, testDoc, nil)
 		if err != nil {
 			t.Error(err)
 			return
@@ -111,7 +111,7 @@ func TestUpdate(t *testing.T) {
 
 		g := new(Generator)
 		ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: f})
-		err = g.Generate(ctx, testDoc, `{"html": true}`)
+		err = g.Generate(ctx, testDoc, map[string]interface{}{"html": true})
 		if err != nil {
 			t.Error(err)
 			return
@@ -501,7 +501,7 @@ func TestGenerator_Generate(t *testing.T) {
 		var b bytes.Buffer
 		g := new(Generator)
 		ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
-		err := g.Generate(ctx, testDoc, "")
+		err := g.Generate(ctx, testDoc, nil)
 		if err != nil {
 			subT.Error(err)
 			return
@@ -521,7 +521,7 @@ func TestGenerator_Generate(t *testing.T) {
 		var b bytes.Buffer
 		g := new(Generator)
 		ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
-		err := g.Generate(ctx, testDoc, `{"html": true}`)
+		err := g.Generate(ctx, testDoc, map[string]interface{}{"html": true})
 		if err != nil {
 			subT.Error(err)
 			return
@@ -546,7 +546,7 @@ func BenchmarkGenerator_Generate(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		buf.Reset()
 
-		err := g.Generate(ctx, testDoc, "")
+		err := g.Generate(ctx, testDoc, nil)
 		if err != nil {
 			b.Error(err)
 			return
@@ -573,7 +573,7 @@ type Query {
 
 	var b bytes.Buffer
 	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b}) // Pass in an actual
-	err = g.Generate(ctx, doc, `{"title": "Example Documentation"}`)
+	err = g.Generate(ctx, doc, map[string]interface{}{"title": "Example Documentation"})
 	if err != nil {
 		return // Handle err
 	}
