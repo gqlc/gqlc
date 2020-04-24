@@ -206,12 +206,11 @@ func TestRoot(t *testing.T) {
 			g := newMockGenerator(subT)
 			testCase.expect(g)
 
-			geners := []*genFlag{{
+			geners := []generator{{
 				Generator: g,
-				outDir:    new(string),
 			}}
 
-			err := root(testFs, &geners, testCase.IPaths, testCase.Args...)
+			err := root(testFs, geners, testCase.IPaths, testCase.Args...)
 			if err != nil {
 				subT.Error(err)
 				return

@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/gqlc/compiler"
-	"github.com/gqlc/gqlc/plugin"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/token"
 	"github.com/spf13/afero"
@@ -20,46 +18,6 @@ func chainPreRunEs(preRunEs ...func(*cobra.Command, []string) error) func(*cobra
 			err = preRunEs[i](cmd, args)
 		}
 		return
-	}
-}
-
-// parseFlags parses the flags given and handles plugin flags
-func parseFlags(prefix *string, geners *[]*genFlag, fp *fparser) func(*cobra.Command, []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		// Parse flags and handle plugin flags
-		var name string
-		for _, a := range args {
-			// Filter for output flags
-			switch strings.Contains(a, "_out") {
-			case false:
-				continue
-			case strings.Contains(a, ":"):
-				ss := strings.Split(a, ":")
-				name = ss[0][:strings.IndexRune(ss[0], '=')]
-			default:
-				name = a
-			}
-
-			// Trim "--" prefix
-			name = name[2:]
-			if f := cmd.Flags().Lookup(name); f != nil {
-				continue
-			}
-
-			opts := make(map[string]interface{})
-			cmd.Flags().Var(&genFlag{
-				Generator: &plugin.Generator{Name: strings.TrimSuffix(name, "_out"), Prefix: *prefix},
-				outDir:    new(string),
-				opts:      opts,
-				geners:    geners,
-				fp:        fp,
-			}, name, "")
-
-			optName := strings.Replace(name, "_out", "_opt", 1)
-			cmd.Flags().Var(&genOptFlag{opts: opts, fp: fp}, optName, "")
-		}
-
-		return cmd.Flags().Parse(args)
 	}
 }
 
@@ -127,10 +85,10 @@ func validatePluginTypes(fs afero.Fs) func(*cobra.Command, []string) error {
 }
 
 // initGenDirs initializes each directory each generator will be outputting to.
-func initGenDirs(fs afero.Fs, genOpts []*genFlag) func(*cobra.Command, []string) error {
+func initGenDirs(fs afero.Fs, dirs *[]string) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) (err error) {
-		for _, genOpt := range genOpts {
-			err = fs.MkdirAll(*genOpt.outDir, os.ModeDir)
+		for _, dir := range *dirs {
+			err = fs.MkdirAll(dir, os.ModeDir)
 			if err != nil {
 				break
 			}

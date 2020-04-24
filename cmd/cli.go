@@ -34,7 +34,8 @@ type CommandLine struct {
 	*cobra.Command
 
 	pluginPrefix *string
-	geners       []*genFlag
+	geners       []generator
+	outDirs      []string
 	fp           *fparser
 	fs           afero.Fs
 }
@@ -59,12 +60,12 @@ func NewCLI(opts ...option) (c *CommandLine) {
 	if c.Command != nil {
 		return
 	}
+
 	c.Command = rootCmd
 	c.PreRunE = chainPreRunEs(
-		parseFlags(c.pluginPrefix, &c.geners, c.fp),
 		validateArgs,
 		validatePluginTypes(c.fs),
-		initGenDirs(c.fs, c.geners),
+		initGenDirs(c.fs, &c.outDirs),
 	)
 	c.RunE = func(cmd *cobra.Command, args []string) error {
 		if len(cmd.Flags().Args()) == 0 || cmd.Flags().Lookup("help").Changed {
@@ -76,7 +77,7 @@ func NewCLI(opts ...option) (c *CommandLine) {
 			return err
 		}
 
-		return root(c.fs, &c.geners, importPaths, cmd.Flags().Args()...)
+		return root(c.fs, c.geners, importPaths, cmd.Flags().Args()...)
 	}
 
 	return
@@ -88,32 +89,21 @@ func NewCLI(opts ...option) (c *CommandLine) {
 func (c *CommandLine) AllowPlugins(prefix string) { *c.pluginPrefix = prefix }
 
 // RegisterGenerator registers a generator with the compiler.
-func (c *CommandLine) RegisterGenerator(g gen.Generator, details ...string) {
-	l := len(details)
-	var name, opt, help string
-	switch {
-	case l == 2:
-		name, help = details[0], details[1]
-	case l > 3:
-		fallthrough
-	case l == 3:
-		name, opt, help = details[0], details[1], details[2]
-	default:
-		panic("invalid generator flag details")
-	}
-
+func (c *CommandLine) RegisterGenerator(g gen.Generator, name, opt, help string) {
 	opts := make(map[string]interface{})
 
-	c.Flags().Var(&genFlag{
-		Generator: g,
-		outDir:    new(string),
-		opts:      opts,
-		geners:    &c.geners,
-		fp:        c.fp,
-	}, name, help)
+	f := genFlag{
+		g:      g,
+		opts:   opts,
+		geners: &c.geners,
+		fp:     c.fp,
+	}
+
+	c.Flags().Var(f, name, help)
 
 	if opt != "" {
-		c.Flags().Var(&genOptFlag{opts: opts, fp: c.fp}, opt, "Pass additional options to generator.")
+		f.isOpt = true
+		c.Flags().Var(f, opt, "Pass additional options to generator.")
 	}
 }
 

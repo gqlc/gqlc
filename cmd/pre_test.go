@@ -11,7 +11,7 @@ import (
 func TestParseFlags(t *testing.T) {
 	testCli := NewCLI()
 	testGen := newMockGenerator(t)
-	testCli.RegisterGenerator(testGen, "a_out", "A test generator.")
+	testCli.RegisterGenerator(testGen, "a_out", "", "A test generator.")
 	testCli.RegisterGenerator(testGen, "b_out", "b_opt", "A second test generator")
 
 	testCases := []struct {
@@ -97,12 +97,9 @@ var (
 
 func TestInitGenDirs(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	gens := []*genFlag{
-		{outDir: &aDir},
-		{outDir: &bDir},
-	}
+	gens := []string{aDir, bDir}
 
-	err := initGenDirs(fs, gens)(nil, nil)
+	err := initGenDirs(fs, &gens)(nil, nil)
 	if err != nil {
 		t.Error(err)
 		return
