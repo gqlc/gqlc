@@ -64,10 +64,11 @@ func TestGenOptFlag(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(subT *testing.T) {
-			f := &genFlag{
-				opts:   make(map[string]interface{}),
-				geners: new([]generator),
-				fp:     &fparser{Scanner: new(scanner.Scanner)},
+			f := genFlag{
+				opts:    make(map[string]interface{}),
+				geners:  new([]generator),
+				outDirs: new([]string),
+				fp:      &fparser{Scanner: new(scanner.Scanner)},
 			}
 
 			err := f.Set(testCase.Arg)
@@ -134,10 +135,11 @@ func TestGenOutFlag(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(subT *testing.T) {
-			f := &genFlag{
-				opts:   make(map[string]interface{}),
-				geners: new([]generator),
-				fp:     &fparser{Scanner: new(scanner.Scanner)},
+			f := genFlag{
+				opts:    make(map[string]interface{}),
+				geners:  new([]generator),
+				outDirs: new([]string),
+				fp:      &fparser{Scanner: new(scanner.Scanner)},
 			}
 
 			err := f.Set(testCase.Arg)
