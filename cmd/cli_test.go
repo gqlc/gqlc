@@ -75,9 +75,16 @@ func TestCli_RegisterGenerator(t *testing.T) {
 				return
 			}
 
-			f := testCli.Flags().Lookup(name).Value.(*genFlag)
-			if testCase.OutDir != *f.outDir {
-				subT.Logf("mismatched output dirs: %s:%s", *f.outDir, testCase.OutDir)
+			f := testCli.Flags().Lookup(name).Value.(genFlag)
+			matched := false
+			for _, g := range *f.geners {
+				if testCase.OutDir == g.outDir {
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				subT.Logf("unmatched output dir for: %s", testCase.OutDir)
 				subT.Fail()
 				return
 			}

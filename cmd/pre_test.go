@@ -97,12 +97,9 @@ var (
 
 func TestInitGenDirs(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	gens := []*genFlag{
-		{outDir: &aDir},
-		{outDir: &bDir},
-	}
+	gens := []string{aDir, bDir}
 
-	err := initGenDirs(fs, gens)(nil, nil)
+	err := initGenDirs(fs, &gens)(nil, nil)
 	if err != nil {
 		t.Error(err)
 		return

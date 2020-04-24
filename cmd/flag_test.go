@@ -66,8 +66,7 @@ func TestGenOptFlag(t *testing.T) {
 		t.Run(testCase.Name, func(subT *testing.T) {
 			f := &genFlag{
 				opts:   make(map[string]interface{}),
-				outDir: new(string),
-				geners: new([]*genFlag),
+				geners: new([]generator),
 				fp:     &fparser{Scanner: new(scanner.Scanner)},
 			}
 
@@ -137,8 +136,7 @@ func TestGenOutFlag(t *testing.T) {
 		t.Run(testCase.Name, func(subT *testing.T) {
 			f := &genFlag{
 				opts:   make(map[string]interface{}),
-				outDir: new(string),
-				geners: new([]*genFlag),
+				geners: new([]generator),
 				fp:     &fparser{Scanner: new(scanner.Scanner)},
 			}
 
@@ -159,8 +157,9 @@ func TestGenOutFlag(t *testing.T) {
 				return
 			}
 
-			if testCase.OutDir != *f.outDir {
-				subT.Logf("mismatched outdirs: %s:%s", testCase.OutDir, *f.outDir)
+			ex := (*f.geners)[0].outDir
+			if testCase.OutDir != ex {
+				subT.Logf("mismatched outdirs: %s:%s", testCase.OutDir, ex)
 				subT.Fail()
 				return
 			}
