@@ -83,7 +83,7 @@ func TestUpdate(t *testing.T) {
 
 	g := new(Generator)
 	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: f})
-	err = g.Generate(ctx, testDoc, `{"descriptions": true}`)
+	err = g.Generate(ctx, testDoc, map[string]interface{}{"descriptions": true})
 	if err != nil {
 		t.Error(err)
 		return
@@ -698,7 +698,7 @@ func TestGenerator_Generate(t *testing.T) {
 
 	var b bytes.Buffer
 	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
-	err := g.Generate(ctx, testDoc, `{"descriptions": true}`)
+	err := g.Generate(ctx, testDoc, map[string]interface{}{"descriptions": true})
 	if err != nil {
 		t.Error(err)
 		return
@@ -722,7 +722,7 @@ func BenchmarkGenerator_Generate(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		buf.Reset()
 
-		err := g.Generate(ctx, testDoc, "")
+		err := g.Generate(ctx, testDoc, nil)
 		if err != nil {
 			b.Error(err)
 			return
@@ -750,7 +750,7 @@ type Query {
 
 	var b bytes.Buffer
 	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b}) // Pass in an actual
-	err = g.Generate(ctx, doc, `{"module": "COMMONJS", "useFlow": true}`)
+	err = g.Generate(ctx, doc, map[string]interface{}{"module": "COMMONJS", "useFlow": true})
 	if err != nil {
 		log.Fatal(err)
 		return

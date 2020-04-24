@@ -57,7 +57,7 @@ func TestGenerator_Generate(t *testing.T) {
 		Cmd:  cmd,
 	}
 	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
-	err := g.Generate(ctx, testDoc, `{hello: "world!"}`)
+	err := g.Generate(ctx, testDoc, map[string]interface{}{"hello": "world!"})
 	if err != nil {
 		t.Error(err)
 		return
@@ -72,13 +72,13 @@ func TestGenerator_Generate(t *testing.T) {
 func TestUnknownPlugin(t *testing.T) {
 	g := &Generator{Name: "nonexistent", Prefix: "gqlc-gen-"}
 
-	err1 := g.Generate(nil, &ast.Document{Name: "Test"}, "")
+	err1 := g.Generate(nil, &ast.Document{Name: "Test"}, nil)
 	if err1 == nil {
 		t.Fail()
 		return
 	}
 
-	err2 := g.Generate(nil, &ast.Document{Name: "Test"}, "")
+	err2 := g.Generate(nil, &ast.Document{Name: "Test"}, nil)
 	if err2 == nil {
 		t.Fail()
 		return
@@ -101,7 +101,7 @@ func TestMalformedResponse(t *testing.T) {
 		Cmd:  cmd,
 	}
 	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
-	err := g.Generate(ctx, testDoc, "")
+	err := g.Generate(ctx, testDoc, nil)
 	if err == nil {
 		t.Error(err)
 		return
@@ -129,7 +129,7 @@ func TestResponseError(t *testing.T) {
 		Cmd:  cmd,
 	}
 	ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
-	err := g.Generate(ctx, testDoc, "")
+	err := g.Generate(ctx, testDoc, nil)
 	if err == nil {
 		t.Error(err)
 		return
@@ -176,7 +176,7 @@ func TestContextErrors(t *testing.T) {
 			Cmd:  cmd,
 		}
 		ctx := gen.WithContext(context.Background(), &testCtx{opener: func(string) (io.WriteCloser, error) { return nil, fmt.Errorf("test error") }})
-		err := g.Generate(ctx, testDoc, `{hello: "world!"}`)
+		err := g.Generate(ctx, testDoc, map[string]interface{}{"hello": "world!"})
 		if err == nil {
 			subT.Errorf("expected error")
 			return
@@ -198,7 +198,7 @@ func TestContextErrors(t *testing.T) {
 			Cmd:  cmd,
 		}
 		ctx := gen.WithContext(context.Background(), &testCtx{w: &testErrWriter{err: io.EOF}})
-		err := g.Generate(ctx, testDoc, `{hello: "world!"}`)
+		err := g.Generate(ctx, testDoc, map[string]interface{}{"hello": "world!"})
 		if err == nil {
 			subT.Errorf("expected error")
 			return

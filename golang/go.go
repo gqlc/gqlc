@@ -4,7 +4,6 @@ package golang
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -19,10 +18,10 @@ import (
 // Options contains the options for the Go generator.
 type Options struct {
 	// Package is the go package this will belong to. (default: main)
-	Package string `json:"package"`
+	Package string
 
 	// Copy descriptions to Go
-	Descriptions bool `json:"descriptions"`
+	Descriptions bool
 }
 
 // Generator generates Go code for a GraphQL schema.
@@ -45,7 +44,7 @@ func (g *Generator) Reset() {
 var typeSuffix = []byte("Type")
 
 // Generate generates Go code for the given document.
-func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string) (err error) {
+func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[string]interface{}) (err error) {
 	g.Lock()
 	defer func() {
 		if err != nil {
@@ -743,7 +742,7 @@ func (g *Generator) Out() {
 // getOptions returns a generator options struct given all generator option metadata from the Doc and CLI.
 // Precedence: CLI over Doc over Default
 //
-func getOptions(doc *ast.Document, opts string) (gOpts *Options, err error) {
+func getOptions(doc *ast.Document, opts map[string]interface{}) (gOpts *Options, err error) {
 	gOpts = &Options{
 		Package: "main",
 	}
@@ -775,11 +774,14 @@ func getOptions(doc *ast.Document, opts string) (gOpts *Options, err error) {
 	}
 
 	// Unmarshal cli options
-	if len(opts) > 0 {
-		err = json.Unmarshal([]byte(opts), gOpts)
-		if err != nil {
-			return
-		}
+	if opts == nil {
+		return
+	}
+	if p, ok := opts["package"]; ok {
+		gOpts.Package, _ = p.(string)
+	}
+	if d, ok := opts["descriptions"]; ok {
+		gOpts.Descriptions, _ = d.(bool)
 	}
 
 	// Trim '"' from beginning and end of title string

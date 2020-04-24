@@ -16,7 +16,7 @@ import (
 //
 type Generator interface {
 	// Generate handles converting a GraphQL Document to scaffolded source code.
-	Generate(ctx context.Context, doc *ast.Document, opts string) error
+	Generate(ctx context.Context, doc *ast.Document, opts map[string]interface{}) error
 }
 
 // GeneratorContext represents the directory to which

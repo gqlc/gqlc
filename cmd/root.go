@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -129,20 +127,11 @@ func root(fs afero.Fs, geners []generator, iPaths []string, args ...string) (err
 	// Run code generators
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	var b bytes.Buffer
-	enc := json.NewEncoder(&b)
 	for _, g := range geners {
-		b.Reset()
-
-		err = enc.Encode(g.opts)
-		if err != nil {
-			return
-		}
-
 		ctx = gen.WithContext(ctx, &genCtx{dir: g.outDir, fs: fs})
 
 		for _, doc := range docs {
-			err = g.Generate(ctx, doc, b.String())
+			err = g.Generate(ctx, doc, g.opts)
 			if err != nil {
 				return
 			}

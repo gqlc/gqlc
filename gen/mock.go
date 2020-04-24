@@ -5,10 +5,9 @@ package gen
 
 import (
 	context "context"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	ast "github.com/gqlc/graphql/ast"
+	reflect "reflect"
 )
 
 // MockGenerator is a mock of Generator interface
@@ -35,7 +34,7 @@ func (m *MockGenerator) EXPECT() *MockGeneratorMockRecorder {
 }
 
 // Generate mocks base method
-func (m *MockGenerator) Generate(arg0 context.Context, arg1 *ast.Document, arg2 string) error {
+func (m *MockGenerator) Generate(arg0 context.Context, arg1 *ast.Document, arg2 map[string]interface{}) error {
 	ret := m.ctrl.Call(m, "Generate", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0

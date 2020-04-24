@@ -4,7 +4,6 @@ package doc
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"io"
@@ -19,8 +18,8 @@ import (
 
 // Options contains the options for the Documentation generator.
 type Options struct {
-	Title string `json:"title"`
-	HTML  bool   `json:"html"`
+	Title string
+	HTML  bool
 
 	toc *[]string
 }
@@ -99,7 +98,7 @@ func (g *Generator) Reset() {
 }
 
 // Generate generates CommonMark documentation for the given document.
-func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string) (err error) {
+func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[string]interface{}) (err error) {
 	g.Lock()
 	defer func() {
 		if err != nil {
@@ -870,7 +869,7 @@ func (g *Generator) Out() {
 // getOptions returns a generator options struct given all generator option metadata from the Doc and CLI.
 // Precedence: CLI over Doc over Default
 //
-func getOptions(doc *ast.Document, opts string) (gOpts *Options, err error) {
+func getOptions(doc *ast.Document, opts map[string]interface{}) (gOpts *Options, err error) {
 	toc := make([]string, 0, len(doc.Types)+9)
 	gOpts = &Options{
 		Title: `Documentation`,
@@ -901,17 +900,20 @@ func getOptions(doc *ast.Document, opts string) (gOpts *Options, err error) {
 		}
 	}
 
-	// Unmarshal cli options
-	if len(opts) > 0 {
-		err = json.Unmarshal([]byte(opts), gOpts)
-		if err != nil {
-			return
-		}
-	}
-
 	// Trim '"' from beginning and end of title string
 	if gOpts.Title[0] == '"' {
 		gOpts.Title = gOpts.Title[1 : len(gOpts.Title)-1]
+	}
+
+	// Unmarshal cli options
+	if opts == nil {
+		return
+	}
+	if t, ok := opts["title"]; ok {
+		gOpts.Title, _ = t.(string)
+	}
+	if h, ok := opts["html"]; ok {
+		gOpts.HTML, _ = h.(bool)
 	}
 	return
 }
