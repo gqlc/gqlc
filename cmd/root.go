@@ -33,11 +33,10 @@ type of flag can be either:
 An additional flag, *_opt, can be used to pass options to a generator. The
 argument given to this type of flag is the same format as the *_opt
 key=value pairs above.`,
-	Example:            "gqlc -I . --doc_out ./docs --go_out ./goservice --js_out ./jsservice api.gql",
-	DisableFlagParsing: true,
-	Args:               cobra.MinimumNArgs(1),
-	SilenceUsage:       true,
-	SilenceErrors:      true,
+	Example:       "gqlc -I . --doc_out ./docs --go_out ./goservice --js_out ./jsservice api.gql",
+	Args:          cobra.MinimumNArgs(1),
+	SilenceUsage:  true,
+	SilenceErrors: true,
 }
 
 func init() {
@@ -63,7 +62,14 @@ func (ctx *genCtx) Open(name string) (io.WriteCloser, error) {
 	return f, f.Truncate(0)
 }
 
-func root(fs afero.Fs, geners *[]*genFlag, iPaths []string, args ...string) (err error) {
+type generator struct {
+	gen.Generator
+
+	opts   map[string]interface{}
+	outDir string
+}
+
+func root(fs afero.Fs, geners []generator, iPaths []string, args ...string) (err error) {
 	// Parse files
 	docMap := make(map[string]*ast.Document, len(args))
 	err = parseInputFiles(fs, token.NewDocSet(), docMap, iPaths, args...)
@@ -118,7 +124,7 @@ func root(fs afero.Fs, geners *[]*genFlag, iPaths []string, args ...string) (err
 	defer cancel()
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
-	for _, g := range *geners {
+	for _, g := range geners {
 		b.Reset()
 
 		err = enc.Encode(g.opts)
@@ -126,7 +132,7 @@ func root(fs afero.Fs, geners *[]*genFlag, iPaths []string, args ...string) (err
 			return
 		}
 
-		ctx = gen.WithContext(ctx, &genCtx{dir: *g.outDir, fs: fs})
+		ctx = gen.WithContext(ctx, &genCtx{dir: g.outDir, fs: fs})
 
 		for _, doc := range docs {
 			err = g.Generate(ctx, doc, b.String())
