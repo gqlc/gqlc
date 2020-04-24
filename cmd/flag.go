@@ -16,8 +16,9 @@ type genFlag struct {
 	g    gen.Generator
 	opts map[string]interface{}
 
-	geners *[]generator
-	fp     *fparser
+	geners  *[]generator
+	outDirs *[]string
+	fp      *fparser
 
 	isOpt bool
 }
@@ -49,6 +50,7 @@ func (f genFlag) Set(arg string) (err error) {
 		*outDir = filepath.Join(wd, *outDir)
 	}
 
+	*f.outDirs = append(*f.outDirs, *outDir)
 	*f.geners = append(*f.geners, generator{Generator: f.g, opts: f.opts, outDir: *outDir})
 	return
 }

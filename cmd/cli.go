@@ -92,10 +92,11 @@ func (c *CommandLine) RegisterGenerator(g gen.Generator, name, opt, help string)
 	opts := make(map[string]interface{})
 
 	f := genFlag{
-		g:      g,
-		opts:   opts,
-		geners: &c.geners,
-		fp:     c.fp,
+		g:       g,
+		opts:    opts,
+		geners:  &c.geners,
+		outDirs: &c.outDirs,
+		fp:      c.fp,
 	}
 
 	c.Flags().Var(f, name, help)
