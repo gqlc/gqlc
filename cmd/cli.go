@@ -63,7 +63,6 @@ func NewCLI(opts ...option) (c *CommandLine) {
 
 	c.Command = rootCmd
 	c.PreRunE = chainPreRunEs(
-		validateArgs,
 		validatePluginTypes(c.fs),
 		initGenDirs(c.fs, &c.outDirs),
 	)

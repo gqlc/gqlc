@@ -21,16 +21,8 @@ func chainPreRunEs(preRunEs ...func(*cobra.Command, []string) error) func(*cobra
 	}
 }
 
-// validateArgs validates the args given to the command
-func validateArgs(cmd *cobra.Command, args []string) error {
-	args = cmd.Flags().Args()
-
-	// Validate args
-	if err := cmd.ValidateArgs(args); err != nil {
-		return err
-	}
-
-	// Validate file names
+// validateFilenames validates that only GraphQL files are provided.
+func validateFilenames(cmd *cobra.Command, args []string) error {
 	for _, fileName := range args {
 		ext := filepath.Ext(fileName)
 		if ext != ".gql" && ext != ".graphql" {

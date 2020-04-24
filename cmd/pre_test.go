@@ -56,9 +56,8 @@ func TestParseFlags(t *testing.T) {
 
 func TestValidateArgs(t *testing.T) {
 	cmd := &cobra.Command{}
-	cmd.Flags().Parse([]string{"test.txt"})
 
-	err := validateArgs(cmd, nil)
+	err := validateFilenames(cmd, []string{"test.txt"})
 	if err == nil {
 		t.Fail()
 		return

@@ -33,8 +33,15 @@ type of flag can be either:
 An additional flag, *_opt, can be used to pass options to a generator. The
 argument given to this type of flag is the same format as the *_opt
 key=value pairs above.`,
-	Example:       "gqlc -I . --doc_out ./docs --go_out ./goservice --js_out ./jsservice api.gql",
-	Args:          cobra.MinimumNArgs(1),
+	Example: "gqlc -I . --doc_out ./docs --go_out ./goservice --js_out ./jsservice api.gql",
+	Args: func(cmd *cobra.Command, args []string) error {
+		err := cobra.MinimumNArgs(1)(cmd, args)
+		if err != nil {
+			return err
+		}
+
+		return validateFilenames(cmd, args)
+	},
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }
