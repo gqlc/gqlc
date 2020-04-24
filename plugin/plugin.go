@@ -4,6 +4,7 @@ package plugin
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"os/exec"
 	"sync"
@@ -29,7 +30,7 @@ type Generator struct {
 }
 
 // Generate executes a plugin given the GraphQL Document.
-func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string) (err error) {
+func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[string]interface{}) (err error) {
 	defer func() {
 		if err != nil {
 			err = gen.GeneratorError{
@@ -39,6 +40,12 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 			}
 		}
 	}()
+
+	// Encode options to JSON
+	b, err := json.Marshal(opts)
+	if err != nil {
+		return err
+	}
 
 	// Lookup plugin only once
 	g.lookOnce.Do(func() {
@@ -53,7 +60,7 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts string
 	// Marshall doc
 	b, perr := proto.Marshal(&pb.Request{
 		FileToGenerate: []string{doc.Name},
-		Parameter:      opts,
+		Parameter:      string(b),
 		Documents:      []*ast.Document{doc},
 	})
 	if perr != nil {
