@@ -18,9 +18,6 @@ script:
   - go vet ./...
   - go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 
-after_success:
-  - test $TRAVIS_GO_VERSION != "tip" && bash <(curl -s https://codecov.io/bash)
-
 deploy:
   - provider: script
     skip_cleanup: true
