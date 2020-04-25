@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/spf13/cobra"
 )
@@ -10,13 +11,13 @@ import (
 // dev refers to a local build. It will be overwritten
 // during CI/CD.
 //
-var version = "dev"
+var version = "D.E.V"
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("gqlc %s\n", version)
+		fmt.Printf("gqlc version gqlc%s %s/%s\n", version, runtime.GOOS, runtime.GOARCH)
 	},
 }
 
