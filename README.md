@@ -1,6 +1,5 @@
 [![GoDoc](https://godoc.org/github.com/gqlc/gqlc?status.svg)](https://godoc.org/github.com/gqlc/gqlc)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gqlc/gqlc)](https://goreportcard.com/report/github.com/gqlc/gqlc)
-[![Build Status](https://travis-ci.org/gqlc/gqlc.svg?branch=master)](https://travis-ci.org/gqlc/gqlc)
 ![build](https://github.com/gqlc/gqlc/workflows/build/badge.svg)
 [![codecov](https://codecov.io/gh/gqlc/gqlc/branch/master/graph/badge.svg)](https://codecov.io/gh/gqlc/gqlc)
 
