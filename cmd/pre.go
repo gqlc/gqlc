@@ -10,6 +10,7 @@ import (
 	"github.com/gqlc/graphql/token"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 func chainPreRunEs(preRunEs ...func(*cobra.Command, []string) error) func(*cobra.Command, []string) error {
@@ -80,6 +81,7 @@ func validatePluginTypes(fs afero.Fs) func(*cobra.Command, []string) error {
 func initGenDirs(fs afero.Fs, dirs *[]string) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) (err error) {
 		for _, dir := range *dirs {
+			zap.S().Info("creating directory:", dir)
 			err = fs.MkdirAll(dir, os.ModeDir)
 			if err != nil {
 				break
