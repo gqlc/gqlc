@@ -3,12 +3,15 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"runtime/debug"
 	"text/scanner"
 
 	"github.com/gqlc/gqlc/gen"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type option func(*CommandLine)
@@ -61,14 +64,29 @@ func NewCLI(opts ...option) (c *CommandLine) {
 		return
 	}
 
+	var l *zap.Logger
+
 	c.Command = rootCmd
 	c.PreRunE = chainPreRunEs(
+		func(cmd *cobra.Command, args []string) error {
+			v, err := cmd.Flags().GetBool("verbose")
+			if !v || err != nil {
+				return err
+			}
+
+			enc := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
+			core := zapcore.NewCore(enc, os.Stdout, zap.InfoLevel)
+
+			l = zap.New(core)
+			zap.ReplaceGlobals(l)
+			return err
+		},
 		validatePluginTypes(c.fs),
 		initGenDirs(c.fs, &c.outDirs),
 	)
 	c.RunE = func(cmd *cobra.Command, args []string) error {
-		if len(cmd.Flags().Args()) == 0 || cmd.Flags().Lookup("help").Changed {
-			return cmd.Help()
+		if l != nil {
+			defer l.Sync()
 		}
 
 		importPaths, err := cmd.Flags().GetStringSlice("import_path")

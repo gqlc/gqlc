@@ -16,6 +16,7 @@ import (
 	"github.com/gqlc/graphql/token"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 var rootCmd = &cobra.Command{
@@ -76,12 +77,14 @@ type generator struct {
 
 func root(fs afero.Fs, geners []generator, iPaths []string, args ...string) (err error) {
 	// Parse files
+	zap.S().Info("parsing input files")
 	docMap := make(map[string]*ast.Document, len(args))
 	err = parseInputFiles(fs, token.NewDocSet(), docMap, iPaths, args...)
 	if err != nil {
 		return
 	}
 
+	zap.S().Info("resolving import paths")
 	docs := make([]*ast.Document, 0, len(docMap))
 	for _, doc := range docMap {
 		docs = append(docs, doc)
@@ -89,12 +92,14 @@ func root(fs afero.Fs, geners []generator, iPaths []string, args ...string) (err
 	resolveImportPaths(docs)
 
 	// First, Resolve imports (this must occur before type checking)
+	zap.S().Info("reducing imports")
 	docsIR, err := compiler.ReduceImports(docs)
 	if err != nil {
 		return err
 	}
 
 	// Then, Perform type checking
+	zap.S().Info("type checking")
 	errs := compiler.CheckTypes(docsIR, compiler.TypeCheckerFn(compiler.Validate))
 	if len(errs) > 0 {
 		for _, err = range errs {
@@ -104,6 +109,7 @@ func root(fs afero.Fs, geners []generator, iPaths []string, args ...string) (err
 	}
 
 	// Merge type extensions with the original type definitions
+	zap.S().Info("merging type extensions")
 	for d, types := range docsIR {
 		docsIR[d] = compiler.MergeExtensions(types)
 	}
@@ -125,6 +131,7 @@ func root(fs afero.Fs, geners []generator, iPaths []string, args ...string) (err
 	}
 
 	// Run code generators
+	zap.S().Info("generating documents")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	for _, g := range geners {

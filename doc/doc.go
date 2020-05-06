@@ -14,6 +14,7 @@ import (
 	"github.com/gqlc/gqlc/types"
 	"github.com/gqlc/graphql/ast"
 	"gitlab.com/zaba505/markdown"
+	"go.uber.org/zap"
 )
 
 // Options contains the options for the Documentation generator.
@@ -86,6 +87,7 @@ type Generator struct {
 
 	mdOnce sync.Once
 	md     *markdown.Markdown
+	log    *zap.Logger
 }
 
 // Reset overrides the bytes.Buffer Reset method to assist in cleaning up some Generator state.
@@ -112,13 +114,20 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[st
 	defer g.Unlock()
 	g.Reset()
 
+	// Register logger
+	if g.log == nil {
+		g.log = zap.L().Named("doc").With(zap.String("doc", doc.Name))
+	}
+
 	// Get generator options
+	g.log.Info("getting options")
 	gOpts, oerr := getOptions(doc, opts)
 	if oerr != nil {
 		return oerr
 	}
 
 	// Generate types
+	g.log.Info("generating types")
 	g.generateTypes(doc.Types, gOpts)
 
 	// Extract generator context

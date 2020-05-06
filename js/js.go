@@ -14,6 +14,7 @@ import (
 	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/token"
+	"go.uber.org/zap"
 )
 
 const (
@@ -126,6 +127,7 @@ type Generator struct {
 	bytes.Buffer
 
 	indent []byte
+	log    *zap.Logger
 }
 
 // Reset overrides the bytes.Buffer Reset method to assist in cleaning up some Generator state.
@@ -152,7 +154,12 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[st
 	defer g.Unlock()
 	g.Reset()
 
+	if g.log == nil {
+		g.log = zap.L().Named("js").With(zap.String("doc", doc.Name))
+	}
+
 	// Get generator options
+	g.log.Info("getting options")
 	gOpts, oerr := getOptions(doc, opts)
 	if oerr != nil {
 		return oerr
@@ -165,12 +172,14 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[st
 
 	// Generate schema
 	if doc.Schema != nil {
+		g.log.Info("generating schema")
 		mask &= ^schemaBit
 		g.generateSchema(gOpts, doc.Schema.Spec.(*ast.TypeDecl_TypeSpec).TypeSpec)
 		g.P()
 	}
 
 	// Generate types
+	g.log.Info("generating types")
 	totalTypes := len(doc.Types) - 1
 	for i, d := range doc.Types {
 		ts, ok := d.Spec.(*ast.TypeDecl_TypeSpec)
@@ -242,6 +251,7 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[st
 	}
 
 	// Write module import statement
+	g.log.Info("writing module import statement")
 	gOpts.setImports(mask)
 	_, err = g.writeImports(jsFile, gOpts)
 	if err != nil {

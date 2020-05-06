@@ -13,6 +13,7 @@ import (
 	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/gqlc/plugin/pb"
 	"github.com/gqlc/graphql/ast"
+	"go.uber.org/zap"
 )
 
 // Generator executes an external plugin as a generator.
@@ -27,6 +28,7 @@ type Generator struct {
 	lookOnce    sync.Once
 	path        string
 	lookPathErr error
+	log         *zap.Logger
 }
 
 // Generate executes a plugin given the GraphQL Document.
@@ -41,7 +43,12 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[st
 		}
 	}()
 
+	if g.log == nil {
+		g.log = zap.L().Named(g.Name).With(zap.String("doc", doc.Name))
+	}
+
 	// Encode options to JSON
+	g.log.Info("marshalling options")
 	b, err := json.Marshal(opts)
 	if err != nil {
 		return err
@@ -58,6 +65,7 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[st
 	}
 
 	// Marshall doc
+	g.log.Info("marshalling request")
 	b, perr := proto.Marshal(&pb.Request{
 		FileToGenerate: []string{doc.Name},
 		Parameter:      string(b),
@@ -77,6 +85,7 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[st
 	g.Stdout = out
 
 	// Exec plugin
+	g.log.Info("executing plugin")
 	err = g.Run()
 	g.Cmd = nil
 	if err != nil {
@@ -84,6 +93,7 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[st
 	}
 
 	// Unmarshall response
+	g.log.Info("unmarshalling response")
 	var resp pb.Response
 	err = proto.Unmarshal(out.Bytes(), &resp)
 	if err != nil {
@@ -98,6 +108,8 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[st
 	// Write plugin files
 	gCtx := gen.Context(ctx)
 	for _, f := range resp.File {
+		g.log.Info("writing content from plugin", zap.String("file", f.Name))
+
 		w, ferr := gCtx.Open(f.Name)
 		if ferr != nil {
 			err = ferr
