@@ -74,13 +74,7 @@ func NewCLI(opts ...option) (c *CommandLine) {
 				return err
 			}
 
-			enc := zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-				MessageKey: "msg",
-				LevelKey:   "level",
-				TimeKey:    "ts",
-				NameKey:    "logger",
-				CallerKey:  "caller",
-			})
+			enc := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
 			core := zapcore.NewCore(enc, os.Stdout, zap.InfoLevel)
 
 			l = zap.New(core)
