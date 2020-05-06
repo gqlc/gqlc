@@ -2,13 +2,13 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/gqlc/gqlc/cmd"
 	"github.com/gqlc/gqlc/doc"
 	"github.com/gqlc/gqlc/golang"
 	"github.com/gqlc/gqlc/js"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -37,7 +37,6 @@ func main() {
 	)
 
 	if err := cli.Run(os.Args); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		zap.S().Fatal(err)
 	}
 }
