@@ -14,6 +14,7 @@ import (
 	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/token"
+	"go.uber.org/zap"
 )
 
 // Options contains the options for the Go generator.
@@ -31,6 +32,7 @@ type Generator struct {
 	bytes.Buffer
 
 	indent []byte
+	log    *zap.Logger
 }
 
 // Reset overrides the bytes.Buffer Reset method to assist in cleaning up some Generator state.
@@ -59,16 +61,23 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[st
 	defer g.Unlock()
 	g.Reset()
 
+	if g.log == nil {
+		g.log = zap.L().Named("golang").With(zap.String("doc", doc.Name))
+	}
+
 	// Get generator options
+	g.log.Info("getting options")
 	gOpts, oerr := getOptions(doc, opts)
 	if oerr != nil {
 		return oerr
 	}
 
 	// Generate package and imports
+	g.log.Info("writing header")
 	g.writeHeader(g, []byte(gOpts.Package))
 
 	// Generate types
+	g.log.Info("generating types")
 	totalTypes := len(doc.Types) - 1
 	for i, d := range doc.Types {
 		ts, ok := d.Spec.(*ast.TypeDecl_TypeSpec)
