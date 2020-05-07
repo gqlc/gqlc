@@ -12,6 +12,7 @@ import (
 	"text/scanner"
 
 	"github.com/gqlc/compiler"
+	"github.com/gqlc/compiler/spec"
 	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/parser"
@@ -158,16 +159,18 @@ func root(fs afero.Fs, geners []generator, iPaths []string, args ...string) (err
 	}
 	resolveImportPaths(docs)
 
+	docsIR := compiler.ToIR(docs)
+
 	// First, Resolve imports (this must occur before type checking)
 	zap.S().Info("reducing imports")
-	docsIR, err := compiler.ReduceImports(docs)
+	docsIR, err = compiler.ReduceImports(docsIR)
 	if err != nil {
 		return err
 	}
 
 	// Then, Perform type checking
 	zap.S().Info("type checking")
-	errs := compiler.CheckTypes(docsIR, compiler.TypeCheckerFn(compiler.Validate))
+	errs := compiler.CheckTypes(docsIR, spec.Validator, compiler.ImportValidator)
 	if len(errs) > 0 {
 		for _, err = range errs {
 			log.Println(err)
@@ -182,19 +185,17 @@ func root(fs afero.Fs, geners []generator, iPaths []string, args ...string) (err
 	}
 
 	// Remove builtin types and any Generator registered types
-	builtins := compiler.ToIR(compiler.Types)
-	for name := range builtins {
-		for _, d := range docsIR {
-			delete(d, name)
-		}
-	}
+	// builtins := compiler.ToIR(compiler.Types)
+	// for name := range builtins {
+	// 	for _, d := range docsIR {
+	// 		delete(d, name)
+	// 	}
+	// }
 
 	// Convert types from IR to []*ast.TypeDecl
-	docs = docs[:0]
-	for doc, types := range docsIR {
-		doc.Types = sortTypeDecls(compiler.FromIR(types))
-
-		docs = append(docs, doc)
+	docs = compiler.FromIR(docsIR)
+	for _, doc := range docs {
+		doc.Types = sortTypeDecls(doc.Types)
 	}
 
 	// Run code generators

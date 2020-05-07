@@ -14,8 +14,8 @@ github.com/golang/mock v1.4.0/go.mod h1:UOMv5ysSaYNkG+OFQykRIcU/QvvxJf3p21QfJ2Bt
 github.com/golang/protobuf v1.3.2 h1:6nsPYzhq5kReh6QImI3k5qWzO4PEbvbIW2cwSfR/6xs=
 github.com/golang/protobuf v1.3.2/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm40UhjYkI=
-github.com/gqlc/compiler v0.5.0 h1:Sm2NYgCNuQgreHmXK47xSY86wxIe/Ik5OouFdmtie3c=
-github.com/gqlc/compiler v0.5.0/go.mod h1:Mz9o3ViJdXvO+T3+ZELVGFGtEca0nlpCaIw9Xtid3jY=
+github.com/gqlc/compiler v0.6.0 h1:6vn4BUOyvwpFg1+hixn2T+13oMWrghfSOesPwqkoLHM=
+github.com/gqlc/compiler v0.6.0/go.mod h1:Mz9o3ViJdXvO+T3+ZELVGFGtEca0nlpCaIw9Xtid3jY=
 github.com/gqlc/graphql v0.4.1 h1:4BVULOhZ7VObn8XKuxVbEkzrROF4v7msK23d/g3J9eE=
 github.com/gqlc/graphql v0.4.1/go.mod h1:8wgWpKsfG0qiucedwA/83Kv5cVXv0tUdu/TY70bJhiw=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
