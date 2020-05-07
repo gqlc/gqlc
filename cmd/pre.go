@@ -34,10 +34,6 @@ func validateFilenames(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func init() {
-	rootCmd.Flags().StringSliceP("types", "t", nil, "Provide .gql files containing types you wish to register with the compiler.")
-}
-
 // validatePluginTypes parses and validates any types given by the --types flag.
 func validatePluginTypes(fs afero.Fs) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {

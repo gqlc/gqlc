@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"text/scanner"
 
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/gqlc/gen"
@@ -17,41 +18,106 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "gqlc",
-	Short: "A GraphQL IDL compiler",
-	Long: `gqlc is a multi-language GraphQL implementation generator.
-
-Generators are specified by using a *_out flag. The argument given to this
-type of flag can be either:
-	1) *_out=some/directory/to/output/file(s)/to
-	2) *_out=comma=separated,key=val,generator=option,pairs=then:some/directory/to/output/file(s)/to
-
-An additional flag, *_opt, can be used to pass options to a generator. The
-argument given to this type of flag is the same format as the *_opt
-key=value pairs above.`,
-	Example: "gqlc -I . --doc_out ./docs --go_out ./goservice --js_out ./jsservice api.gql",
-	Args: func(cmd *cobra.Command, args []string) error {
-		err := cobra.MinimumNArgs(1)(cmd, args)
-		if err != nil {
-			return err
-		}
-
-		return validateFilenames(cmd, args)
-	},
-	SilenceUsage:  true,
-	SilenceErrors: true,
+type gqlcCmd struct {
+	*cobra.Command
 }
 
-func init() {
-	rootCmd.Flags().StringSliceP("import_path", "I", []string{"."}, `Specify the directory in which to search for
+func (c *CommandLine) newGqlcCmd(cfgs []genConfig, fs afero.Fs, pluginPrefix string) *gqlcCmd {
+	outDirs := make([]string, 0, len(cfgs))
+	geners := make([]generator, 0, len(cfgs))
+
+	restoreLogger := func() {}
+
+	cmd := &gqlcCmd{
+		Command: &cobra.Command{
+			Use:   "gqlc",
+			Short: "A GraphQL IDL compiler",
+			Long: `gqlc is a multi-language GraphQL implementation generator.
+
+		Generators are specified by using a *_out flag. The argument given to this
+		type of flag can be either:
+			1) *_out=some/directory/to/output/file(s)/to
+			2) *_out=comma=separated,key=val,generator=option,pairs=then:some/directory/to/output/file(s)/to
+
+		An additional flag, *_opt, can be used to pass options to a generator. The
+		argument given to this type of flag is the same format as the *_opt
+		key=value pairs above.`,
+			Example: "gqlc -I . --doc_out ./docs --go_out ./goservice --js_out ./jsservice api.gql",
+			Args: func(cmd *cobra.Command, args []string) error {
+				err := cobra.MinimumNArgs(1)(cmd, args)
+				if err != nil {
+					return err
+				}
+
+				return validateFilenames(cmd, args)
+			},
+			PreRunE: chainPreRunEs(
+				func(cmd *cobra.Command, args []string) error {
+					v, err := cmd.Flags().GetBool("verbose")
+					if !v || err != nil {
+						return err
+					}
+
+					enc := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
+					core := zapcore.NewCore(enc, os.Stdout, zap.InfoLevel)
+
+					l := zap.New(core)
+					restoreLogger = zap.ReplaceGlobals(l)
+					return err
+				},
+				validatePluginTypes(c.fs),
+				initGenDirs(fs, &outDirs),
+			),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				defer restoreLogger()
+				defer zap.L().Sync()
+
+				importPaths, err := cmd.Flags().GetStringSlice("import_path")
+				if err != nil {
+					return err
+				}
+
+				return root(fs, geners, importPaths, cmd.Flags().Args()...)
+			},
+			SilenceUsage:  true,
+			SilenceErrors: true,
+		},
+	}
+
+	cmd.SetUsageTemplate(usageTmpl)
+
+	cmd.Flags().StringSliceP("import_path", "I", []string{"."}, `Specify the directory in which to search for
 imports.  May be specified multiple times;
 directories will be searched in order.  If not
 given, the current working directory is used.`)
-	rootCmd.Flags().BoolP("verbose", "v", false, "Output logging")
-	rootCmd.SetUsageTemplate(usageTmpl)
+	cmd.Flags().BoolP("verbose", "v", false, "Output logging")
+	cmd.Flags().StringSliceP("types", "t", nil, "Provide .gql files containing types you wish to register with the compiler.")
+
+	fp := &fparser{
+		Scanner: new(scanner.Scanner),
+	}
+
+	for _, cfg := range cfgs {
+		f := genFlag{
+			g:       cfg.g,
+			opts:    make(map[string]interface{}),
+			geners:  &geners,
+			outDirs: &outDirs,
+			fp:      fp,
+		}
+
+		cmd.Flags().Var(f, cfg.name, cfg.help)
+
+		if cfg.opt != "" {
+			f.isOpt = true
+			cmd.Flags().Var(f, cfg.opt, "Pass additional options to generator.")
+		}
+	}
+
+	return cmd
 }
 
 type genCtx struct {

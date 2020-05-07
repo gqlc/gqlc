@@ -3,25 +3,14 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"runtime/debug"
-	"text/scanner"
 
 	"github.com/gqlc/gqlc/gen"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 type option func(*CommandLine)
-
-// WithCommand configures the underlying cobra.Command to be used.
-func WithCommand(cmd *cobra.Command) option {
-	return func(c *CommandLine) {
-		c.Command = cmd
-	}
-}
 
 // WithFS configures the underlying afero.FS used to read/write files.
 func WithFS(fs afero.Fs) option {
@@ -30,27 +19,49 @@ func WithFS(fs afero.Fs) option {
 	}
 }
 
-// CommandLine which simply extends a github.com/spf13/cobra.Command
-// to include helper methods for registering code generators.
-//
-type CommandLine struct {
-	*cobra.Command
+type genConfig struct {
+	g    gen.Generator
+	name string
+	opt  string
+	help string
+}
 
-	pluginPrefix *string
-	geners       []generator
-	outDirs      []string
-	fp           *fparser
-	fs           afero.Fs
+// CommandLine provides a convient API for adding generators to gqlc.
+type CommandLine struct {
+	prefix string
+	fs     afero.Fs
+
+	cmds []cmder
+	gens []genConfig
+}
+
+type cmder interface {
+	getCommand() *cobra.Command
+}
+
+type baseCmd struct {
+	*cobra.Command
+}
+
+func (cmd *baseCmd) getCommand() *cobra.Command { return cmd.Command }
+
+func (c *CommandLine) addCommand(cmds ...cmder) *CommandLine {
+	c.cmds = append(c.cmds, cmds...)
+	return c
+}
+
+func (c *CommandLine) build() *cobra.Command {
+	cmd := c.newGqlcCmd(c.gens, c.fs, c.prefix)
+	for _, cmdr := range c.cmds {
+		cmd.AddCommand(cmdr.getCommand())
+	}
+
+	return cmd.Command
 }
 
 // NewCLI returns a CommandLine implementation.
 func NewCLI(opts ...option) (c *CommandLine) {
-	c = &CommandLine{
-		pluginPrefix: new(string),
-		fp: &fparser{
-			Scanner: new(scanner.Scanner),
-		},
-	}
+	c = new(CommandLine)
 
 	for _, opt := range opts {
 		opt(c)
@@ -60,69 +71,22 @@ func NewCLI(opts ...option) (c *CommandLine) {
 		c.fs = afero.NewOsFs()
 	}
 
-	if c.Command != nil {
-		return
-	}
-
-	var l *zap.Logger
-
-	c.Command = rootCmd
-	c.PreRunE = chainPreRunEs(
-		func(cmd *cobra.Command, args []string) error {
-			v, err := cmd.Flags().GetBool("verbose")
-			if !v || err != nil {
-				return err
-			}
-
-			enc := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
-			core := zapcore.NewCore(enc, os.Stdout, zap.InfoLevel)
-
-			l = zap.New(core)
-			zap.ReplaceGlobals(l)
-			return err
-		},
-		validatePluginTypes(c.fs),
-		initGenDirs(c.fs, &c.outDirs),
-	)
-	c.RunE = func(cmd *cobra.Command, args []string) error {
-		if l != nil {
-			defer l.Sync()
-		}
-
-		importPaths, err := cmd.Flags().GetStringSlice("import_path")
-		if err != nil {
-			return err
-		}
-
-		return root(c.fs, c.geners, importPaths, cmd.Flags().Args()...)
-	}
-
 	return
 }
 
 // AllowPlugins sets the plugin prefix to be used
 // when looking up plugin executables.
 //
-func (c *CommandLine) AllowPlugins(prefix string) { *c.pluginPrefix = prefix }
+func (c *CommandLine) AllowPlugins(prefix string) { c.prefix = prefix }
 
 // RegisterGenerator registers a generator with the compiler.
 func (c *CommandLine) RegisterGenerator(g gen.Generator, name, opt, help string) {
-	opts := make(map[string]interface{})
-
-	f := genFlag{
-		g:       g,
-		opts:    opts,
-		geners:  &c.geners,
-		outDirs: &c.outDirs,
-		fp:      c.fp,
-	}
-
-	c.Flags().Var(f, name, help)
-
-	if opt != "" {
-		f.isOpt = true
-		c.Flags().Var(f, opt, "Pass additional options to generator.")
-	}
+	c.gens = append(c.gens, genConfig{
+		g:    g,
+		name: name,
+		opt:  opt,
+		help: help,
+	})
 }
 
 func wrapPanic(err error, stack []byte) error {
@@ -145,6 +109,8 @@ func (c *CommandLine) Run(args []string) (err error) {
 		}
 	}()
 
-	c.SetArgs(args[1:])
-	return c.Execute()
+	cmd := c.addCommand(c.newVersionCmd()).build()
+
+	cmd.SetArgs(args[1:])
+	return cmd.Execute()
 }
