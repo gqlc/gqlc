@@ -37,6 +37,7 @@ func main() {
 	)
 
 	if err := cli.Run(os.Args); err != nil {
-		zap.S().Fatal(err)
+		l, _ := zap.NewDevelopment()
+		l.Sugar().Fatal(err)
 	}
 }
