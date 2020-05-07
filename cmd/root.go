@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -260,18 +261,11 @@ func parseInputFiles(fs afero.Fs, dset *token.DocSet, docs map[string]*ast.Docum
 			continue
 		}
 
-		fname, err := normFilePath(fs, importPaths, filename)
+		f, err := openFile(filename, fs, importPaths)
 		if err != nil {
 			return err
 		}
-		if fname == "" {
-			return fmt.Errorf("could not resolve file path: %s", filename)
-		}
-
-		f, err := fs.Open(fname)
-		if err != nil {
-			return err
-		}
+		defer f.Close()
 
 		doc, err := parser.ParseDoc(dset, name, f, parser.ParseComments)
 		if err != nil {
@@ -327,6 +321,24 @@ func getImports(doc *ast.Document) (names []string) {
 	}
 
 	return
+}
+
+func openFile(name string, fs afero.Fs, importPaths []string) (io.ReadCloser, error) {
+	if strings.HasPrefix(name, "http") {
+		zap.L().Info("fetching remote file", zap.String("name", name))
+		resp, err := http.Get(name)
+		return resp.Body, err
+	}
+
+	fname, err := normFilePath(fs, importPaths, name)
+	if err != nil {
+		return nil, err
+	}
+	if fname == "" {
+		return nil, fmt.Errorf("could not resolve file path: %s", name)
+	}
+
+	return fs.Open(fname)
 }
 
 // normFilePath converts any path to absolute path
