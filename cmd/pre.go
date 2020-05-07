@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/gqlc/compiler"
+	"github.com/gqlc/compiler/spec"
 	"github.com/gqlc/graphql/ast"
 	"github.com/gqlc/graphql/token"
 	"github.com/spf13/afero"
@@ -58,12 +59,14 @@ func validatePluginTypes(fs afero.Fs) func(*cobra.Command, []string) error {
 			docs = append(docs, doc)
 		}
 
-		docsIR, err := compiler.ReduceImports(docs)
+		docsIR := compiler.ToIR(docs)
+
+		docsIR, err = compiler.ReduceImports(docsIR)
 		if err != nil {
 			return err
 		}
 
-		errs := compiler.CheckTypes(docsIR, compiler.TypeCheckerFn(compiler.Validate))
+		errs := compiler.CheckTypes(docsIR, spec.Validator, compiler.ImportValidator)
 		if len(errs) > 0 {
 			// TODO: Compound errs
 			return nil
