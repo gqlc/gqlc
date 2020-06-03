@@ -9,11 +9,8 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/yuin/goldmark v1.1.30
-	gitlab.com/golang-commonmark/html v0.0.0-20191124015941-a22733972181 // indirect
-	gitlab.com/golang-commonmark/mdurl v0.0.0-20191124015652-932350d1cb84 // indirect
-	gitlab.com/golang-commonmark/puny v0.0.0-20191124015043-9f83538fa04f // indirect
-	gitlab.com/zaba505/markdown v0.0.0-20191028180128-7fc06c621af7
 	go.uber.org/zap v1.15.0
+	golang.org/x/text v0.3.2 // indirect
 )
 
 go 1.13
