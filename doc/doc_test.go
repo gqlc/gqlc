@@ -496,11 +496,28 @@ func TestArgs(t *testing.T) {
 	}
 }
 
+type noopCloser struct {
+	io.Writer
+}
+
+func (*noopCloser) Close() error { return nil }
+
+type testCtx struct {
+	md, html io.Writer
+}
+
+func (ctx *testCtx) Open(name string) (io.WriteCloser, error) {
+	if filepath.Ext(name) == ".md" {
+		return &noopCloser{ctx.md}, nil
+	}
+	return &noopCloser{ctx.html}, nil
+}
+
 func TestGenerator_Generate(t *testing.T) {
 	t.Run("Markdown", func(subT *testing.T) {
 		var b bytes.Buffer
 		g := new(Generator)
-		ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
+		ctx := gen.WithContext(context.Background(), &testCtx{md: &b})
 		err := g.Generate(ctx, testDoc, nil)
 		if err != nil {
 			subT.Error(err)
@@ -520,7 +537,7 @@ func TestGenerator_Generate(t *testing.T) {
 	t.Run("WithHTML", func(subT *testing.T) {
 		var b bytes.Buffer
 		g := new(Generator)
-		ctx := gen.WithContext(context.Background(), gen.TestCtx{Writer: &b})
+		ctx := gen.WithContext(context.Background(), &testCtx{md: new(bytes.Buffer), html: &b})
 		err := g.Generate(ctx, testDoc, map[string]interface{}{"html": true})
 		if err != nil {
 			subT.Error(err)
