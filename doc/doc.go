@@ -13,7 +13,7 @@ import (
 	"github.com/gqlc/gqlc/gen"
 	"github.com/gqlc/gqlc/types"
 	"github.com/gqlc/graphql/ast"
-	"gitlab.com/zaba505/markdown"
+	"github.com/yuin/goldmark"
 	"go.uber.org/zap"
 )
 
@@ -86,7 +86,6 @@ type Generator struct {
 	indent []byte
 
 	mdOnce sync.Once
-	md     *markdown.Markdown
 	log    *zap.Logger
 }
 
@@ -136,10 +135,10 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[st
 	// Open .md file
 	base := doc.Name[:len(doc.Name)-len(filepath.Ext(doc.Name))]
 	docFile, err := gCtx.Open(base + ".md")
-	defer docFile.Close()
 	if err != nil {
 		return
 	}
+	defer docFile.Close()
 
 	// Write Title and Table of Contents
 	_, err = writeToC(docFile, gOpts)
@@ -158,19 +157,14 @@ func (g *Generator) Generate(ctx context.Context, doc *ast.Document, opts map[st
 		return
 	}
 
-	// Make sure markdown renderer is set
-	if g.md == nil {
-		g.mdOnce.Do(func() { g.md = markdown.New() })
-	}
-
 	// Open HTML file
 	htmlFile, err := gCtx.Open(base + ".html")
-	defer htmlFile.Close()
 	if err != nil {
 		return
 	}
+	defer htmlFile.Close()
 
-	err = g.md.Render(htmlFile, b)
+	err = goldmark.Convert(b, htmlFile)
 	return
 }
 
