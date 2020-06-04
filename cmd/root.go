@@ -161,14 +161,18 @@ func root(fs afero.Fs, geners []generator, iPaths []string, args ...string) (err
 
 	docsIR := compiler.ToIR(docs)
 
-	// First, Resolve imports (this must occur before type checking)
+	// Resolve imports (this must occur before type checking)
 	zap.S().Info("reducing imports")
 	docsIR, err = compiler.ReduceImports(docsIR)
 	if err != nil {
 		return err
 	}
 
-	// Then, Perform type checking
+	// Add any missing fields to objects that implement interfaces
+	zap.S().Info("implementing interfaces")
+	docsIR = implInterfaces(docsIR)
+
+	// Perform type checking
 	zap.S().Info("type checking")
 	errs := compiler.CheckTypes(docsIR, spec.Validator, compiler.ImportValidator)
 	if len(errs) > 0 {
@@ -183,14 +187,6 @@ func root(fs afero.Fs, geners []generator, iPaths []string, args ...string) (err
 	for d, types := range docsIR {
 		docsIR[d] = compiler.MergeExtensions(types)
 	}
-
-	// Remove builtin types and any Generator registered types
-	// builtins := compiler.ToIR(compiler.Types)
-	// for name := range builtins {
-	// 	for _, d := range docsIR {
-	// 		delete(d, name)
-	// 	}
-	// }
 
 	// Convert types from IR to []*ast.TypeDecl
 	docs = compiler.FromIR(docsIR)

@@ -218,3 +218,29 @@ func TestRoot(t *testing.T) {
 		})
 	}
 }
+
+func TestRoot_AutoImplInterfaces(t *testing.T) {
+	autoImplInterfacesGql := `
+interface Iterator {
+	next: Int
+}
+
+type Bytes implements Iterator {
+	asString: String!
+}
+	`
+	afero.WriteFile(testFs, "/home/graphql/auto_impl_interfaces.gql", []byte(autoImplInterfacesGql), 0644)
+
+	g := newMockGenerator(t)
+	g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+	geners := []generator{{
+		Generator: g,
+	}}
+
+	err := root(testFs, geners, nil, "/home/graphql/auto_impl_interfaces.gql")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
