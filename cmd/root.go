@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/scanner"
+	"time"
 
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/compiler/spec"
@@ -320,9 +321,13 @@ func getImports(doc *ast.Document) (names []string) {
 	return
 }
 
+var httpClient = &http.Client{
+	Timeout: 5 * time.Second,
+}
+
 func openFile(name string, fs afero.Fs, importPaths []string) (io.ReadCloser, error) {
 	if strings.HasPrefix(name, "http") {
-		return fetchFile(name)
+		return fetch(httpClient, name)
 	}
 
 	fname, err := normFilePath(fs, importPaths, name)
@@ -334,18 +339,6 @@ func openFile(name string, fs afero.Fs, importPaths []string) (io.ReadCloser, er
 	}
 
 	return fs.Open(fname)
-}
-
-func fetchFile(name string) (io.ReadCloser, error) {
-	if filepath.Base(name) != "graphql" {
-		zap.L().Info("fetching remote file", zap.String("name", name))
-		resp, err := http.Get(name)
-		return resp.Body, err
-	}
-
-	// TODO: Fetch via introspection query
-
-	return nil, nil
 }
 
 // normFilePath converts any path to absolute path
