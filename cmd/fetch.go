@@ -327,9 +327,7 @@ func (c *converter) Read(p []byte) (n int, err error) {
 		writeTyp(&c.buf, t)
 	}
 
-	n = copy(p, c.buf.Bytes())
-	c.buf.Truncate(n)
-	return
+	return c.buf.Read(p)
 }
 
 // TODO
