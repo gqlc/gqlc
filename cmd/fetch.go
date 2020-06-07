@@ -389,6 +389,22 @@ func writeTyp(b *bytes.Buffer, t typ) {
 		}
 		b.Write([]byte("\n}"))
 	case INTERFACE:
+		if t.Description != "" {
+			b.WriteString(t.Description)
+			b.Write([]byte("\n  "))
+		}
+
+		b.Write([]byte("interface "))
+		b.WriteString(t.Name)
+		b.Write([]byte(" {\n  "))
+		l := len(t.Fields) - 1
+		for i, f := range t.Fields {
+			writeField(b, f)
+			if i != l {
+				b.Write([]byte("\n  "))
+			}
+		}
+		b.Write([]byte("\n}"))
 	case UNION:
 	case ENUM:
 	case INPUT_OBJECT:
