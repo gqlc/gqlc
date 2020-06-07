@@ -126,6 +126,107 @@ func TestConverter(t *testing.T) {
 			`,
 			IDL: []byte("scalar Time"),
 		},
+		{
+			Name: "OBJECT",
+			JSON: `
+			{
+			  "data": {
+			    "__schema": {
+			      "directives": [],
+			      "types": [
+			        {
+			          "kind": "OBJECT",
+			          "name": "Test",
+			          "description": null,
+			          "fields": [
+									{
+										"name": "a",
+										"description": null,
+										"isDeprecated": false,
+										"deprecationReason": null,
+										"args": [
+											{
+												"name": "b",
+												"description": null,
+												"isDeprecated": false,
+												"deprecationReason": null,
+												"type": {
+													"kind": "SCALAR",
+													"name": "Int",
+													"ofType": null
+												}
+											}
+										],
+										"type": {
+											"kind": "SCALAR",
+											"name": "String",
+											"ofType": null
+										}
+									},
+									{
+										"name": "b",
+										"description": null,
+										"isDeprecated": false,
+										"deprecationReason": null,
+										"args": [],
+										"type": {
+											"kind": "SCALAR",
+											"name": "Int",
+											"ofType": {
+												"kind": "LIST"
+											}
+										}
+									},
+									{
+										"name": "c",
+										"description": null,
+										"isDeprecated": false,
+										"deprecationReason": null,
+										"args": [
+											{
+												"name": "d",
+												"description": null,
+												"defaultValue": "0",
+												"type": {
+													"kind": "SCALAR",
+													"name": "Int",
+													"ofType": null
+												}
+											}
+										],
+										"type": {
+											"kind": "SCALAR",
+											"name": "Int",
+											"ofType": {
+												"kind": "NON_NULL"
+											}
+										}
+									}
+								],
+			          "interfaces": [
+									{
+										"name": "A"
+									},
+									{
+										"name": "B"
+									}
+								],
+			          "possibleTypes": null,
+			          "enumValues": null,
+			          "inputFields": null,
+			          "ofType": null
+			        }
+			      ]
+			    }
+			  }
+			}
+			`,
+			IDL: []byte(`type Test implements A & B {
+  a(b: Int): String
+  b: [Int]
+  c(d: Int = 0): Int!
+}`),
+		},
 	}
 
 	for _, testCase := range testCases {
