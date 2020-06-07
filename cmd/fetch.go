@@ -432,8 +432,20 @@ func writeTyp(b *bytes.Buffer, t typ) {
 
 		b.Write([]byte("}"))
 	case INPUT_OBJECT:
-	case LIST:
-	case NON_NULL:
+		b.Write([]byte("input "))
+		b.WriteString(t.Name)
+		b.Write([]byte(" {\n  "))
+
+		l := len(t.InputFields) - 1
+		for i, a := range t.InputFields {
+			writeArg(b, a)
+			b.Write([]byte("\n"))
+			if i != l {
+				b.Write([]byte("  "))
+			}
+		}
+
+		b.Write([]byte("}"))
 	}
 }
 
