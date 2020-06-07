@@ -409,6 +409,69 @@ func TestConverter(t *testing.T) {
   C
 }`),
 		},
+		{
+			Name: "INPUT",
+			JSON: `
+			{
+			  "data": {
+			    "__schema": {
+			      "directives": [],
+			      "types": [
+			        {
+			          "kind": "INPUT_OBJECT",
+			          "name": "Test",
+			          "description": null,
+								"fields": [],
+			          "interfaces": null,
+			          "possibleTypes": null,
+			          "enumValues": null,
+			          "inputFields": [
+									{
+										"name": "a",
+										"description": null,
+										"defaultValue": null,
+										"type": {
+											"kind": "SCALAR",
+											"name": "String",
+											"ofType": null
+										}
+									},
+									{
+										"name": "b",
+										"description": null,
+										"defaultValue": null,
+										"type": {
+											"kind": "SCALAR",
+											"name": "Int",
+											"ofType": {
+												"kind": "LIST"
+											}
+										}
+									},
+									{
+										"name": "d",
+										"description": null,
+										"defaultValue": "0",
+										"type": {
+											"kind": "SCALAR",
+											"name": "Int",
+											"ofType": null
+										}
+									}
+								],
+			          "ofType": null
+			        }
+			      ]
+			    }
+			  }
+			}
+			`,
+			IDL: []byte(`input Test {
+  a: String
+  b: [Int]
+  d: Int = 0
+}`),
+		},
 	}
 
 	for _, testCase := range testCases {
