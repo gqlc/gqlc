@@ -292,9 +292,11 @@ func (c *converter) Read(p []byte) (n int, err error) {
 		c.buf.Write([]byte("@"))
 		c.buf.WriteString(d.Name)
 
-		if d.Args != nil {
+		if len(d.Args) > 0 {
 			c.buf.Write([]byte("("))
-			writeArgs(&c.buf, d.Args)
+			for _, a := range d.Args {
+				writeArg(&c.buf, a)
+			}
 			c.buf.Write([]byte(")"))
 		}
 
@@ -330,8 +332,21 @@ func (c *converter) Read(p []byte) (n int, err error) {
 	return c.buf.Read(p)
 }
 
-// TODO
-func writeArgs(w io.Writer, args []*inputValue) {}
+func writeArg(b *bytes.Buffer, a *inputValue) {
+	if a.Description != "" {
+		b.WriteString(a.Description)
+		b.Write([]byte("\n  "))
+	}
+
+	b.WriteString(a.Name)
+	b.Write([]byte(": "))
+	writeTypSig(b, a.Type)
+
+	if a.DefaultValue != "" {
+		b.Write([]byte(" = "))
+		b.WriteString(a.DefaultValue)
+	}
+}
 
 const (
 	SCALAR       = "SCALAR"
@@ -350,6 +365,29 @@ func writeTyp(b *bytes.Buffer, t typ) {
 		b.Write([]byte("scalar "))
 		b.WriteString(t.Name)
 	case OBJECT:
+		b.Write([]byte("type "))
+		b.WriteString(t.Name)
+
+		if len(t.Interfaces) > 0 {
+			b.Write([]byte(" implements "))
+			l := len(t.Interfaces) - 1
+			for i, it := range t.Interfaces {
+				b.WriteString(it.Name)
+				if i != l {
+					b.Write([]byte(" & "))
+				}
+			}
+		}
+		b.Write([]byte(" {\n  "))
+
+		l := len(t.Fields) - 1
+		for i, f := range t.Fields {
+			writeField(b, f)
+			if i != l {
+				b.Write([]byte("\n  "))
+			}
+		}
+		b.Write([]byte("\n}"))
 	case INTERFACE:
 	case UNION:
 	case ENUM:
@@ -357,6 +395,46 @@ func writeTyp(b *bytes.Buffer, t typ) {
 	case LIST:
 	case NON_NULL:
 	}
+}
+
+func writeField(b *bytes.Buffer, f *field) {
+	if f.Description != "" {
+		b.WriteString(f.Description)
+		b.Write([]byte("\n  "))
+	}
+	b.WriteString(f.Name)
+
+	if len(f.Args) > 0 {
+		l := len(f.Args) - 1
+		b.Write([]byte("("))
+		for i, a := range f.Args {
+			writeArg(b, a)
+			if i != l {
+				b.Write([]byte("\n    "))
+			}
+		}
+		b.Write([]byte(")"))
+	}
+	b.Write([]byte(": "))
+
+	writeTypSig(b, f.Type)
+}
+
+func writeTypSig(b *bytes.Buffer, t *typ) {
+	if t.OfType == nil {
+		b.WriteString(t.Name)
+		return
+	}
+
+	if t.OfType.Kind == "NON_NULL" {
+		b.WriteString(t.Name)
+		b.Write([]byte("!"))
+		return
+	}
+
+	b.Write([]byte("["))
+	b.WriteString(t.Name)
+	b.Write([]byte("]"))
 }
 
 func (c *converter) Close() error {
