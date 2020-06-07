@@ -227,6 +227,100 @@ func TestConverter(t *testing.T) {
   c(d: Int = 0): Int!
 }`),
 		},
+		{
+			Name: "INTERFACE",
+			JSON: `
+			{
+			  "data": {
+			    "__schema": {
+			      "directives": [],
+			      "types": [
+			        {
+			          "kind": "INTERFACE",
+			          "name": "Test",
+			          "description": null,
+								"fields": [
+									{
+										"name": "a",
+										"description": null,
+										"isDeprecated": false,
+										"deprecationReason": null,
+										"args": [
+											{
+												"name": "b",
+												"description": null,
+												"isDeprecated": false,
+												"deprecationReason": null,
+												"type": {
+													"kind": "SCALAR",
+													"name": "Int",
+													"ofType": null
+												}
+											}
+										],
+										"type": {
+											"kind": "SCALAR",
+											"name": "String",
+											"ofType": null
+										}
+									},
+									{
+										"name": "b",
+										"description": null,
+										"isDeprecated": false,
+										"deprecationReason": null,
+										"args": [],
+										"type": {
+											"kind": "SCALAR",
+											"name": "Int",
+											"ofType": {
+												"kind": "LIST"
+											}
+										}
+									},
+									{
+										"name": "c",
+										"description": null,
+										"isDeprecated": false,
+										"deprecationReason": null,
+										"args": [
+											{
+												"name": "d",
+												"description": null,
+												"defaultValue": "0",
+												"type": {
+													"kind": "SCALAR",
+													"name": "Int",
+													"ofType": null
+												}
+											}
+										],
+										"type": {
+											"kind": "SCALAR",
+											"name": "Int",
+											"ofType": {
+												"kind": "NON_NULL"
+											}
+										}
+									}
+								],
+			          "interfaces": null,
+			          "possibleTypes": null,
+			          "enumValues": null,
+			          "inputFields": null,
+			          "ofType": null
+			        }
+			      ]
+			    }
+			  }
+			}
+			`,
+			IDL: []byte(`interface Test {
+  a(b: Int): String
+  b: [Int]
+  c(d: Int = 0): Int!
+}`),
+		},
 	}
 
 	for _, testCase := range testCases {
