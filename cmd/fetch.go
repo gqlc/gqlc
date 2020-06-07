@@ -389,11 +389,6 @@ func writeTyp(b *bytes.Buffer, t typ) {
 		}
 		b.Write([]byte("\n}"))
 	case INTERFACE:
-		if t.Description != "" {
-			b.WriteString(t.Description)
-			b.Write([]byte("\n  "))
-		}
-
 		b.Write([]byte("interface "))
 		b.WriteString(t.Name)
 		b.Write([]byte(" {\n  "))
@@ -406,6 +401,17 @@ func writeTyp(b *bytes.Buffer, t typ) {
 		}
 		b.Write([]byte("\n}"))
 	case UNION:
+		b.Write([]byte("union "))
+		b.WriteString(t.Name)
+		b.Write([]byte(" = "))
+
+		l := len(t.PossibleTypes) - 1
+		for i, m := range t.PossibleTypes {
+			b.WriteString(m.Name)
+			if i != l {
+				b.Write([]byte(" | "))
+			}
+		}
 	case ENUM:
 	case INPUT_OBJECT:
 	case LIST:
