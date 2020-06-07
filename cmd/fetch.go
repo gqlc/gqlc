@@ -413,6 +413,24 @@ func writeTyp(b *bytes.Buffer, t typ) {
 			}
 		}
 	case ENUM:
+		b.Write([]byte("enum "))
+		b.WriteString(t.Name)
+		b.Write([]byte(" {\n  "))
+
+		l := len(t.EnumValues) - 1
+		for i, v := range t.EnumValues {
+			if v.Description != "" {
+				b.WriteString(v.Description)
+				b.Write([]byte("\n  "))
+			}
+			b.WriteString(v.Name)
+			b.Write([]byte("\n"))
+			if i != l {
+				b.Write([]byte("  "))
+			}
+		}
+
+		b.Write([]byte("}"))
 	case INPUT_OBJECT:
 	case LIST:
 	case NON_NULL:
