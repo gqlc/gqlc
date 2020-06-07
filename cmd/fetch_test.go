@@ -321,6 +321,45 @@ func TestConverter(t *testing.T) {
   c(d: Int = 0): Int!
 }`),
 		},
+		{
+			Name: "UNION",
+			JSON: `
+			{
+			  "data": {
+			    "__schema": {
+			      "directives": [],
+			      "types": [
+			        {
+			          "kind": "UNION",
+			          "name": "Test",
+			          "description": null,
+								"fields": [],
+			          "interfaces": null,
+			          "possibleTypes": [
+									{
+										"kind": "OBJECT",
+										"name": "A"
+									},
+									{
+										"kind": "OBJECT",
+										"name": "B"
+									},
+									{
+										"kind": "OBJECT",
+										"name": "C"
+									}
+								],
+			          "enumValues": null,
+			          "inputFields": null,
+			          "ofType": null
+			        }
+			      ]
+			    }
+			  }
+			}
+			`,
+			IDL: []byte(`union Test = A | B | C`),
+		},
 	}
 
 	for _, testCase := range testCases {
