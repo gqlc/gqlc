@@ -360,6 +360,55 @@ func TestConverter(t *testing.T) {
 			`,
 			IDL: []byte(`union Test = A | B | C`),
 		},
+		{
+			Name: "ENUM",
+			JSON: `
+			{
+			  "data": {
+			    "__schema": {
+			      "directives": [],
+			      "types": [
+			        {
+			          "kind": "ENUM",
+			          "name": "Test",
+			          "description": null,
+								"fields": [],
+			          "interfaces": null,
+								"possibleTypes": null,
+			          "enumValues": [
+									{
+										"name": "A",
+										"description": null,
+										"isDeprecated": null,
+										"deprecationReason": null
+									},
+									{
+										"name": "B",
+										"description": null,
+										"isDeprecated": null,
+										"deprecationReason": null
+									},
+									{
+										"name": "C",
+										"description": null,
+										"isDeprecated": null,
+										"deprecationReason": null
+									}
+								],
+			          "inputFields": null,
+			          "ofType": null
+			        }
+			      ]
+			    }
+			  }
+			}
+			`,
+			IDL: []byte(`enum Test {
+  A
+  B
+  C
+}`),
+		},
 	}
 
 	for _, testCase := range testCases {
