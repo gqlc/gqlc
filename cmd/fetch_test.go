@@ -65,32 +65,46 @@ var testRespData = []byte(`
 `)
 
 func TestFetch_FromService(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	m := http.NewServeMux()
+	m.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		w.Write(testRespData)
-	}))
+	})
+	m.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
+		w.Write(testRespData)
+	})
+
+	srv := httptest.NewServer(m)
 	defer srv.Close()
 
-	endpoint, _ := url.Parse(fmt.Sprintf("http://%s/graphql", srv.Listener.Addr().String()))
+	t.Run("Over HTTP", func(subT *testing.T) {
+		endpoint, _ := url.Parse(fmt.Sprintf("http://%s/graphql", srv.Listener.Addr().String()))
 
-	r, err := fetch(&fetchClient{Client: http.DefaultClient}, endpoint)
-	if err != nil {
-		t.Errorf("unexpected error when fetching file: %s", err)
-		return
-	}
-	defer r.Close()
+		r, err := fetch(&fetchClient{Client: http.DefaultClient}, endpoint)
+		if err != nil {
+			subT.Errorf("unexpected error when fetching file: %s", err)
+			return
+		}
+		defer r.Close()
 
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		t.Errorf("unexpected error when reading response: %s", err)
-		return
-	}
+		b, err := ioutil.ReadAll(r)
+		if err != nil {
+			subT.Errorf("unexpected error when reading response: %s", err)
+			return
+		}
 
-	// After fetching it should convert the response to the GraphQL IDL.
-	// Hence, equal testGqlFile
-	if !bytes.Equal(b, testGqlFile) {
-		t.Fail()
-		return
-	}
+		// After fetching it should convert the response to the GraphQL IDL.
+		// Hence, equal testGqlFile
+		if !bytes.Equal(b, testGqlFile) {
+			subT.Fail()
+			return
+		}
+	})
+
+	t.Run("Over Websocket", func(subT *testing.T) {
+		endpoint, _ := url.Parse(fmt.Sprintf("ws://%s/graphql", srv.Listener.Addr().String()))
+		subT.Log(endpoint)
+		subT.SkipNow()
+	})
 }
 
 type noopCloser struct {
