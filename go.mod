@@ -3,6 +3,7 @@ module github.com/gqlc/gqlc
 require (
 	github.com/golang/mock v1.4.0
 	github.com/golang/protobuf v1.3.2
+	github.com/gorilla/websocket v1.4.2
 	github.com/gqlc/compiler v0.6.0
 	github.com/gqlc/graphql v0.4.1
 	github.com/spf13/afero v1.2.2
