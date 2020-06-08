@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/compiler/spec"
@@ -26,6 +27,10 @@ func chainPreRunEs(preRunEs ...func(*cobra.Command, []string) error) func(*cobra
 // validateFilenames validates that only GraphQL files are provided.
 func validateFilenames(cmd *cobra.Command, args []string) error {
 	for _, fileName := range args {
+		if strings.HasPrefix(fileName, "http") || strings.HasPrefix(fileName, "ws") {
+			continue
+		}
+
 		ext := filepath.Ext(fileName)
 		if ext != ".gql" && ext != ".graphql" {
 			return fmt.Errorf("gqlc: invalid file extension: %s", fileName)

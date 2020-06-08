@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path/filepath"
+	"strings"
 
+	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 )
 
@@ -115,18 +118,40 @@ func init() {
 	}
 }
 
-func fetch(client *http.Client, url string) (io.ReadCloser, error) {
-	if filepath.Base(url) != "graphql" {
-		zap.L().Info("fetching remote file", zap.String("name", url))
-		resp, err := client.Get(url)
-		return resp.Body, err
+type fetchClient struct {
+	*http.Client
+	*websocket.Dialer
+}
+
+func fetch(client *fetchClient, url *url.URL) (io.ReadCloser, error) {
+	if strings.HasPrefix(url.Scheme, "ws") || filepath.Base(url.Path) == "graphql" {
+		zap.L().Info("fetching types via introspection", zap.String("endpoint", url.String()))
+		return client.introspect(url)
 	}
 
-	resp, err := client.Post(url, "application/json", &query)
-	if err != nil {
-		return nil, err
+	zap.L().Info("fetching remote file", zap.String("name", url.String()))
+	resp, err := client.Get(url.String())
+	return resp.Body, err
+}
+
+func (c *fetchClient) introspect(endpoint *url.URL) (io.ReadCloser, error) {
+	switch endpoint.Scheme {
+	case "http", "https":
+		resp, err := c.Post(endpoint.String(), "application/json", &query)
+		if err != nil {
+			return nil, err
+		}
+		return newConverter(resp.Body)
+	case "ws", "wss":
+		conn, _, err := c.Dial(endpoint.String(), nil)
+		if err != nil {
+			return nil, err
+		}
+		defer conn.Close()
+		return nil, nil
+	default:
+		return nil, nil
 	}
-	return newConverter(resp.Body)
 }
 
 type inputValue struct {

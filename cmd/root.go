@@ -6,12 +6,14 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/scanner"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/compiler/spec"
 	"github.com/gqlc/gqlc/gen"
@@ -321,13 +323,23 @@ func getImports(doc *ast.Document) (names []string) {
 	return
 }
 
-var httpClient = &http.Client{
-	Timeout: 5 * time.Second,
+var client = &fetchClient{
+	Client: &http.Client{
+		Timeout: 5 * time.Second,
+	},
+	Dialer: &websocket.Dialer{
+		HandshakeTimeout: 3 * time.Second,
+		Subprotocols:     []string{"graphql-ws"},
+	},
 }
 
 func openFile(name string, fs afero.Fs, importPaths []string) (io.ReadCloser, error) {
-	if strings.HasPrefix(name, "http") {
-		return fetch(httpClient, name)
+	endpoint, err := url.Parse(name)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint.Scheme != "" && endpoint.Opaque == "" {
+		return fetch(client, endpoint)
 	}
 
 	fname, err := normFilePath(fs, importPaths, name)

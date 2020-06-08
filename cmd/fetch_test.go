@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -19,7 +20,9 @@ func TestFetch_RemoteFile(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	r, err := fetch(http.DefaultClient, "http://"+srv.Listener.Addr().String())
+	endpoint, _ := url.Parse("http://" + srv.Listener.Addr().String())
+
+	r, err := fetch(&fetchClient{Client: http.DefaultClient}, endpoint)
 	if err != nil {
 		t.Errorf("unexpected error when fetching file: %s", err)
 		return
@@ -67,7 +70,9 @@ func TestFetch_FromService(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	r, err := fetch(http.DefaultClient, fmt.Sprintf("http://%s/graphql", srv.Listener.Addr().String()))
+	endpoint, _ := url.Parse(fmt.Sprintf("http://%s/graphql", srv.Listener.Addr().String()))
+
+	r, err := fetch(&fetchClient{Client: http.DefaultClient}, endpoint)
 	if err != nil {
 		t.Errorf("unexpected error when fetching file: %s", err)
 		return
