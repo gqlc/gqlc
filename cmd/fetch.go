@@ -2,15 +2,17 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path/filepath"
 	"strings"
 
-	"github.com/gorilla/websocket"
+	"github.com/zaba505/gws"
 	"go.uber.org/zap"
 )
 
@@ -86,7 +88,6 @@ var introQuery = `query {
 			name
 			description
 			locations
-			isRepeatable
 			args {
 				name
 				description
@@ -120,7 +121,6 @@ func init() {
 
 type fetchClient struct {
 	*http.Client
-	*websocket.Dialer
 }
 
 func fetch(client *fetchClient, url *url.URL) (io.ReadCloser, error) {
@@ -134,24 +134,53 @@ func fetch(client *fetchClient, url *url.URL) (io.ReadCloser, error) {
 	return resp.Body, err
 }
 
+type noopCloser struct {
+	io.Reader
+}
+
+func (noopCloser) Close() error { return nil }
+
 func (c *fetchClient) introspect(endpoint *url.URL) (io.ReadCloser, error) {
+	var resp *gws.Response
+
 	switch endpoint.Scheme {
 	case "http", "https":
-		resp, err := c.Post(endpoint.String(), "application/json", &query)
+		r, err := c.Post(endpoint.String(), "application/json", &query)
 		if err != nil {
 			return nil, err
 		}
-		return newConverter(resp.Body)
+		defer r.Body.Close()
+
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		resp = new(gws.Response)
+		err = json.Unmarshal(b, resp)
+		if err != nil {
+			return nil, err
+		}
 	case "ws", "wss":
-		conn, _, err := c.Dial(endpoint.String(), nil)
+		conn, err := gws.Dial(context.TODO(), endpoint.String())
 		if err != nil {
 			return nil, err
 		}
 		defer conn.Close()
-		return nil, nil
+
+		wc := gws.NewClient(conn)
+
+		resp, err = wc.Query(context.TODO(), &gws.Request{Query: introQuery})
+		if err != nil {
+			return nil, err
+		}
 	default:
+		// TODO
 		return nil, nil
 	}
+	// TODO: Check resp.Errors
+
+	return newConverter(noopCloser{bytes.NewReader(resp.Data)})
 }
 
 type inputValue struct {
@@ -226,23 +255,13 @@ func newConverter(rc io.ReadCloser) (*converter, error) {
 
 func (c *converter) init() error {
 	c.src.Token()
+
 	tok, terr := c.src.Token()
 	if terr != nil {
 		return terr
 	}
 
 	fieldName := tok.(string)
-	if fieldName != "data" {
-		return fmt.Errorf("unexpected field in json: %s", fieldName)
-	}
-	c.src.Token()
-
-	tok, terr = c.src.Token()
-	if terr != nil {
-		return terr
-	}
-
-	fieldName = tok.(string)
 	if fieldName != "__schema" {
 		return fmt.Errorf("expected field: \"__schema\", but got: %s", fieldName)
 	}
