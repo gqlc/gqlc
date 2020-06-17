@@ -2,14 +2,17 @@ package cmd
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/zaba505/gws"
 )
 
 var testGqlFile = []byte(`scalar Time`)
@@ -43,75 +46,87 @@ func TestFetch_RemoteFile(t *testing.T) {
 
 var testRespData = []byte(`
 {
-  "data": {
-    "__schema": {
-      "directives": [],
-      "types": [
-        {
-          "kind": "SCALAR",
-          "name": "Time",
-          "description": null,
-          "fields": null,
-          "interfaces": null,
-          "possibleTypes": null,
-          "enumValues": null,
-          "inputFields": null,
-          "ofType": null
-        }
-      ]
-    }
+  "__schema": {
+    "directives": [],
+    "types": [
+      {
+        "kind": "SCALAR",
+        "name": "Time",
+        "description": null,
+        "fields": null,
+        "interfaces": null,
+        "possibleTypes": null,
+        "enumValues": null,
+        "inputFields": null,
+        "ofType": null
+      }
+    ]
   }
 }
 `)
 
 func TestFetch_FromService(t *testing.T) {
+	wh := gws.NewHandler(gws.HandlerFunc(func(s *gws.Stream, req *gws.Request) error {
+		s.Send(context.TODO(), &gws.Response{Data: []byte(testRespData)})
+		return s.Close()
+	}))
+
 	m := http.NewServeMux()
-	m.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		w.Write(testRespData)
-	})
+	m.Handle("/", wh)
 	m.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
-		w.Write(testRespData)
+		b, _ := json.Marshal(&gws.Response{Data: []byte(testRespData)})
+		w.Write(b)
 	})
+
+	testCases := []struct {
+		Name   string
+		Scheme string
+		Path   string
+	}{
+		{
+			Name:   "Over HTTP",
+			Scheme: "http",
+			Path:   "graphql",
+		},
+		{
+			Name:   "Over Websocket",
+			Scheme: "ws",
+		},
+	}
 
 	srv := httptest.NewServer(m)
 	defer srv.Close()
 
-	t.Run("Over HTTP", func(subT *testing.T) {
-		endpoint, _ := url.Parse(fmt.Sprintf("http://%s/graphql", srv.Listener.Addr().String()))
+	testClient := &fetchClient{
+		Client: http.DefaultClient,
+	}
 
-		r, err := fetch(&fetchClient{Client: http.DefaultClient}, endpoint)
-		if err != nil {
-			subT.Errorf("unexpected error when fetching file: %s", err)
-			return
-		}
-		defer r.Close()
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(subT *testing.T) {
+			endpoint, _ := url.Parse(fmt.Sprintf("%s://%s/%s", testCase.Scheme, srv.Listener.Addr().String(), testCase.Path))
 
-		b, err := ioutil.ReadAll(r)
-		if err != nil {
-			subT.Errorf("unexpected error when reading response: %s", err)
-			return
-		}
+			r, err := fetch(testClient, endpoint)
+			if err != nil {
+				subT.Errorf("unexpected error when fetching file: %s", err)
+				return
+			}
+			defer r.Close()
 
-		// After fetching it should convert the response to the GraphQL IDL.
-		// Hence, equal testGqlFile
-		if !bytes.Equal(b, testGqlFile) {
-			subT.Fail()
-			return
-		}
-	})
+			b, err := ioutil.ReadAll(r)
+			if err != nil {
+				subT.Errorf("unexpected error when reading response: %s", err)
+				return
+			}
 
-	t.Run("Over Websocket", func(subT *testing.T) {
-		endpoint, _ := url.Parse(fmt.Sprintf("ws://%s/graphql", srv.Listener.Addr().String()))
-		subT.Log(endpoint)
-		subT.SkipNow()
-	})
+			// After fetching it should convert the response to the GraphQL IDL.
+			// Hence, equal testGqlFile
+			if !bytes.Equal(b, testGqlFile) {
+				subT.Fail()
+				return
+			}
+		})
+	}
 }
-
-type noopCloser struct {
-	io.Reader
-}
-
-func (noopCloser) Close() error { return nil }
 
 func TestConverter(t *testing.T) {
 	testCases := []struct {
@@ -123,7 +138,6 @@ func TestConverter(t *testing.T) {
 			Name: "SCALAR",
 			JSON: `
 			{
-			  "data": {
 			    "__schema": {
 			      "directives": [],
 			      "types": [
@@ -140,7 +154,6 @@ func TestConverter(t *testing.T) {
 			        }
 			      ]
 			    }
-			  }
 			}
 			`,
 			IDL: []byte("scalar Time"),
@@ -149,7 +162,6 @@ func TestConverter(t *testing.T) {
 			Name: "OBJECT",
 			JSON: `
 			{
-			  "data": {
 			    "__schema": {
 			      "directives": [],
 			      "types": [
@@ -237,7 +249,6 @@ func TestConverter(t *testing.T) {
 			        }
 			      ]
 			    }
-			  }
 			}
 			`,
 			IDL: []byte(`type Test implements A & B {
@@ -250,7 +261,6 @@ func TestConverter(t *testing.T) {
 			Name: "INTERFACE",
 			JSON: `
 			{
-			  "data": {
 			    "__schema": {
 			      "directives": [],
 			      "types": [
@@ -331,7 +341,6 @@ func TestConverter(t *testing.T) {
 			        }
 			      ]
 			    }
-			  }
 			}
 			`,
 			IDL: []byte(`interface Test {
@@ -344,7 +353,6 @@ func TestConverter(t *testing.T) {
 			Name: "UNION",
 			JSON: `
 			{
-			  "data": {
 			    "__schema": {
 			      "directives": [],
 			      "types": [
@@ -374,7 +382,6 @@ func TestConverter(t *testing.T) {
 			        }
 			      ]
 			    }
-			  }
 			}
 			`,
 			IDL: []byte(`union Test = A | B | C`),
@@ -383,7 +390,6 @@ func TestConverter(t *testing.T) {
 			Name: "ENUM",
 			JSON: `
 			{
-			  "data": {
 			    "__schema": {
 			      "directives": [],
 			      "types": [
@@ -419,7 +425,6 @@ func TestConverter(t *testing.T) {
 			        }
 			      ]
 			    }
-			  }
 			}
 			`,
 			IDL: []byte(`enum Test {
@@ -432,7 +437,6 @@ func TestConverter(t *testing.T) {
 			Name: "INPUT",
 			JSON: `
 			{
-			  "data": {
 			    "__schema": {
 			      "directives": [],
 			      "types": [
@@ -482,7 +486,6 @@ func TestConverter(t *testing.T) {
 			        }
 			      ]
 			    }
-			  }
 			}
 			`,
 			IDL: []byte(`input Test {
