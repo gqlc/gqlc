@@ -10,7 +10,7 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/yuin/goldmark v1.1.30
-	github.com/zaba505/gws v0.3.1
+	github.com/zaba505/gws v0.3.2
 	go.uber.org/zap v1.15.0
 )
 
