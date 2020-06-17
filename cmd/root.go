@@ -13,7 +13,6 @@ import (
 	"text/scanner"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/compiler/spec"
 	"github.com/gqlc/gqlc/gen"
@@ -326,10 +325,6 @@ func getImports(doc *ast.Document) (names []string) {
 var client = &fetchClient{
 	Client: &http.Client{
 		Timeout: 5 * time.Second,
-	},
-	Dialer: &websocket.Dialer{
-		HandshakeTimeout: 3 * time.Second,
-		Subprotocols:     []string{"graphql-ws"},
 	},
 }
 
