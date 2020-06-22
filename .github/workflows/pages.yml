@@ -37,9 +37,10 @@ jobs:
     steps:
     - name: Configure SSH
       run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
         eval `ssh-agent -s`
-        echo "${{ secrets.SSH_PAGES_DEPLOY_KEY }}" | ssh-add -
-        ls ~/.ssh
+        ssh-add - <<< "${{ secrets.SSH_PAGES_DEPLOY_KEY }}"
 
     - name: Download pages artifact
       uses: actions/download-artifact@v1
