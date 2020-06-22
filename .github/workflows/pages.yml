@@ -1,0 +1,31 @@
+name: pages
+
+on:
+  push:
+    branches:
+    - site
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Node
+      uses: actions/setup-node@v1
+      with:
+        node-version: 12.x
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Get dependencies
+      run: npm ci
+
+    - name: Run vuepress build
+      run: npm run docs:build
+
+    - name: Artifact built pages
+      uses: actions/upload-artifact@v1
+      with:
+        name: dist
+        path: docs/.vuepress/dist
