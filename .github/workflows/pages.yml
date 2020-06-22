@@ -39,6 +39,7 @@ jobs:
       run: |
         eval `ssh-agent -s`
         echo "${{ secrets.SSH_PAGES_DEPLOY_KEY }}" | ssh-add -
+        ls ~/.ssh
 
     - name: Download pages artifact
       uses: actions/download-artifact@v1
@@ -46,7 +47,9 @@ jobs:
         name: dist
 
     - name: Init repo
-      run: git clone git@github.com:gqlc/gqlc.github.io.git
+      run: |
+        ssh -vT git@github.com
+        git clone git@github.com:gqlc/gqlc.github.io.git
 
     - name: Update pages
       run: |
