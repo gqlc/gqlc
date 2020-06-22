@@ -36,7 +36,9 @@ jobs:
     needs: build
     steps:
     - name: Configure SSH
-      run: echo "${{ secrets.SSH_PAGES_DEPLOY_KEY }}" | ssh-add -
+      run: |
+        eval `ssh-agent -s`
+        echo "${{ secrets.SSH_PAGES_DEPLOY_KEY }}" | ssh-add -
 
     - name: Download pages artifact
       uses: actions/download-artifact@v1
