@@ -490,7 +490,7 @@ func TestConverter(t *testing.T) {
 				"__schema": {
 					"directives": [
 						{
-							"name": "skip",
+							"name": "s",
 							"locations": ["FIELD_DEFINITION"],
 							"args": [
 								{
@@ -511,7 +511,28 @@ func TestConverter(t *testing.T) {
 				}
 			}
 			`,
-			IDL: []byte("@skip(if: Boolean!) on FIELD_DEFINITION\n"),
+			IDL: []byte("@s(if: Boolean!) on FIELD_DEFINITION\n"),
+		},
+		{
+			Name: "Ignore Builtins",
+			JSON: `
+			{
+				"__schema": {
+					"directives": [],
+					"types": [
+						{
+							"kind": "SCALAR",
+							"name": "String"
+						},
+						{
+							"kind": "SCALAR",
+							"name": "Custom"
+						}
+					]
+				}
+			}
+			`,
+			IDL: []byte("scalar Custom\n"),
 		},
 	}
 
