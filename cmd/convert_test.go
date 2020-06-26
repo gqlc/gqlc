@@ -484,7 +484,7 @@ func TestConverter(t *testing.T) {
 			rc := noopCloser{strings.NewReader(testCase.JSON)}
 			c, err := newConverter(rc)
 			if err != nil {
-				t.Errorf("unexpected error when initing converter: %s", err)
+				subT.Errorf("unexpected error when initing converter: %s", err)
 				return
 			}
 
@@ -495,8 +495,8 @@ func TestConverter(t *testing.T) {
 			}
 
 			if !bytes.Equal(b, testCase.IDL) {
-				t.Logf("\nexpected: %s\ngot: %s", string(testCase.IDL), string(b))
-				t.Fail()
+				subT.Logf("\nexpected: %s\ngot: %s", string(testCase.IDL), string(b))
+				subT.Fail()
 				return
 			}
 		})
