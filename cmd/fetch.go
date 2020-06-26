@@ -40,6 +40,7 @@ var introQuery = `query {
 
             ofType {
               kind
+							name
             }
 					}
 				}
@@ -49,6 +50,7 @@ var introQuery = `query {
 
           ofType {
             kind
+						name
           }
 				}
 			}
@@ -79,6 +81,7 @@ var introQuery = `query {
 
           ofType {
             kind
+						name
           }
 				}
 			}
@@ -97,6 +100,7 @@ var introQuery = `query {
 
           ofType {
             kind
+						name
           }
 				}
 			}

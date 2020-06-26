@@ -80,10 +80,11 @@ func TestConverter(t *testing.T) {
 										"deprecationReason": null,
 										"args": [],
 										"type": {
-											"kind": "SCALAR",
-											"name": "Int",
+											"kind": "LIST",
+											"name": null,
 											"ofType": {
-												"kind": "LIST"
+												"name": "Int",
+												"kind": "SCALAR"
 											}
 										}
 									},
@@ -105,10 +106,11 @@ func TestConverter(t *testing.T) {
 											}
 										],
 										"type": {
-											"kind": "SCALAR",
-											"name": "Int",
+											"kind": "NON_NULL",
+											"name": null,
 											"ofType": {
-												"kind": "NON_NULL"
+												"name": "Int",
+												"kind": "SCALAR"
 											}
 										}
 									}
@@ -180,10 +182,11 @@ func TestConverter(t *testing.T) {
 										"deprecationReason": null,
 										"args": [],
 										"type": {
-											"kind": "SCALAR",
-											"name": "Int",
+											"kind": "LIST",
+											"name": null,
 											"ofType": {
-												"kind": "LIST"
+												"name": "Int",
+												"kind": "SCALAR"
 											}
 										}
 									},
@@ -205,10 +208,11 @@ func TestConverter(t *testing.T) {
 											}
 										],
 										"type": {
-											"kind": "SCALAR",
-											"name": "Int",
+											"kind": "NON_NULL",
+											"name": null,
 											"ofType": {
-												"kind": "NON_NULL"
+												"name": "Int",
+												"kind": "SCALAR"
 											}
 										}
 									}
@@ -280,10 +284,11 @@ func TestConverter(t *testing.T) {
 										"deprecationReason": null,
 										"args": [],
 										"type": {
-											"kind": "SCALAR",
-											"name": "Int",
+											"kind": "LIST",
+											"name": null,
 											"ofType": {
-												"kind": "LIST"
+												"kind": "SCALAR",
+												"name": "Int"
 											}
 										}
 									},
@@ -305,10 +310,11 @@ func TestConverter(t *testing.T) {
 											}
 										],
 										"type": {
-											"kind": "SCALAR",
-											"name": "Int",
+											"kind": "NON_NULL",
+											"name": null,
 											"ofType": {
-												"kind": "NON_NULL"
+												"kind": "SCALAR",
+												"name": "Int"
 											}
 										}
 									}
@@ -446,10 +452,10 @@ func TestConverter(t *testing.T) {
 										"description": null,
 										"defaultValue": null,
 										"type": {
-											"kind": "SCALAR",
-											"name": "Int",
+											"kind": "LIST",
 											"ofType": {
-												"kind": "LIST"
+												"name": "Int",
+												"kind": "SCALAR"
 											}
 										}
 									},
@@ -476,6 +482,36 @@ func TestConverter(t *testing.T) {
   d: Int = 0
 }
 `),
+		},
+		{
+			Name: "DIRECTIVE",
+			JSON: `
+			{
+				"__schema": {
+					"directives": [
+						{
+							"name": "skip",
+							"locations": ["FIELD_DEFINITION"],
+							"args": [
+								{
+									"name": "if",
+									"type": {
+										"kind": "NON_NULL",
+										"name": null,
+										"ofType": {
+											"kind": "SCALAR",
+											"name": "Boolean"
+										}
+									}
+								}
+							]
+						}
+					],
+					"types": []
+				}
+			}
+			`,
+			IDL: []byte("@skip(if: Boolean!) on FIELD_DEFINITION\n"),
 		},
 	}
 
