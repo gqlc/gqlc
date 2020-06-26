@@ -361,20 +361,18 @@ func writeField(b *bytes.Buffer, f *field) {
 }
 
 func writeTypSig(b *bytes.Buffer, t *typ) {
-	if t.OfType == nil {
-		b.WriteString(t.Name)
-		return
-	}
-
-	if t.OfType.Kind == "NON_NULL" {
-		b.WriteString(t.Name)
+	switch t.Kind {
+	case "NON_NULL":
+		writeTypSig(b, t.OfType)
 		b.Write([]byte("!"))
+	case "LIST":
+		b.Write([]byte("["))
+		writeTypSig(b, t.OfType)
+		b.Write([]byte("]"))
+	default:
+		b.WriteString(t.Name)
 		return
 	}
-
-	b.Write([]byte("["))
-	b.WriteString(t.Name)
-	b.Write([]byte("]"))
 }
 
 func (c *converter) Close() error {
