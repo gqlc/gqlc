@@ -192,6 +192,10 @@ func (c *converter) Read(p []byte) (n int, err error) {
 			break
 		}
 
+		if isBuiltin(t.Name) {
+			return c.Read(p)
+		}
+
 		if t.Description != "" {
 			writeDescrQuotes(&c.buf, t.Description)
 			c.buf.WriteString(t.Description)
@@ -377,4 +381,8 @@ func writeTypSig(b *bytes.Buffer, t *typ) {
 
 func (c *converter) Close() error {
 	return c.close()
+}
+
+func isBuiltin(name string) bool {
+	return name == "ID" || name == "Int" || name == "Float" || name == "String" || name == "Boolean" || name == "skip" || name == "deprecated" || name == "include"
 }
