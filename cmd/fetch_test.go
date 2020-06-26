@@ -15,7 +15,7 @@ import (
 	"github.com/zaba505/gws"
 )
 
-var testGqlFile = []byte(`scalar Time`)
+var testGqlFile = []byte("scalar Time\n")
 
 func TestFetch_RemoteFile(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -156,7 +156,7 @@ func TestConverter(t *testing.T) {
 			    }
 			}
 			`,
-			IDL: []byte("scalar Time"),
+			IDL: []byte("scalar Time\n"),
 		},
 		{
 			Name: "OBJECT",
@@ -255,7 +255,108 @@ func TestConverter(t *testing.T) {
   a(b: Int): String
   b: [Int]
   c(d: Int = 0): Int!
-}`),
+}
+`),
+		},
+		{
+			Name: "OBJECT with Descriptions",
+			JSON: `
+			{
+			    "__schema": {
+			      "directives": [],
+			      "types": [
+			        {
+			          "kind": "OBJECT",
+			          "name": "Test",
+			          "description": null,
+			          "fields": [
+									{
+										"name": "a",
+										"description": "a is a field.",
+										"isDeprecated": false,
+										"deprecationReason": null,
+										"args": [
+											{
+												"name": "b",
+												"description": "b is a arg.",
+												"isDeprecated": false,
+												"deprecationReason": null,
+												"type": {
+													"kind": "SCALAR",
+													"name": "Int",
+													"ofType": null
+												}
+											}
+										],
+										"type": {
+											"kind": "SCALAR",
+											"name": "String",
+											"ofType": null
+										}
+									},
+									{
+										"name": "b",
+										"description": "b is a field.",
+										"isDeprecated": false,
+										"deprecationReason": null,
+										"args": [],
+										"type": {
+											"kind": "SCALAR",
+											"name": "Int",
+											"ofType": {
+												"kind": "LIST"
+											}
+										}
+									},
+									{
+										"name": "c",
+										"description": "c is a field.",
+										"isDeprecated": false,
+										"deprecationReason": null,
+										"args": [
+											{
+												"name": "d",
+												"description": "d is a arg.",
+												"defaultValue": "0",
+												"type": {
+													"kind": "SCALAR",
+													"name": "Int",
+													"ofType": null
+												}
+											}
+										],
+										"type": {
+											"kind": "SCALAR",
+											"name": "Int",
+											"ofType": {
+												"kind": "NON_NULL"
+											}
+										}
+									}
+								],
+			          "interfaces": [
+									{
+										"name": "A"
+									},
+									{
+										"name": "B"
+									}
+								],
+			          "possibleTypes": null,
+			          "enumValues": null,
+			          "inputFields": null,
+			          "ofType": null
+			        }
+			      ]
+			    }
+			}
+			`,
+			IDL: []byte(`type Test implements A & B {
+  "a is a field." a("b is a arg." b: Int): String
+  "b is a field." b: [Int]
+  "c is a field." c("d is a arg." d: Int = 0): Int!
+}
+`),
 		},
 		{
 			Name: "INTERFACE",
@@ -347,7 +448,8 @@ func TestConverter(t *testing.T) {
   a(b: Int): String
   b: [Int]
   c(d: Int = 0): Int!
-}`),
+}
+`),
 		},
 		{
 			Name: "UNION",
@@ -384,7 +486,7 @@ func TestConverter(t *testing.T) {
 			    }
 			}
 			`,
-			IDL: []byte(`union Test = A | B | C`),
+			IDL: []byte("union Test = A | B | C\n"),
 		},
 		{
 			Name: "ENUM",
@@ -431,7 +533,8 @@ func TestConverter(t *testing.T) {
   A
   B
   C
-}`),
+}
+`),
 		},
 		{
 			Name: "INPUT",
@@ -492,7 +595,8 @@ func TestConverter(t *testing.T) {
   a: String
   b: [Int]
   d: Int = 0
-}`),
+}
+`),
 		},
 	}
 

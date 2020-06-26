@@ -328,9 +328,10 @@ func (c *converter) Read(p []byte) (n int, err error) {
 		}
 
 		if d.Description != "" {
-			c.buf.Write([]byte("\""))
+			writeDescrQuotes(&c.buf, d.Description)
 			c.buf.WriteString(d.Description)
-			c.buf.Write([]byte("\"\n"))
+			writeDescrQuotes(&c.buf, d.Description)
+			c.buf.Write([]byte("\n"))
 		}
 
 		c.buf.Write([]byte("@"))
@@ -365,21 +366,25 @@ func (c *converter) Read(p []byte) (n int, err error) {
 		}
 
 		if t.Description != "" {
-			c.buf.Write([]byte("\""))
+			writeDescrQuotes(&c.buf, t.Description)
 			c.buf.WriteString(t.Description)
-			c.buf.Write([]byte("\"\n"))
+			writeDescrQuotes(&c.buf, t.Description)
+			c.buf.Write([]byte("\n"))
 		}
 
 		writeTyp(&c.buf, t)
 	}
+	c.buf.WriteRune('\n')
 
 	return c.buf.Read(p)
 }
 
 func writeArg(b *bytes.Buffer, a *inputValue) {
 	if a.Description != "" {
+		writeDescrQuotes(b, a.Description)
 		b.WriteString(a.Description)
-		b.Write([]byte("\n  "))
+		writeDescrQuotes(b, a.Description)
+		b.Write([]byte(" "))
 	}
 
 	b.WriteString(a.Name)
@@ -389,6 +394,14 @@ func writeArg(b *bytes.Buffer, a *inputValue) {
 	if a.DefaultValue != "" {
 		b.Write([]byte(" = "))
 		b.WriteString(a.DefaultValue)
+	}
+}
+
+func writeDescrQuotes(b *bytes.Buffer, descr string) {
+	b.Write([]byte(`"`))
+
+	if strings.ContainsRune(descr, '\n') {
+		b.Write([]byte(`""`))
 	}
 }
 
@@ -464,8 +477,10 @@ func writeTyp(b *bytes.Buffer, t typ) {
 		l := len(t.EnumValues) - 1
 		for i, v := range t.EnumValues {
 			if v.Description != "" {
+				writeDescrQuotes(b, v.Description)
 				b.WriteString(v.Description)
-				b.Write([]byte("\n  "))
+				writeDescrQuotes(b, v.Description)
+				b.Write([]byte(" "))
 			}
 			b.WriteString(v.Name)
 			b.Write([]byte("\n"))
@@ -495,8 +510,10 @@ func writeTyp(b *bytes.Buffer, t typ) {
 
 func writeField(b *bytes.Buffer, f *field) {
 	if f.Description != "" {
+		writeDescrQuotes(b, f.Description)
 		b.WriteString(f.Description)
-		b.Write([]byte("\n  "))
+		writeDescrQuotes(b, f.Description)
+		b.Write([]byte(" "))
 	}
 	b.WriteString(f.Name)
 
