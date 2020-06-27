@@ -440,7 +440,7 @@ func TestConverter(t *testing.T) {
 									{
 										"name": "a",
 										"description": null,
-										"defaultValue": null,
+										"defaultValue": "\"hello\"",
 										"type": {
 											"kind": "SCALAR",
 											"name": "String",
@@ -462,7 +462,7 @@ func TestConverter(t *testing.T) {
 									{
 										"name": "d",
 										"description": null,
-										"defaultValue": "0",
+										"defaultValue": "\"0\"",
 										"type": {
 											"kind": "SCALAR",
 											"name": "Int",
@@ -477,7 +477,7 @@ func TestConverter(t *testing.T) {
 			}
 			`,
 			IDL: []byte(`input Test {
-  a: String
+  a: String = "hello"
   b: [Int]
   d: Int = 0
 }
