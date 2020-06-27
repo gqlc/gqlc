@@ -124,7 +124,7 @@ type fetchClient struct {
 
 func fetch(client *fetchClient, url *url.URL, headers http.Header) (io.ReadCloser, error) {
 	if strings.HasPrefix(url.Scheme, "ws") || filepath.Base(url.Path) == "graphql" {
-		zap.L().Info("fetching types via introspection", zap.String("endpoint", url.String()))
+		zap.L().Info("fetching types via introspection", zap.String("endpoint", url.String()), zap.Any("headers", headers))
 		return client.introspect(url, headers)
 	}
 
