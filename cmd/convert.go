@@ -230,7 +230,11 @@ func writeArg(b *bytes.Buffer, a *inputValue) {
 
 	if a.DefaultValue != "" {
 		b.Write([]byte(" = "))
-		b.WriteString(a.DefaultValue)
+		v := a.DefaultValue
+		if a.Type.Name != "String" {
+			v = strings.Trim(v, "\"")
+		}
+		b.WriteString(v)
 	}
 }
 
