@@ -122,14 +122,17 @@ type fetchClient struct {
 	*http.Client
 }
 
-func fetch(client *fetchClient, url *url.URL) (io.ReadCloser, error) {
+func fetch(client *fetchClient, url *url.URL, headers http.Header) (io.ReadCloser, error) {
 	if strings.HasPrefix(url.Scheme, "ws") || filepath.Base(url.Path) == "graphql" {
 		zap.L().Info("fetching types via introspection", zap.String("endpoint", url.String()))
-		return client.introspect(url)
+		return client.introspect(url, headers)
 	}
 
-	zap.L().Info("fetching remote file", zap.String("name", url.String()))
-	resp, err := client.Get(url.String())
+	req, _ := http.NewRequest(http.MethodGet, url.String(), nil)
+	req.Header = headers
+
+	zap.L().Info("fetching remote file", zap.String("name", url.String()), zap.Any("headers", headers))
+	resp, err := client.Do(req)
 	return resp.Body, err
 }
 
@@ -139,12 +142,23 @@ type noopCloser struct {
 
 func (noopCloser) Close() error { return nil }
 
-func (c *fetchClient) introspect(endpoint *url.URL) (io.ReadCloser, error) {
+func (c *fetchClient) introspect(endpoint *url.URL, headers http.Header) (io.ReadCloser, error) {
 	var resp *gws.Response
 
 	switch endpoint.Scheme {
 	case "http", "https":
-		r, err := c.Post(endpoint.String(), "application/json", &query)
+		hs := make(http.Header)
+		for k, v := range headers {
+			for _, s := range v {
+				hs.Add(k, s)
+			}
+		}
+		hs.Set("Content-Type", "application/json")
+
+		req, _ := http.NewRequest(http.MethodPost, endpoint.String(), &query)
+		req.Header = hs
+
+		r, err := c.Do(req)
 		if err != nil {
 			return nil, err
 		}
@@ -161,7 +175,7 @@ func (c *fetchClient) introspect(endpoint *url.URL) (io.ReadCloser, error) {
 			return nil, err
 		}
 	case "ws", "wss":
-		conn, err := gws.Dial(context.TODO(), endpoint.String())
+		conn, err := gws.Dial(context.TODO(), endpoint.String(), gws.WithHeaders(headers))
 		if err != nil {
 			return nil, err
 		}
