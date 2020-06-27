@@ -154,6 +154,11 @@ func (c *converter) Read(p []byte) (n int, err error) {
 			break
 		}
 
+		// Skip builtin directives
+		if isBuiltinDirective(d.Name) {
+			return c.Read(p)
+		}
+
 		if d.Description != "" {
 			writeDescrQuotes(&c.buf, d.Description)
 			c.buf.WriteString(d.Description)
@@ -192,7 +197,8 @@ func (c *converter) Read(p []byte) (n int, err error) {
 			break
 		}
 
-		if isBuiltin(t.Name) {
+		// Skip introspection types and builtin types
+		if strings.HasPrefix(t.Name, "__") || isBuiltinType(t.Name) {
 			return c.Read(p)
 		}
 
@@ -383,6 +389,10 @@ func (c *converter) Close() error {
 	return c.close()
 }
 
-func isBuiltin(name string) bool {
-	return name == "ID" || name == "Int" || name == "Float" || name == "String" || name == "Boolean" || name == "skip" || name == "deprecated" || name == "include"
+func isBuiltinType(name string) bool {
+	return name == "ID" || name == "Int" || name == "Float" || name == "String" || name == "Boolean"
+}
+
+func isBuiltinDirective(name string) bool {
+	return name == "skip" || name == "deprecated" || name == "include"
 }
