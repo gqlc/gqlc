@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"encoding/csv"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -10,6 +12,58 @@ import (
 
 	"github.com/gqlc/gqlc/gen"
 )
+
+// headerFlag represents a flag for setting HTTP headers
+// Any repeats will not override. They will append.
+//
+// format: a=1,b=2
+//
+type headerFlag struct {
+	value   *http.Header
+	changed bool
+}
+
+func (*headerFlag) String() string { return "" }
+
+func (*headerFlag) Type() string { return "map[string][]string" }
+
+func (f *headerFlag) Set(val string) error {
+	var ss []string
+	n := strings.Count(val, "=")
+	switch n {
+	case 0:
+		return fmt.Errorf("%s must be formatted as key=value", val)
+	case 1:
+		ss = append(ss, strings.Trim(val, `"`))
+	default:
+		r := csv.NewReader(strings.NewReader(val))
+		var err error
+		ss, err = r.Read()
+		if err != nil {
+			return err
+		}
+	}
+
+	out := make(http.Header, len(ss))
+	for _, pair := range ss {
+		kv := strings.SplitN(pair, "=", 2)
+		if len(kv) != 2 {
+			return fmt.Errorf("%s must be formatted as key=value", pair)
+		}
+		out.Add(kv[0], strings.Trim(kv[1], "\""))
+	}
+	if !f.changed {
+		*f.value = out
+	} else {
+		for k, v := range out {
+			for _, s := range v {
+				f.value.Add(k, strings.Trim(s, "\""))
+			}
+		}
+	}
+	f.changed = true
+	return nil
+}
 
 // genFlag represents a Generator flag: *_out
 type genFlag struct {
