@@ -230,13 +230,17 @@ func (c *fetchClient) Do(req *http.Request) (resp *http.Response, err error) {
 		r := req.WithContext(ctx)
 		r.Body = &noopCloser{body}
 
-		zap.L().Info("fetching remote source", zap.String("endpoint", req.URL.String()), zap.Int("attempt", attempt), zap.Duration("timeout", timeout))
+		zap.L().Info("performing http request", zap.String("endpoint", req.URL.String()), zap.Int("attempt", attempt), zap.Duration("timeout", timeout))
 		resp, err = c.Client.Do(r)
-		cancel()
 
 		if err == nil {
+			b, err = ioutil.ReadAll(resp.Body)
+			cancel()
+			resp.Body = &noopCloser{bytes.NewReader(b)}
 			return
 		}
+
+		cancel()
 		if _, ok := err.(*url.Error); !ok {
 			return
 		}
