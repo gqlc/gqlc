@@ -50,6 +50,8 @@ func (c *CommandLine) newGqlcCmd(cfgs []genConfig, fs afero.Fs, pluginPrefix str
 		},
 	}
 
+	resetGlobalLogger := func() {}
+
 	cc.Command = &cobra.Command{
 		Use:   "gqlc",
 		Short: "A GraphQL IDL compiler",
@@ -83,6 +85,7 @@ func (c *CommandLine) newGqlcCmd(cfgs []genConfig, fs afero.Fs, pluginPrefix str
 				core := zapcore.NewCore(enc, os.Stdout, zap.InfoLevel)
 
 				cc.cfg.logger = zap.New(core)
+				resetGlobalLogger = zap.ReplaceGlobals(cc.cfg.logger)
 				return err
 			},
 			func(cmd *cobra.Command, args []string) (err error) {
@@ -93,12 +96,7 @@ func (c *CommandLine) newGqlcCmd(cfgs []genConfig, fs afero.Fs, pluginPrefix str
 			initGenDirs(fs, &outDirs),
 		),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			defer func() {
-				if cc.cfg.logger == nil {
-					return
-				}
-				zap.ReplaceGlobals(cc.cfg.logger)
-			}()
+			defer resetGlobalLogger()
 			defer zap.L().Sync()
 
 			return cc.run(fs, cmd.Flags().Args()...)
@@ -277,6 +275,7 @@ func (c *gqlcCmd) parseInputFiles(fs afero.Fs, dset *token.DocSet, docs map[stri
 			continue
 		}
 
+		zap.L().Info("opening input", zap.String("name", filename))
 		f, err := c.openFile(filename, fs)
 		if err != nil {
 			return err

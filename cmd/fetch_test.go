@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/zaba505/gws"
 )
@@ -24,7 +25,7 @@ func TestFetch_RemoteFile(t *testing.T) {
 
 	endpoint, _ := url.Parse("http://" + srv.Listener.Addr().String())
 
-	r, err := fetch(&fetchClient{Client: http.DefaultClient}, endpoint, nil)
+	r, err := fetch(defaultClient, endpoint, nil)
 	if err != nil {
 		t.Errorf("unexpected error when fetching file: %s", err)
 		return
@@ -96,15 +97,11 @@ func TestFetch_FromService(t *testing.T) {
 	srv := httptest.NewServer(m)
 	defer srv.Close()
 
-	testClient := &fetchClient{
-		Client: http.DefaultClient,
-	}
-
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(subT *testing.T) {
 			endpoint, _ := url.Parse(fmt.Sprintf("%s://%s/%s", testCase.Scheme, srv.Listener.Addr().String(), testCase.Path))
 
-			r, err := fetch(testClient, endpoint, nil)
+			r, err := fetch(defaultClient, endpoint, nil)
 			if err != nil {
 				subT.Errorf("unexpected error when fetching file: %s", err)
 				return
@@ -139,13 +136,48 @@ func TestFetch_WithHeaders(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	testClient := &fetchClient{
-		Client: http.DefaultClient,
-	}
-
 	endpoint, _ := url.Parse(fmt.Sprintf("http://%s/graphql", srv.Listener.Addr().String()))
 
-	r, err := fetch(testClient, endpoint, http.Header{"hello": []string{"world"}})
+	r, err := fetch(defaultClient, endpoint, http.Header{"hello": []string{"world"}})
+	if err != nil {
+		t.Errorf("unexpected error when fetching file: %s", err)
+		return
+	}
+	defer r.Close()
+
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Errorf("unexpected error when reading response: %s", err)
+		return
+	}
+
+	// After fetching it should convert the response to the GraphQL IDL.
+	// Hence, equal testGqlFile
+	if !bytes.Equal(b, testGqlFile) {
+		t.Fail()
+		return
+	}
+}
+
+func TestFetch_Retry(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		<-time.After(2 * time.Second)
+
+		b, _ := json.Marshal(&gws.Response{Data: []byte(testRespData)})
+		w.Write(b)
+	}))
+	defer srv.Close()
+
+	endpoint, _ := url.Parse(fmt.Sprintf("http://%s/graphql", srv.Listener.Addr()))
+
+	testClient := &fetchClient{
+		Client: &http.Client{
+			Timeout: 1 * time.Minute,
+		},
+		maxRetries: 5,
+	}
+
+	r, err := fetch(testClient, endpoint, nil)
 	if err != nil {
 		t.Errorf("unexpected error when fetching file: %s", err)
 		return

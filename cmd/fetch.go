@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -121,12 +122,15 @@ func init() {
 
 type fetchClient struct {
 	*http.Client
+
+	maxRetries uint8
 }
 
 var defaultClient = &fetchClient{
 	Client: &http.Client{
-		Timeout: 2 * time.Second,
+		Timeout: 1 * time.Minute,
 	},
+	maxRetries: 5,
 }
 
 func fetch(client *fetchClient, url *url.URL, headers http.Header) (io.ReadCloser, error) {
@@ -201,4 +205,46 @@ func (c *fetchClient) introspect(endpoint *url.URL, headers http.Header) (io.Rea
 	// TODO: Check resp.Errors
 
 	return newConverter(noopCloser{bytes.NewReader(resp.Data)})
+}
+
+func (c *fetchClient) Do(req *http.Request) (resp *http.Response, err error) {
+	var b []byte
+	if req.Body != nil {
+		b, err = ioutil.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		req.Body.Close()
+	}
+
+	body := bytes.NewReader(b)
+
+	attempt := 0
+	for attempt < int(c.maxRetries) {
+		body.Seek(0, 0)
+
+		attempt++
+		timeout := time.Duration(math.Exp2(float64(attempt))-1) * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+
+		r := req.WithContext(ctx)
+		r.Body = &noopCloser{body}
+
+		zap.L().Info("performing http request", zap.String("endpoint", req.URL.String()), zap.Int("attempt", attempt), zap.Duration("timeout", timeout))
+		resp, err = c.Client.Do(r)
+
+		if err == nil {
+			b, err = ioutil.ReadAll(resp.Body)
+			cancel()
+			resp.Body = &noopCloser{bytes.NewReader(b)}
+			return
+		}
+
+		cancel()
+		if _, ok := err.(*url.Error); !ok {
+			return
+		}
+	}
+
+	return nil, context.DeadlineExceeded
 }
