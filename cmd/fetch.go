@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/zaba505/gws"
 	"go.uber.org/zap"
@@ -120,6 +121,12 @@ func init() {
 
 type fetchClient struct {
 	*http.Client
+}
+
+var defaultClient = &fetchClient{
+	Client: &http.Client{
+		Timeout: 2 * time.Second,
+	},
 }
 
 func fetch(client *fetchClient, url *url.URL, headers http.Header) (io.ReadCloser, error) {
