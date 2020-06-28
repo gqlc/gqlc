@@ -32,11 +32,15 @@ func TestValidatePluginTypes(t *testing.T) {
 		return
 	}
 
-	cmd := &cobra.Command{}
+	cmd := &gqlcCmd{
+		Command: &cobra.Command{},
+		cfg: &gqlcConfig{
+			ipaths: []string{"."},
+		},
+	}
 	cmd.Flags().StringSlice("types", []string{"test.gql"}, "")
-	cmd.Flags().StringSlice("import_path", []string{"."}, "")
 
-	err = validatePluginTypes(fs)(cmd, nil)
+	err = cmd.validatePluginTypes(fs)(cmd.Command, nil)
 	if err != nil {
 		t.Error(err)
 		return
