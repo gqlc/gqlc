@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -116,8 +119,12 @@ func TestParseInputFiles(t *testing.T) {
 	// Run test cases
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(subT *testing.T) {
+			cmd := &gqlcCmd{
+				cfg: &gqlcConfig{ipaths: testCase.ImportPaths},
+			}
+
 			docMap := make(map[string]*ast.Document, len(testCase.Args))
-			err := parseInputFiles(testFs, token.NewDocSet(), docMap, testCase.ImportPaths, testCase.Args...)
+			err := cmd.parseInputFiles(testFs, token.NewDocSet(), docMap, testCase.Args...)
 			if err != nil {
 				subT.Error(err)
 				return
@@ -161,7 +168,7 @@ func TestParseInputFiles(t *testing.T) {
 	}
 }
 
-func TestRoot(t *testing.T) {
+func TestRun(t *testing.T) {
 	testCases := []struct {
 		Name   string
 		IPaths []string
@@ -210,7 +217,14 @@ func TestRoot(t *testing.T) {
 				Generator: g,
 			}}
 
-			err := root(testFs, geners, testCase.IPaths, testCase.Args...)
+			cmd := &gqlcCmd{
+				cfg: &gqlcConfig{
+					geners: geners,
+					ipaths: testCase.IPaths,
+				},
+			}
+
+			err := cmd.run(testFs, testCase.Args...)
 			if err != nil {
 				subT.Error(err)
 				return
@@ -219,7 +233,7 @@ func TestRoot(t *testing.T) {
 	}
 }
 
-func TestRoot_AutoImplInterfaces(t *testing.T) {
+func TestRun_AutoImplInterfaces(t *testing.T) {
 	autoImplInterfacesGql := `
 interface Iterator {
 	next: Int
@@ -238,9 +252,96 @@ type Bytes implements Iterator {
 		Generator: g,
 	}}
 
-	err := root(testFs, geners, nil, "/home/graphql/auto_impl_interfaces.gql")
+	cmd := &gqlcCmd{
+		cfg: &gqlcConfig{
+			geners: geners,
+		},
+	}
+
+	err := cmd.run(testFs, "/home/graphql/auto_impl_interfaces.gql")
 	if err != nil {
 		t.Error(err)
 		return
 	}
+}
+
+var testIntroResp = []byte(`{
+	"data": {
+		"__schema": {
+			"directives": [],
+			"types": [
+				{
+					"kind": "SCALAR",
+					"name": "Time",
+					"description": null,
+					"fields": null,
+					"interfaces": null,
+					"possibleTypes": null,
+					"enumValues": null,
+					"inputFields": null,
+					"ofType": null
+				}
+			]
+		}
+	}
+}`)
+
+func TestRun_RemoteService(t *testing.T) {
+	t.Run("No Headers", func(subT *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.Write(testIntroResp)
+		}))
+		defer srv.Close()
+
+		g := newMockGenerator(t)
+		g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		geners := []generator{{
+			Generator: g,
+		}}
+
+		cmd := &gqlcCmd{
+			cfg: &gqlcConfig{
+				geners: geners,
+				client: defaultClient,
+			},
+		}
+
+		err := cmd.run(testFs, fmt.Sprintf("http://%s/graphql", srv.Listener.Addr()))
+		if err != nil {
+			subT.Error(err)
+			return
+		}
+	})
+
+	t.Run("With Headers", func(subT *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			world := req.Header.Get("Hello")
+			if world == "" || world != "World" {
+				subT.Fail()
+			}
+
+			w.Write(testIntroResp)
+		}))
+		defer srv.Close()
+
+		g := newMockGenerator(t)
+		g.EXPECT().Generate(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		geners := []generator{{
+			Generator: g,
+		}}
+
+		cmd := &gqlcCmd{
+			cfg: &gqlcConfig{
+				geners:  geners,
+				client:  defaultClient,
+				headers: http.Header{"Hello": []string{"World"}},
+			},
+		}
+
+		err := cmd.run(testFs, fmt.Sprintf("http://%s/graphql", srv.Listener.Addr()))
+		if err != nil {
+			subT.Error(err)
+			return
+		}
+	})
 }
