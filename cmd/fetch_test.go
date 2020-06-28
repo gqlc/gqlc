@@ -161,7 +161,7 @@ func TestFetch_WithHeaders(t *testing.T) {
 
 func TestFetch_Retry(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		<-time.After(5 * time.Second)
+		<-time.After(2 * time.Second)
 
 		b, _ := json.Marshal(&gws.Response{Data: []byte(testRespData)})
 		w.Write(b)
@@ -172,8 +172,9 @@ func TestFetch_Retry(t *testing.T) {
 
 	testClient := &fetchClient{
 		Client: &http.Client{
-			Timeout: 2 * time.Second,
+			Timeout: 1 * time.Minute,
 		},
+		maxRetries: 5,
 	}
 
 	r, err := fetch(testClient, endpoint, nil)
