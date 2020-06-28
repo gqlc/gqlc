@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 	"text/scanner"
-	"time"
 
 	"github.com/gqlc/compiler"
 	"github.com/gqlc/compiler/spec"
@@ -25,21 +24,36 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+type gqlcConfig struct {
+	ipaths []string
+	geners []generator
+
+	logger  *zap.Logger
+	client  *fetchClient
+	headers http.Header
+}
+
 type gqlcCmd struct {
 	*cobra.Command
+
+	cfg *gqlcConfig
 }
 
 func (c *CommandLine) newGqlcCmd(cfgs []genConfig, fs afero.Fs, pluginPrefix string) *gqlcCmd {
 	outDirs := make([]string, 0, len(cfgs))
-	geners := make([]generator, 0, len(cfgs))
 
-	restoreLogger := func() {}
+	cc := &gqlcCmd{
+		cfg: &gqlcConfig{
+			geners:  make([]generator, 0, len(cfgs)),
+			client:  defaultClient,
+			headers: make(http.Header),
+		},
+	}
 
-	cmd := &gqlcCmd{
-		Command: &cobra.Command{
-			Use:   "gqlc",
-			Short: "A GraphQL IDL compiler",
-			Long: `gqlc is a multi-language GraphQL implementation generator.
+	cc.Command = &cobra.Command{
+		Use:   "gqlc",
+		Short: "A GraphQL IDL compiler",
+		Long: `gqlc is a multi-language GraphQL implementation generator.
 
 		Generators are specified by using a *_out flag. The argument given to this
 		type of flag can be either:
@@ -49,56 +63,59 @@ func (c *CommandLine) newGqlcCmd(cfgs []genConfig, fs afero.Fs, pluginPrefix str
 		An additional flag, *_opt, can be used to pass options to a generator. The
 		argument given to this type of flag is the same format as the *_opt
 		key=value pairs above.`,
-			Example: "gqlc -I . --doc_out ./docs --go_out ./goservice --js_out ./jsservice api.gql",
-			Args: func(cmd *cobra.Command, args []string) error {
-				err := cobra.MinimumNArgs(1)(cmd, args)
-				if err != nil {
-					return err
-				}
+		Example: "gqlc -I . --doc_out ./docs --go_out ./goservice --js_out ./jsservice api.gql",
+		Args: func(cmd *cobra.Command, args []string) error {
+			err := cobra.MinimumNArgs(1)(cmd, args)
+			if err != nil {
+				return err
+			}
 
-				return validateFilenames(cmd, args)
-			},
-			PreRunE: chainPreRunEs(
-				func(cmd *cobra.Command, args []string) error {
-					v, err := cmd.Flags().GetBool("verbose")
-					if !v || err != nil {
-						return err
-					}
-
-					enc := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
-					core := zapcore.NewCore(enc, os.Stdout, zap.InfoLevel)
-
-					l := zap.New(core)
-					restoreLogger = zap.ReplaceGlobals(l)
-					return err
-				},
-				validatePluginTypes(c.fs),
-				initGenDirs(fs, &outDirs),
-			),
-			RunE: func(cmd *cobra.Command, args []string) error {
-				defer restoreLogger()
-				defer zap.L().Sync()
-
-				importPaths, err := cmd.Flags().GetStringSlice("import_path")
-				if err != nil {
-					return err
-				}
-
-				return root(fs, geners, importPaths, cmd.Flags().Args()...)
-			},
-			SilenceUsage:  true,
-			SilenceErrors: true,
+			return validateFilenames(cmd, args)
 		},
+		PreRunE: chainPreRunEs(
+			func(cmd *cobra.Command, args []string) error {
+				v, err := cmd.Flags().GetBool("verbose")
+				if !v || err != nil {
+					return err
+				}
+
+				enc := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
+				core := zapcore.NewCore(enc, os.Stdout, zap.InfoLevel)
+
+				cc.cfg.logger = zap.New(core)
+				return err
+			},
+			func(cmd *cobra.Command, args []string) (err error) {
+				cc.cfg.ipaths, err = cmd.Flags().GetStringSlice("import_path")
+				return
+			},
+			cc.validatePluginTypes(c.fs),
+			initGenDirs(fs, &outDirs),
+		),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			defer func() {
+				if cc.cfg.logger == nil {
+					return
+				}
+				zap.ReplaceGlobals(cc.cfg.logger)
+			}()
+			defer zap.L().Sync()
+
+			return cc.run(fs, cmd.Flags().Args()...)
+		},
+		SilenceUsage:  true,
+		SilenceErrors: true,
 	}
 
-	cmd.SetUsageTemplate(usageTmpl)
+	cc.SetUsageTemplate(usageTmpl)
 
-	cmd.Flags().StringSliceP("import_path", "I", []string{"."}, `Specify the directory in which to search for
+	cc.Flags().StringSliceP("import_path", "I", []string{"."}, `Specify the directory in which to search for
 imports.  May be specified multiple times;
 directories will be searched in order.  If not
 given, the current working directory is used.`)
-	cmd.Flags().BoolP("verbose", "v", false, "Output logging")
-	cmd.Flags().StringSliceP("types", "t", nil, "Provide .gql files containing types you wish to register with the compiler.")
+	cc.Flags().BoolP("verbose", "v", false, "Output logging")
+	cc.Flags().StringSliceP("types", "t", nil, "Provide .gql files containing types you wish to register with the compiler.")
+	cc.Flags().VarP(&headerFlag{value: &cc.cfg.headers}, "headers", "H", "Provide HTTP headers to fetching. Format: a=1,b=2")
 
 	fp := &fparser{
 		Scanner: new(scanner.Scanner),
@@ -108,20 +125,20 @@ given, the current working directory is used.`)
 		f := genFlag{
 			g:       cfg.g,
 			opts:    make(map[string]interface{}),
-			geners:  &geners,
+			geners:  &cc.cfg.geners,
 			outDirs: &outDirs,
 			fp:      fp,
 		}
 
-		cmd.Flags().Var(f, cfg.name, cfg.help)
+		cc.Flags().Var(f, cfg.name, cfg.help)
 
 		if cfg.opt != "" {
 			f.isOpt = true
-			cmd.Flags().Var(f, cfg.opt, "Pass additional options to generator.")
+			cc.Flags().Var(f, cfg.opt, "Pass additional options to generator.")
 		}
 	}
 
-	return cmd
+	return cc
 }
 
 type genCtx struct {
@@ -145,11 +162,11 @@ type generator struct {
 	outDir string
 }
 
-func root(fs afero.Fs, geners []generator, iPaths []string, args ...string) (err error) {
+func (c *gqlcCmd) run(fs afero.Fs, args ...string) (err error) {
 	// Parse files
 	zap.S().Info("parsing input files")
 	docMap := make(map[string]*ast.Document, len(args))
-	err = parseInputFiles(fs, token.NewDocSet(), docMap, iPaths, args...)
+	err = c.parseInputFiles(fs, token.NewDocSet(), docMap, args...)
 	if err != nil {
 		return
 	}
@@ -200,7 +217,7 @@ func root(fs afero.Fs, geners []generator, iPaths []string, args ...string) (err
 	zap.S().Info("generating documents")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	for _, g := range geners {
+	for _, g := range c.cfg.geners {
 		ctx = gen.WithContext(ctx, &genCtx{dir: g.outDir, fs: fs})
 
 		for _, doc := range docs {
@@ -253,14 +270,14 @@ func resolveImportPaths(docs []*ast.Document) {
 }
 
 // parseInputFiles parses all input files from the command line args, as well as any imported files.
-func parseInputFiles(fs afero.Fs, dset *token.DocSet, docs map[string]*ast.Document, importPaths []string, filenames ...string) error {
+func (c *gqlcCmd) parseInputFiles(fs afero.Fs, dset *token.DocSet, docs map[string]*ast.Document, filenames ...string) error {
 	for _, filename := range filenames {
 		name := filepath.Base(filename)
 		if _, exists := docs[name]; exists {
 			continue
 		}
 
-		f, err := openFile(filename, fs, importPaths)
+		f, err := c.openFile(filename, fs)
 		if err != nil {
 			return err
 		}
@@ -276,12 +293,12 @@ func parseInputFiles(fs afero.Fs, dset *token.DocSet, docs map[string]*ast.Docum
 
 	for _, doc := range docs {
 		imports := getImports(doc)
-		imports = filter(imports, docs, fs, importPaths)
+		imports = filter(imports, docs, fs, c.cfg.ipaths)
 		if len(imports) == 0 {
 			continue
 		}
 
-		err := parseInputFiles(fs, dset, docs, importPaths, imports...)
+		err := c.parseInputFiles(fs, dset, docs, imports...)
 		if err != nil {
 			return err
 		}
@@ -322,22 +339,16 @@ func getImports(doc *ast.Document) (names []string) {
 	return
 }
 
-var client = &fetchClient{
-	Client: &http.Client{
-		Timeout: 5 * time.Second,
-	},
-}
-
-func openFile(name string, fs afero.Fs, importPaths []string) (io.ReadCloser, error) {
+func (c *gqlcCmd) openFile(name string, fs afero.Fs) (io.ReadCloser, error) {
 	endpoint, err := url.Parse(name)
 	if err != nil {
 		return nil, err
 	}
 	if endpoint.Scheme != "" && endpoint.Opaque == "" {
-		return fetch(client, endpoint)
+		return fetch(c.cfg.client, endpoint, c.cfg.headers)
 	}
 
-	fname, err := normFilePath(fs, importPaths, name)
+	fname, err := normFilePath(fs, c.cfg.ipaths, name)
 	if err != nil {
 		return nil, err
 	}

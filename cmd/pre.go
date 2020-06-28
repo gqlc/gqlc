@@ -41,20 +41,15 @@ func validateFilenames(cmd *cobra.Command, args []string) error {
 }
 
 // validatePluginTypes parses and validates any types given by the --types flag.
-func validatePluginTypes(fs afero.Fs) func(*cobra.Command, []string) error {
+func (c *gqlcCmd) validatePluginTypes(fs afero.Fs) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		pluginTypes, _ := cmd.Flags().GetStringSlice("types")
 		if len(pluginTypes) == 0 {
 			return nil
 		}
 
-		importPaths, err := cmd.Flags().GetStringSlice("import_path")
-		if err != nil {
-			return err
-		}
-
 		docMap := make(map[string]*ast.Document, len(pluginTypes))
-		err = parseInputFiles(fs, token.NewDocSet(), docMap, importPaths, pluginTypes...)
+		err := c.parseInputFiles(fs, token.NewDocSet(), docMap, pluginTypes...)
 		if err != nil {
 			return err
 		}
