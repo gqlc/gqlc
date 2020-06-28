@@ -207,12 +207,15 @@ func (c *fetchClient) introspect(endpoint *url.URL, headers http.Header) (io.Rea
 	return newConverter(noopCloser{bytes.NewReader(resp.Data)})
 }
 
-func (c *fetchClient) Do(req *http.Request) (*http.Response, error) {
-	b, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		return nil, err
+func (c *fetchClient) Do(req *http.Request) (resp *http.Response, err error) {
+	var b []byte
+	if req.Body != nil {
+		b, err = ioutil.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		req.Body.Close()
 	}
-	req.Body.Close()
 
 	body := bytes.NewReader(b)
 
@@ -228,14 +231,14 @@ func (c *fetchClient) Do(req *http.Request) (*http.Response, error) {
 		r.Body = &noopCloser{body}
 
 		zap.L().Info("fetching remote source", zap.String("endpoint", req.URL.String()), zap.Int("attempt", attempt), zap.Duration("timeout", timeout))
-		resp, err := c.Client.Do(r)
+		resp, err = c.Client.Do(r)
 		cancel()
 
 		if err == nil {
-			return resp, nil
+			return
 		}
 		if _, ok := err.(*url.Error); !ok {
-			return resp, err
+			return
 		}
 	}
 
