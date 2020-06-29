@@ -7,6 +7,27 @@ module.exports = {
     repo: "gqlc/gqlc",
     nav: [
       { text: "Guide", link: "/guide/" }
-    ]
+    ],
+    sidebar: {
+      "/guide/": [
+        {
+          title: "Guide",
+          collapsable: false,
+          children: [
+            "",
+            "getting-started",
+            "configuring-output"
+          ]
+        },
+        {
+          title: "Advanced",
+          collapsable: false,
+          children: [
+            "importing-types",
+            "remote-service-as-a-source"
+          ]
+        }
+      ]
+    }
   }
 };
