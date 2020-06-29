@@ -48,6 +48,8 @@ jobs:
 
     - name: Update pages
       run: |
+        eval `ssh-agent -s`
+        ssh-add - <<< "${{ secrets.SSH_PAGES_DEPLOY_KEY }}"
         cd gqlc.github.io
         rm -rf ./*
         cp -r ../dist/* .
