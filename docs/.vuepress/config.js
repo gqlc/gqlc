@@ -4,6 +4,9 @@ module.exports = {
     "@vuepress/pwa"
   ],
   themeConfig: {
-    repo: "gqlc/gqlc"
+    repo: "gqlc/gqlc",
+    nav: [
+      { text: "Guide", link: "/guide/" }
+    ]
   }
 };
