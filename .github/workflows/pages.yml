@@ -50,7 +50,7 @@ jobs:
       run: |
         cd gqlc.github.io
         rm -rf ./*
-        cp ../dist/* .
+        cp -r ../dist/* .
         git add .
         git commit -m "feat: update site"
         git push
