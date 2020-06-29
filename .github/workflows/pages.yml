@@ -53,4 +53,6 @@ jobs:
         cp -r ../dist/* .
         git add .
         git commit -m "feat: update site"
+        git config user.email "gqlc.bot@gmail.com"
+        git config user.name "gqlc site builder"
         git push
