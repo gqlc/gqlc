@@ -1,4 +1,6 @@
 module.exports = {
+  title: "GraphQL Compiler",
+  description: "gqlc is a compiler for the GraphQL IDL",
   plugins: [
     "@vuepress/nprogress",
     "@vuepress/pwa"
