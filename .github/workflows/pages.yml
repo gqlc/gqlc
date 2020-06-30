@@ -53,7 +53,7 @@ jobs:
         cd gqlc.github.io
         rm -rf ./*
         cp -r ../dist/* .
-        git config user.email "gqlc.bot@gmail.com"
+        git config user.email "bot@gqlc.dev"
         git config user.name "gqlc site builder"
         git add .
         git commit -m "feat: update site"
