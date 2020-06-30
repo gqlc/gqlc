@@ -16,7 +16,7 @@ module.exports = {
           children: [
             "",
             "getting-started",
-            "configuring-output"
+            "config"
           ]
         },
         {
