@@ -8,7 +8,8 @@ module.exports = {
   themeConfig: {
     repo: "gqlc/gqlc",
     nav: [
-      { text: "Guide", link: "/guide/" }
+      { text: "Guide", link: "/guide/" },
+      { text: "Generators", link: "/generators/" }
     ],
     sidebar: {
       "/guide/": [
@@ -27,6 +28,24 @@ module.exports = {
           children: [
             "importing-types",
             "remote-service-as-a-source"
+          ]
+        }
+      ],
+      "/generators/": [
+        {
+          title: "Generators",
+          collapsable: false,
+          children: [
+            "documentation",
+            "go",
+            "javascript"
+          ]
+        },
+        {
+          title: "Community Maintained",
+          collapsable: false,
+          children: [
+            "community"
           ]
         }
       ]
