@@ -202,6 +202,7 @@ func TestObject(t *testing.T) {
 })
 `)
 
+		subT.Log(string(g.Bytes()))
 		gen.CompareBytes(subT, ex, g.Bytes())
 	})
 

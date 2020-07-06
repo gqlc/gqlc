@@ -106,44 +106,13 @@ func (c *converter) init() error {
 	case "types":
 		c.decoding = decodeTypes
 	}
-	tok, _ = c.src.Token()
+	c.src.Token()
 	return nil
 }
 
 func (c *converter) Read(p []byte) (n int, err error) {
 	if !c.src.More() {
-		t, err := c.src.Token()
-		if err != nil {
-			return 0, err
-		}
-
-		if delim, ok := t.(json.Delim); !ok || delim != ']' {
-			return 0, fmt.Errorf("expected array closing")
-		}
-
-		t, err = c.src.Token()
-		if err != nil {
-			return 0, err
-		}
-		_, ok := t.(json.Delim)
-		if ok {
-			return 0, io.EOF
-		}
-
-		v, ok := t.(string)
-		if !ok {
-			return 0, fmt.Errorf("unexpected token: %v", t)
-		}
-		c.src.Token()
-
-		switch v {
-		case "directives":
-			c.decoding = decodeDirs
-		case "types":
-			c.decoding = decodeTypes
-		}
-
-		return c.Read(p)
+		return c.readMore(p)
 	}
 
 	switch c.decoding {
@@ -171,9 +140,7 @@ func (c *converter) Read(p []byte) (n int, err error) {
 
 		if len(d.Args) > 0 {
 			c.buf.Write([]byte("("))
-			for _, a := range d.Args {
-				writeArg(&c.buf, a)
-			}
+			writeArgs(&c.buf, d.Args)
 			c.buf.Write([]byte(")"))
 		}
 
@@ -216,6 +183,51 @@ func (c *converter) Read(p []byte) (n int, err error) {
 	return c.buf.Read(p)
 }
 
+func (c *converter) readMore(p []byte) (int, error) {
+	t, err := c.src.Token()
+	if err != nil {
+		return 0, err
+	}
+
+	if delim, ok := t.(json.Delim); !ok || delim != ']' {
+		return 0, fmt.Errorf("expected array closing")
+	}
+
+	t, err = c.src.Token()
+	if err != nil {
+		return 0, err
+	}
+	_, ok := t.(json.Delim)
+	if ok {
+		return 0, io.EOF
+	}
+
+	v, ok := t.(string)
+	if !ok {
+		return 0, fmt.Errorf("unexpected token: %v", t)
+	}
+	c.src.Token()
+
+	switch v {
+	case "directives":
+		c.decoding = decodeDirs
+	case "types":
+		c.decoding = decodeTypes
+	}
+
+	return c.Read(p)
+}
+
+func writeArgs(b *bytes.Buffer, args []*inputValue) {
+	l := len(args) - 1
+	for i, a := range args {
+		writeArg(b, a)
+		if i != l {
+			b.Write([]byte("\n  "))
+		}
+	}
+}
+
 func writeArg(b *bytes.Buffer, a *inputValue) {
 	if a.Description != "" {
 		writeDescrQuotes(b, a.Description)
@@ -247,22 +259,22 @@ func writeDescrQuotes(b *bytes.Buffer, descr string) {
 }
 
 const (
-	SCALAR       = "SCALAR"
-	OBJECT       = "OBJECT"
-	INTERFACE    = "INTERFACE"
-	UNION        = "UNION"
-	ENUM         = "ENUM"
-	INPUT_OBJECT = "INPUT_OBJECT"
-	LIST         = "LIST"
-	NON_NULL     = "NON_NULL"
+	scalarKind      = "SCALAR"
+	objectKind      = "OBJECT"
+	interfaceKind   = "INTERFACE"
+	unionKind       = "UNION"
+	enumKind        = "ENUM"
+	inputObjectKind = "INPUT_OBJECT"
+	listLind        = "LIST"
+	nonNullKind     = "NON_NULL"
 )
 
 func writeTyp(b *bytes.Buffer, t typ) {
 	switch t.Kind {
-	case SCALAR:
+	case scalarKind:
 		b.Write([]byte("scalar "))
 		b.WriteString(t.Name)
-	case OBJECT:
+	case objectKind:
 		b.Write([]byte("type "))
 		b.WriteString(t.Name)
 
@@ -278,27 +290,15 @@ func writeTyp(b *bytes.Buffer, t typ) {
 		}
 		b.Write([]byte(" {\n  "))
 
-		l := len(t.Fields) - 1
-		for i, f := range t.Fields {
-			writeField(b, f)
-			if i != l {
-				b.Write([]byte("\n  "))
-			}
-		}
+		writeFields(b, t.Fields)
 		b.Write([]byte("\n}"))
-	case INTERFACE:
+	case interfaceKind:
 		b.Write([]byte("interface "))
 		b.WriteString(t.Name)
 		b.Write([]byte(" {\n  "))
-		l := len(t.Fields) - 1
-		for i, f := range t.Fields {
-			writeField(b, f)
-			if i != l {
-				b.Write([]byte("\n  "))
-			}
-		}
+		writeFields(b, t.Fields)
 		b.Write([]byte("\n}"))
-	case UNION:
+	case unionKind:
 		b.Write([]byte("union "))
 		b.WriteString(t.Name)
 		b.Write([]byte(" = "))
@@ -310,7 +310,7 @@ func writeTyp(b *bytes.Buffer, t typ) {
 				b.Write([]byte(" | "))
 			}
 		}
-	case ENUM:
+	case enumKind:
 		b.Write([]byte("enum "))
 		b.WriteString(t.Name)
 		b.Write([]byte(" {\n  "))
@@ -331,21 +331,24 @@ func writeTyp(b *bytes.Buffer, t typ) {
 		}
 
 		b.Write([]byte("}"))
-	case INPUT_OBJECT:
+	case inputObjectKind:
 		b.Write([]byte("input "))
 		b.WriteString(t.Name)
 		b.Write([]byte(" {\n  "))
 
-		l := len(t.InputFields) - 1
-		for i, a := range t.InputFields {
-			writeArg(b, a)
-			b.Write([]byte("\n"))
-			if i != l {
-				b.Write([]byte("  "))
-			}
-		}
+		writeInputVals(b, t.InputFields)
 
 		b.Write([]byte("}"))
+	}
+}
+
+func writeFields(b *bytes.Buffer, fields []*field) {
+	l := len(fields) - 1
+	for i, f := range fields {
+		writeField(b, f)
+		if i != l {
+			b.Write([]byte("\n  "))
+		}
 	}
 }
 
@@ -372,6 +375,17 @@ func writeField(b *bytes.Buffer, f *field) {
 	b.Write([]byte(": "))
 
 	writeTypSig(b, f.Type)
+}
+
+func writeInputVals(b *bytes.Buffer, args []*inputValue) {
+	l := len(args) - 1
+	for i, a := range args {
+		writeArg(b, a)
+		b.WriteByte('\n')
+		if i != l {
+			b.Write([]byte("  "))
+		}
+	}
 }
 
 func writeTypSig(b *bytes.Buffer, t *typ) {

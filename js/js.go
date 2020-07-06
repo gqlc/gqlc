@@ -55,69 +55,32 @@ type Options struct {
 	declStr []byte
 }
 
-var (
-	schemaImport    = []byte("GraphQLSchema")
-	scalarImport    = []byte("GraphQLScalarType")
-	objectImport    = []byte("GraphQLObjectType")
-	interfaceImport = []byte("GraphQLInterfaceType")
-	unionImport     = []byte("GraphQLUnionType")
-	enumImport      = []byte("GraphQLEnumType")
-	inputImport     = []byte("GraphQLInputObjectType")
-	directiveImport = []byte("GraphQLDirectiveType")
-	listImport      = []byte("GraphQLList")
-	nonNullImport   = []byte("GraphQLNonNull")
-	intImport       = []byte("GraphQLInt")
-	floatImport     = []byte("GraphQLFloat")
-	stringImport    = []byte("GraphQLString")
-	booleanImport   = []byte("GraphQLBoolean")
-	idImport        = []byte("GraphQLID")
-)
+var bits = []struct {
+	bit uint16
+	imp []byte
+}{
+	{bit: schemaBit, imp: []byte("GraphQLSchema")},
+	{bit: scalarBit, imp: []byte("GraphQLScalarType")},
+	{bit: objectBit, imp: []byte("GraphQLObjectType")},
+	{bit: interfaceBit, imp: []byte("GraphQLInterfaceType")},
+	{bit: unionBit, imp: []byte("GraphQLUnionType")},
+	{bit: enumBit, imp: []byte("GraphQLEnumType")},
+	{bit: inputObjectBit, imp: []byte("GraphQLInputObjectType")},
+	{bit: directiveBit, imp: []byte("GraphQLDirectiveType")},
+	{bit: listBit, imp: []byte("GraphQLList")},
+	{bit: nonNullBit, imp: []byte("GraphQLNonNull")},
+	{bit: intBit, imp: []byte("GraphQLInt")},
+	{bit: floatBit, imp: []byte("GraphQLFloat")},
+	{bit: stringBit, imp: []byte("GraphQLString")},
+	{bit: booleanBit, imp: []byte("GraphQLBoolean")},
+	{bit: idBit, imp: []byte("GraphQLID")},
+}
 
 func (o *Options) setImports(mask uint16) {
-	if mask&schemaBit == 0 {
-		o.imports = append(o.imports, schemaImport)
-	}
-	if mask&scalarBit == 0 {
-		o.imports = append(o.imports, scalarImport)
-	}
-	if mask&objectBit == 0 {
-		o.imports = append(o.imports, objectImport)
-	}
-	if mask&interfaceBit == 0 {
-		o.imports = append(o.imports, interfaceImport)
-	}
-	if mask&unionBit == 0 {
-		o.imports = append(o.imports, unionImport)
-	}
-	if mask&enumBit == 0 {
-		o.imports = append(o.imports, enumImport)
-	}
-	if mask&inputObjectBit == 0 {
-		o.imports = append(o.imports, inputImport)
-	}
-	if mask&directiveBit == 0 {
-		o.imports = append(o.imports, directiveImport)
-	}
-	if mask&listBit == 0 {
-		o.imports = append(o.imports, listImport)
-	}
-	if mask&nonNullBit == 0 {
-		o.imports = append(o.imports, nonNullImport)
-	}
-	if mask&intBit == 0 {
-		o.imports = append(o.imports, intImport)
-	}
-	if mask&floatBit == 0 {
-		o.imports = append(o.imports, floatImport)
-	}
-	if mask&stringBit == 0 {
-		o.imports = append(o.imports, stringImport)
-	}
-	if mask&booleanBit == 0 {
-		o.imports = append(o.imports, booleanImport)
-	}
-	if mask&idBit == 0 {
-		o.imports = append(o.imports, idImport)
+	for _, p := range bits {
+		if mask&p.bit == 0 {
+			o.imports = append(o.imports, p.imp)
+		}
 	}
 }
 
@@ -485,59 +448,9 @@ func (g *Generator) generateFields(fields *ast.FieldList, imports *uint16, descr
 			g.P("args: {")
 			g.In()
 
-			aLen := len(f.Args.List) - 1
-			for ai, a := range f.Args.List {
-				g.P(a.Name.Name, ": {")
-				g.In()
-				g.Write(g.indent)
-				g.WriteString("type: ")
-
-				var argType interface{}
-				switch v := a.Type.(type) {
-				case *ast.InputValue_Ident:
-					argType = v.Ident
-				case *ast.InputValue_List:
-					argType = v.List
-				case *ast.InputValue_NonNull:
-					argType = v.NonNull
-				}
-				g.printType(imports, argType)
-
-				if a.Default != nil {
-					g.WriteByte(',')
-					g.WriteByte('\n')
-
-					g.Write(g.indent)
-					g.WriteString("defaultValue: ")
-
-					var defType interface{}
-					switch v := a.Default.(type) {
-					case *ast.InputValue_BasicLit:
-						defType = v.BasicLit
-					case *ast.InputValue_CompositeLit:
-						defType = v.CompositeLit
-					}
-					g.printVal(defType)
-				}
-
-				if descr {
-					g.printDescr(a.Doc)
-				}
-
-				g.WriteByte('\n')
-
-				g.Out()
-
-				g.Write(g.indent)
-				g.WriteByte('}')
-				if ai != aLen {
-					g.WriteByte(',')
-				}
-				g.WriteByte('\n')
-			}
+			g.generateArgs(f.Args.List, imports, descr)
 
 			g.Out()
-
 			g.Write(g.indent)
 			g.WriteByte('}')
 		}
@@ -671,56 +584,7 @@ func (g *Generator) generateInput(imports *uint16, name string, descr bool, doc 
 	g.P("fields: {")
 	g.In()
 
-	fLen := len(input.Fields.List) - 1
-	for i, f := range input.Fields.List {
-		g.P(f.Name.Name, ": {")
-		g.In()
-		g.Write(g.indent)
-		g.WriteString("type: ")
-
-		var fieldType interface{}
-		switch v := f.Type.(type) {
-		case *ast.InputValue_Ident:
-			fieldType = v.Ident
-		case *ast.InputValue_List:
-			fieldType = v.List
-		case *ast.InputValue_NonNull:
-			fieldType = v.NonNull
-		}
-		g.printType(imports, fieldType)
-
-		if f.Default != nil {
-			g.WriteByte(',')
-			g.WriteByte('\n')
-
-			g.Write(g.indent)
-			g.WriteString("defaultValue: ")
-
-			var defType interface{}
-			switch v := f.Default.(type) {
-			case *ast.InputValue_BasicLit:
-				defType = v.BasicLit
-			case *ast.InputValue_CompositeLit:
-				defType = v.CompositeLit
-			}
-			g.printVal(defType)
-		}
-
-		g.Out()
-
-		if descr {
-			g.printDescr(f.Doc)
-
-		}
-
-		g.WriteByte('\n')
-		g.Write(g.indent)
-		g.WriteByte('}')
-		if i != fLen {
-			g.WriteByte(',')
-		}
-		g.WriteByte('\n')
-	}
+	g.generateArgs(input.Fields.List, imports, descr)
 
 	g.Out()
 	g.Write(g.indent)
@@ -779,64 +643,12 @@ func (g *Generator) generateDirective(imports *uint16, name string, descr bool, 
 			g.WriteByte(',')
 			g.WriteByte('\n')
 		}
-
 		g.P("args: {")
 		g.In()
 
-		aLen := len(directive.Args.List) - 1
-		for i, a := range directive.Args.List {
-			g.P(a.Name.Name, ": {")
-			g.In()
-
-			g.Write(g.indent)
-			g.WriteString("type: ")
-
-			var fieldType interface{}
-			switch v := a.Type.(type) {
-			case *ast.InputValue_Ident:
-				fieldType = v.Ident
-			case *ast.InputValue_List:
-				fieldType = v.List
-			case *ast.InputValue_NonNull:
-				fieldType = v.NonNull
-			}
-			g.printType(imports, fieldType)
-
-			if a.Default != nil {
-				g.WriteByte(',')
-				g.WriteByte('\n')
-
-				g.Write(g.indent)
-				g.WriteString("defaultValue: ")
-
-				var defType interface{}
-				switch v := a.Default.(type) {
-				case *ast.InputValue_BasicLit:
-					defType = v.BasicLit
-				case *ast.InputValue_CompositeLit:
-					defType = v.CompositeLit
-				}
-				g.printVal(defType)
-			}
-
-			if descr {
-				g.printDescr(a.Doc)
-			}
-
-			g.WriteByte('\n')
-
-			g.Out()
-
-			g.Write(g.indent)
-			g.WriteByte('}')
-			if i != aLen {
-				g.WriteByte(',')
-			}
-			g.WriteByte('\n')
-		}
+		g.generateArgs(directive.Args.List, imports, descr)
 
 		g.Out()
-
 		g.Write(g.indent)
 		g.WriteByte('}')
 	}
@@ -844,6 +656,60 @@ func (g *Generator) generateDirective(imports *uint16, name string, descr bool, 
 	g.Out()
 	g.P()
 	g.P("});")
+}
+
+func (g *Generator) generateArgs(args []*ast.InputValue, imports *uint16, descr bool) {
+	aLen := len(args) - 1
+	for i, a := range args {
+		g.P(a.Name.Name, ": {")
+		g.In()
+
+		g.Write(g.indent)
+		g.WriteString("type: ")
+
+		var fieldType interface{}
+		switch v := a.Type.(type) {
+		case *ast.InputValue_Ident:
+			fieldType = v.Ident
+		case *ast.InputValue_List:
+			fieldType = v.List
+		case *ast.InputValue_NonNull:
+			fieldType = v.NonNull
+		}
+		g.printType(imports, fieldType)
+
+		if a.Default != nil {
+			g.WriteByte(',')
+			g.WriteByte('\n')
+
+			g.Write(g.indent)
+			g.WriteString("defaultValue: ")
+
+			var defType interface{}
+			switch v := a.Default.(type) {
+			case *ast.InputValue_BasicLit:
+				defType = v.BasicLit
+			case *ast.InputValue_CompositeLit:
+				defType = v.CompositeLit
+			}
+			g.printVal(defType)
+		}
+
+		if descr {
+			g.printDescr(a.Doc)
+		}
+
+		g.WriteByte('\n')
+
+		g.Out()
+
+		g.Write(g.indent)
+		g.WriteByte('}')
+		if i != aLen {
+			g.WriteByte(',')
+		}
+		g.WriteByte('\n')
+	}
 }
 
 func (g *Generator) printDescr(doc *ast.DocGroup) {
@@ -933,48 +799,9 @@ func (g *Generator) printVal(val interface{}) {
 		}
 		g.WriteString(s)
 	case *ast.ListLit:
-		g.WriteByte('[')
-
-		var vals []interface{}
-		switch w := v.List.(type) {
-		case *ast.ListLit_BasicList:
-			for _, bval := range w.BasicList.Values {
-				vals = append(vals, bval)
-			}
-		case *ast.ListLit_CompositeList:
-			for _, cval := range w.CompositeList.Values {
-				vals = append(vals, cval)
-			}
-		}
-
-		vLen := len(vals) - 1
-		for i, iv := range vals {
-			g.printVal(iv)
-			if i != vLen {
-				g.WriteByte(',')
-				g.WriteByte(' ')
-			}
-		}
-
-		g.WriteByte(']')
+		g.printList(v)
 	case *ast.ObjLit:
-		g.WriteByte('{')
-		g.WriteByte(' ')
-
-		pLen := len(v.Fields) - 1
-		for i, p := range v.Fields {
-			g.WriteString(p.Key.Name)
-			g.WriteString(": ")
-
-			g.printVal(p.Val)
-
-			if i != pLen {
-				g.WriteByte(',')
-			}
-			g.WriteByte(' ')
-		}
-
-		g.WriteByte('}')
+		g.printObject(v)
 	case *ast.CompositeLit:
 		switch w := v.Value.(type) {
 		case *ast.CompositeLit_BasicLit:
@@ -985,6 +812,53 @@ func (g *Generator) printVal(val interface{}) {
 			g.printVal(w.ObjLit)
 		}
 	}
+}
+
+func (g *Generator) printList(v *ast.ListLit) {
+	g.WriteByte('[')
+
+	var vals []interface{}
+	switch w := v.List.(type) {
+	case *ast.ListLit_BasicList:
+		for _, bval := range w.BasicList.Values {
+			vals = append(vals, bval)
+		}
+	case *ast.ListLit_CompositeList:
+		for _, cval := range w.CompositeList.Values {
+			vals = append(vals, cval)
+		}
+	}
+
+	vLen := len(vals) - 1
+	for i, iv := range vals {
+		g.printVal(iv)
+		if i != vLen {
+			g.WriteByte(',')
+			g.WriteByte(' ')
+		}
+	}
+
+	g.WriteByte(']')
+}
+
+func (g *Generator) printObject(v *ast.ObjLit) {
+	g.WriteByte('{')
+	g.WriteByte(' ')
+
+	pLen := len(v.Fields) - 1
+	for i, p := range v.Fields {
+		g.WriteString(p.Key.Name)
+		g.WriteString(": ")
+
+		g.printVal(p.Val)
+
+		if i != pLen {
+			g.WriteByte(',')
+		}
+		g.WriteByte(' ')
+	}
+
+	g.WriteByte('}')
 }
 
 // P prints the arguments to the generated output.

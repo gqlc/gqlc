@@ -96,7 +96,7 @@ func TestImports(t *testing.T) {
 	t.Run("CommonJS", func(subT *testing.T) {
 
 		subT.Run("Single", func(triT *testing.T) {
-			imports := [][]byte{schemaImport}
+			imports := [][]byte{[]byte("GraphQLSchema")}
 
 			var b bytes.Buffer
 			_, err := g.writeImports(&b, &Options{Module: "COMMONJS", imports: imports})
@@ -110,7 +110,7 @@ func TestImports(t *testing.T) {
 		})
 
 		subT.Run("Multiple", func(triT *testing.T) {
-			imports := [][]byte{schemaImport, scalarImport}
+			imports := [][]byte{[]byte("GraphQLSchema"), []byte("GraphQLScalarType")}
 
 			var b bytes.Buffer
 			_, err := g.writeImports(&b, &Options{Module: "COMMONJS", imports: imports})
@@ -127,7 +127,7 @@ func TestImports(t *testing.T) {
 	t.Run("ES6", func(subT *testing.T) {
 
 		subT.Run("Single", func(triT *testing.T) {
-			imports := [][]byte{schemaImport}
+			imports := [][]byte{[]byte("GraphQLSchema")}
 
 			var b bytes.Buffer
 			_, err := g.writeImports(&b, &Options{Module: "ES6", imports: imports})
@@ -141,7 +141,7 @@ func TestImports(t *testing.T) {
 		})
 
 		subT.Run("Multiple", func(triT *testing.T) {
-			imports := [][]byte{schemaImport, scalarImport}
+			imports := [][]byte{[]byte("GraphQLSchema"), []byte("GraphQLScalarType")}
 
 			var b bytes.Buffer
 			_, err := g.writeImports(&b, &Options{Module: "ES6", imports: imports})

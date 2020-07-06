@@ -26,10 +26,10 @@ var (
 	//
 	gqlFileName   = flag.String("gqlFile", "test.gql", "Specify a .gql file to use a input for testing.")
 	exMdDocName   = flag.String("expectedMdFile", "test.md", "Specify a .md file which is the expected generator output from the given .gql file.")
-	exHtmlDocName = flag.String("expectedHTMLFile", "test.html", "Specify a .html file which is the expected generator output from the given .gql file.")
+	exHTMLDocName = flag.String("expectedHTMLFile", "test.html", "Specify a .html file which is the expected generator output from the given .gql file.")
 
 	testDoc            *ast.Document
-	exMdDoc, exHtmlDoc io.Reader
+	exMdDoc, exHTMLDoc io.Reader
 )
 
 func TestMain(m *testing.M) {
@@ -61,10 +61,10 @@ func TestMain(m *testing.M) {
 	}
 
 	// Assume the .html output file is in the current working directory
-	if !filepath.IsAbs(*exHtmlDocName) {
-		*exHtmlDocName = filepath.Join(wd, *exHtmlDocName)
+	if !filepath.IsAbs(*exHTMLDocName) {
+		*exHTMLDocName = filepath.Join(wd, *exHTMLDocName)
 	}
-	exHtmlDoc, err = os.Open(*exHtmlDocName)
+	exHTMLDoc, err = os.Open(*exHTMLDocName)
 	if err != nil {
 		panic(err)
 	}
@@ -79,7 +79,7 @@ func TestMain(m *testing.M) {
 
 func TestUpdate(t *testing.T) {
 	if !*update {
-		t.Skipf("not updating expected output files: %s,%s", *exMdDocName, *exHtmlDocName)
+		t.Skipf("not updating expected output files: %s,%s", *exMdDocName, *exHTMLDocName)
 		return
 	}
 	t.Run(".md", func(subT *testing.T) {
@@ -101,9 +101,9 @@ func TestUpdate(t *testing.T) {
 	})
 
 	t.Run(".html", func(subT *testing.T) {
-		t.Logf("updating expected html output file: %s", *exHtmlDocName)
+		t.Logf("updating expected html output file: %s", *exHTMLDocName)
 
-		f, err := os.OpenFile(*exHtmlDocName, os.O_RDWR|os.O_CREATE, 0755)
+		f, err := os.OpenFile(*exHTMLDocName, os.O_RDWR|os.O_CREATE, 0755)
 		if err != nil {
 			t.Error(err)
 			return
@@ -545,7 +545,7 @@ func TestGenerator_Generate(t *testing.T) {
 		}
 
 		// Compare generated output to golden output
-		ex, err := ioutil.ReadAll(exHtmlDoc)
+		ex, err := ioutil.ReadAll(exHTMLDoc)
 		if err != nil {
 			subT.Error(err)
 			return

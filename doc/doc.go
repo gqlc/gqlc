@@ -396,105 +396,47 @@ func writeToC(w io.Writer, opts *Options) (int64, error) {
 	b.WriteString("## Table of Contents")
 	b.WriteByte('\n')
 
-	name, link := make([]byte, 0, 20), make([]byte, 0, 23) // Assume longest would be a 5 character CJK unicode name => 4byte * 5char = 20
-	listTok := []byte{'-', '*'}
-	indent := make([]byte, 0, 2)
 	for _, s := range *opts.toc {
-		name, link = name[:0], link[:0]
-
-		var shouldIndent, addS bool
 		switch s {
 		case schema:
-			name = append(name, schemaName...)
-			link = append(link, schemaLink...)
+			writeContentLink(&b, schemaName, schemaLink, false)
 		case scalar:
-			if len(indent) > 0 {
-				indent = indent[:len(indent)-1]
-			}
-
-			name = append(name, scalarName...)
-			link = append(link, scalarLink...)
-			shouldIndent = true
-			addS = true
+			writeContentLink(&b, scalarName, scalarLink, true)
 		case object:
-			if len(indent) > 0 {
-				indent = indent[:len(indent)-1]
-			}
-
-			name = append(name, objectName...)
-			link = append(link, objectLink...)
-			shouldIndent = true
-			addS = true
+			writeContentLink(&b, objectName, objectLink, true)
 		case inter:
-			if len(indent) > 0 {
-				indent = indent[:len(indent)-1]
-			}
-
-			name = append(name, interName...)
-			link = append(link, interLink...)
-			shouldIndent = true
-			addS = true
+			writeContentLink(&b, interName, interLink, true)
 		case union:
-			if len(indent) > 0 {
-				indent = indent[:len(indent)-1]
-			}
-			name = append(name, unionName...)
-			link = append(link, unionLink...)
-			shouldIndent = true
-			addS = true
+			writeContentLink(&b, unionName, unionLink, true)
 		case enum:
-			if len(indent) > 0 {
-				indent = indent[:len(indent)-1]
-			}
-			name = append(name, enumName...)
-			link = append(link, enumLink...)
-			shouldIndent = true
-			addS = true
+			writeContentLink(&b, enumName, enumLink, true)
 		case input:
-			if len(indent) > 0 {
-				indent = indent[:len(indent)-1]
-			}
-			name = append(name, inputName...)
-			link = append(link, inputLink...)
-			shouldIndent = true
-			addS = true
+			writeContentLink(&b, inputName, inputLink, true)
 		case directive:
-			if len(indent) > 0 {
-				indent = indent[:len(indent)-1]
-			}
-			name = append(name, directiveName...)
-			link = append(link, directiveLink...)
-			shouldIndent = true
-			addS = true
+			writeContentLink(&b, directiveName, directiveLink, true)
 		default:
-			name = append(name, s...)
-			link = append(link, ']', '(', '#')
-			link = append(link, name...)
+			b.WriteByte('\t')
+			b.Write([]byte("* ["))
+			b.WriteString(s)
+			b.Write([]byte("](#"))
+			b.WriteString(s)
+			b.WriteByte(')')
 		}
-
-		b.Write(indent)
-		b.WriteByte(listTok[len(indent)%2])
-		b.WriteByte(' ')
-		b.WriteByte('[')
-
-		b.Write(name)
-
-		b.Write(link)
-
-		if addS {
-			b.WriteByte('s')
-		}
-
-		b.WriteByte(')')
 		b.WriteByte('\n')
-
-		if shouldIndent {
-			indent = append(indent, '\t')
-		}
 	}
 	b.WriteByte('\n')
 
 	return b.WriteTo(w)
+}
+
+func writeContentLink(b *bytes.Buffer, name, link []byte, addS bool) {
+	b.Write([]byte("- ["))
+	b.Write(name)
+	b.Write(link)
+	if addS {
+		b.WriteByte('s')
+	}
+	b.WriteByte(')')
 }
 
 func (g *Generator) writeSectionHeader(section string) {
@@ -785,48 +727,9 @@ func (g *Generator) printVal(val interface{}) {
 	case *ast.BasicLit:
 		g.WriteString(v.Value)
 	case *ast.ListLit:
-		g.WriteByte('[')
-
-		var vals []interface{}
-		switch w := v.List.(type) {
-		case *ast.ListLit_BasicList:
-			for _, bval := range w.BasicList.Values {
-				vals = append(vals, bval)
-			}
-		case *ast.ListLit_CompositeList:
-			for _, cval := range w.CompositeList.Values {
-				vals = append(vals, cval)
-			}
-		}
-
-		vLen := len(vals) - 1
-		for i, iv := range vals {
-			g.printVal(iv)
-			if i != vLen {
-				g.WriteByte(',')
-				g.WriteByte(' ')
-			}
-		}
-
-		g.WriteByte(']')
+		g.printList(v)
 	case *ast.ObjLit:
-		g.WriteByte('{')
-		g.WriteByte(' ')
-
-		pLen := len(v.Fields) - 1
-		for i, p := range v.Fields {
-			g.WriteString(p.Key.Name)
-			g.WriteString(": ")
-
-			g.printVal(p.Val)
-
-			if i != pLen {
-				g.WriteByte(',')
-			}
-			g.WriteByte(' ')
-		}
-
-		g.WriteByte('}')
+		g.printObject(v)
 	case *ast.CompositeLit:
 		switch w := v.Value.(type) {
 		case *ast.CompositeLit_BasicLit:
@@ -837,6 +740,53 @@ func (g *Generator) printVal(val interface{}) {
 			g.printVal(w.ObjLit)
 		}
 	}
+}
+
+func (g *Generator) printList(v *ast.ListLit) {
+	g.WriteByte('[')
+
+	var vals []interface{}
+	switch w := v.List.(type) {
+	case *ast.ListLit_BasicList:
+		for _, bval := range w.BasicList.Values {
+			vals = append(vals, bval)
+		}
+	case *ast.ListLit_CompositeList:
+		for _, cval := range w.CompositeList.Values {
+			vals = append(vals, cval)
+		}
+	}
+
+	vLen := len(vals) - 1
+	for i, iv := range vals {
+		g.printVal(iv)
+		if i != vLen {
+			g.WriteByte(',')
+			g.WriteByte(' ')
+		}
+	}
+
+	g.WriteByte(']')
+}
+
+func (g *Generator) printObject(v *ast.ObjLit) {
+	g.WriteByte('{')
+	g.WriteByte(' ')
+
+	pLen := len(v.Fields) - 1
+	for i, p := range v.Fields {
+		g.WriteString(p.Key.Name)
+		g.WriteString(": ")
+
+		g.printVal(p.Val)
+
+		if i != pLen {
+			g.WriteByte(',')
+		}
+		g.WriteByte(' ')
+	}
+
+	g.WriteByte('}')
 }
 
 // P prints the arguments to the generated output.

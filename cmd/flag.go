@@ -160,7 +160,7 @@ func parseArg(p *fparser, dir *string, opts map[string]interface{}) stateFn {
 		opts[key] = true
 		return parseArg
 	case '=':
-		return parseValue(key)
+		return parseLongForm(key)
 	case os.PathSeparator:
 		*dir = *dir + key + string(os.PathSeparator)
 		return parseDir(p, dir)
@@ -177,93 +177,118 @@ func parseArg(p *fparser, dir *string, opts map[string]interface{}) stateFn {
 	return nil
 }
 
-func parseValue(key string) stateFn {
+func parseLongForm(key string) stateFn {
 	return func(p *fparser, dir *string, opts map[string]interface{}) stateFn {
-		var val interface{}
-		tt := p.Scan()
-		valStr := p.TokenText()
-
-		oldV, ok := opts[key]
-		switch tt {
-		case scanner.Int:
-			valInt, err := strconv.ParseInt(valStr, 10, 64)
-			if err != nil {
-				p.error(err)
-			}
-
-			if !ok {
-				val = valInt
-				break
-			}
-
-			oldS, isS := oldV.([]int64)
-			if !isS {
-				val = append(oldS, oldV.(int64), valInt)
-				break
-			}
-			val = append(oldS, valInt)
-		case scanner.Float:
-			valFloat, err := strconv.ParseFloat(valStr, 64)
-			if err != nil {
-				p.error(err)
-			}
-
-			if !ok {
-				val = valFloat
-				break
-			}
-
-			oldS, isS := oldV.([]float64)
-			if !isS {
-				val = append(oldS, oldV.(float64), valFloat)
-				break
-			}
-			val = append(oldS, valFloat)
-		case scanner.Ident:
-			if valStr == "true" || valStr == "false" {
-				valBool, err := strconv.ParseBool(valStr)
-				if err != nil {
-					p.error(err)
-				}
-
-				if !ok {
-					val = valBool
-					break
-				}
-
-				oldS, isS := oldV.([]bool)
-				if !isS {
-					val = append(oldS, oldV.(bool), valBool)
-					break
-				}
-				val = append(oldS, valBool)
-				break
-			}
-
-			fallthrough
-		case scanner.String:
-			if !ok {
-				val = valStr
-				break
-			}
-
-			oldS, isS := oldV.([]string)
-			if !isS {
-				val = append(oldS, oldV.(string), valStr)
-				break
-			}
-			val = append(oldS, valStr)
-		default:
-			p.errorf("gqlc: unexpected character in generator option, %s, value: %s", key, string(tt))
-		}
-
-		opts[key] = val
+		opts[key] = parseValue(p, key, opts)
 		if t := p.Scan(); t == ':' {
 			return parseDir(p, dir)
 		}
 
 		return parseArg
 	}
+}
+
+func parseValue(p *fparser, key string, opts map[string]interface{}) (val interface{}) {
+	tt := p.Scan()
+	switch tt {
+	case scanner.Int:
+		return parseInt(p, opts, key)
+	case scanner.Float:
+		return parseFloat(p, opts, key)
+	case scanner.Ident:
+		valStr := p.TokenText()
+		if valStr == "true" || valStr == "false" {
+			return parseBool(p, opts, key)
+		}
+
+		fallthrough
+	case scanner.String:
+		valStr := p.TokenText()
+		oldV, ok := opts[key]
+		if !ok {
+			val = valStr
+			break
+		}
+
+		oldS, isS := oldV.([]string)
+		if !isS {
+			val = append(oldS, oldV.(string), valStr)
+			break
+		}
+		val = append(oldS, valStr)
+	default:
+		p.errorf("gqlc: unexpected character in generator option, %s, value: %s", key, string(tt))
+	}
+	return val
+}
+
+func parseInt(p *fparser, opts map[string]interface{}, key string) (val interface{}) {
+	valStr := p.TokenText()
+	oldV, ok := opts[key]
+
+	valInt, err := strconv.ParseInt(valStr, 10, 64)
+	if err != nil {
+		p.error(err)
+	}
+
+	if !ok {
+		val = valInt
+		return
+	}
+
+	oldS, isS := oldV.([]int64)
+	if !isS {
+		val = append(oldS, oldV.(int64), valInt)
+		return
+	}
+	val = append(oldS, valInt)
+	return
+}
+
+func parseFloat(p *fparser, opts map[string]interface{}, key string) (val interface{}) {
+	valStr := p.TokenText()
+	oldV, ok := opts[key]
+
+	valFloat, err := strconv.ParseFloat(valStr, 64)
+	if err != nil {
+		p.error(err)
+	}
+
+	if !ok {
+		val = valFloat
+		return
+	}
+
+	oldS, isS := oldV.([]float64)
+	if !isS {
+		val = append(oldS, oldV.(float64), valFloat)
+		return
+	}
+	val = append(oldS, valFloat)
+	return
+}
+
+func parseBool(p *fparser, opts map[string]interface{}, key string) (val interface{}) {
+	valStr := p.TokenText()
+	oldV, ok := opts[key]
+
+	valBool, err := strconv.ParseBool(valStr)
+	if err != nil {
+		p.error(err)
+	}
+
+	if !ok {
+		val = valBool
+		return
+	}
+
+	oldS, isS := oldV.([]bool)
+	if !isS {
+		val = append(oldS, oldV.(bool), valBool)
+		return
+	}
+	val = append(oldS, valBool)
+	return
 }
 
 func parseDir(p *fparser, dir *string) stateFn {
