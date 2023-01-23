@@ -1,0 +1,28 @@
+name: Story
+description: Represents stories
+title: "story(subject): short description"
+labels: ["story"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Please provide an informal, general explanation of the work needed to be done, written from the perspective of the end user.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List the criteria for accepting this story as done
+    validations:
+      required: true
+
+  - type: textarea
+    id: related-issues
+    attributes:
+      label: Related Issues
+      description: Please reference any other related issue, for example, if this story was created to address a bug report, reference the bug report issue here
+    validations:
+      required: false
